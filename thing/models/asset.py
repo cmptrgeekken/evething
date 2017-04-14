@@ -39,7 +39,7 @@ class Asset(models.Model):
 
     character = models.ForeignKey(Character)
     corporation_id = models.IntegerField(default=0, db_index=True)
-    system = models.ForeignKey(System)
+    system = models.ForeignKey(System, blank=True, null=True)
     station = models.ForeignKey(Station, blank=True, null=True)
 
     item = models.ForeignKey(Item)

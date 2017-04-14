@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="{{ STATIC_URL }}favicon.ico">
 {% if authed %}
-{% if debug %}
+{% if False %}
     <link rel="stylesheet/less" href="{{ STATIC_URL }}less/theme-{{ user.profile.theme }}/bootstrap.less">
 {% else %}
     <link rel="stylesheet" href="{{ static('css/theme-' + user.profile.theme + '.min.css') }}">

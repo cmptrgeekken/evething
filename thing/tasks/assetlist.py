@@ -52,7 +52,7 @@ class AssetList(APITask):
             a_filter = Asset.objects.filter(character=character, corporation_id=0)
 
         # Fetch the API data
-        params = {'characterID': character.id}
+        params = {'characterID': character.id, 'flat': 1}
         if self.fetch_api(url, params) is False or self.root is None:
             return
 
@@ -83,7 +83,22 @@ class AssetList(APITask):
         for asset_id, location_id, parent_id, item_id, flag_id, quantity, rawQuantity, singleton in data['assets']:
             system = system_map.get(location_id)
             station = station_map.get(location_id)
-            if system is None:
+
+            if station is None:
+                station = Station(
+                    id=location_id,
+                    name='[Unknown Station: %d]' % (location_id),
+                    system=None,
+                    is_unknown=True,
+                    is_citadel=True,
+                )
+
+                self.log_warn('Unknown Station: %d', location_id)
+
+                Station.objects.save(station)
+
+                station_map = Station.objects.select_related('system').in_bulk(data['locations'])
+            elif system is None:
                 system = station.system
 
             if (system, station) not in totals:
@@ -122,6 +137,9 @@ class AssetList(APITask):
         # Create summary objects
         summaries = []
         for (system, station), data in totals.items():
+            if system is None or system.id is None:
+                continue
+
             summary = AssetSummary(
                 character=character,
                 system=system,

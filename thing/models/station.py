@@ -48,8 +48,9 @@ class Station(models.Model):
     id = models.IntegerField(primary_key=True)
     name = models.CharField(max_length=128)
     short_name = models.CharField(max_length=64, default='')
-
-    system = models.ForeignKey(System)
+    is_citadel = models.BooleanField(default=False)
+    is_unknown = models.BooleanField(default=False)
+    system = models.ForeignKey(System, blank=True, null=True)
 
     class Meta:
         app_label = 'thing'

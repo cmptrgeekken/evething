@@ -90,7 +90,8 @@
                   {{ order.character.name }}
                   {%- endif %}
                 </td>
-                <td>{{ order.station.short_name }}</td>
+                <td>
+                  <span class="tip" rel="tooltip" title="{{order.station.name }}">{{ order.station.short_name or order.station.name }}</span></td>
                 <td>
                   {% if order.z_creator_character -%}
                   {{ order.z_creator_character.name }}

@@ -29,7 +29,7 @@ from decimal import Decimal
 
 from .apitask import APITask
 
-from thing.models import Alliance, Character, Contract, Corporation, Event, Station, APIKey
+from thing.models import Alliance, Character, Contract, ContractItem, Corporation, Event, Station, APIKey
 
 
 class Contracts(APITask):
@@ -272,32 +272,32 @@ class Contracts(APITask):
         Event.objects.bulk_create(new_events)
 
         # Force the queryset to update
-        # c_filter.update()
+        c_filter.update()
 
         # # Now go fetch items for each contract
-        # items_url = url.replace('Contracts', 'ContractItems')
-        # new = []
-        # seen_contracts = []
-        # # Apparently courier contracts don't have ContractItems support? :ccp:
-        # for contract in c_filter.filter(retrieved_items=False).exclude(type='Courier'):
-        #     params['contractID'] = contract.contract_id
-        #     if self.fetch_api(items_url, params) is False or self.root is None:
-        #         continue
+        items_url = url.replace('Contracts', 'ContractItems')
+        new = []
+        seen_contracts = []
+        # Apparently courier contracts don't have ContractItems support? :ccp:
+        for contract in c_filter.filter(retrieved_items=False).exclude(type='Courier'):
+            params['contractID'] = contract.contract_id
+            if self.fetch_api(items_url, params) is False or self.root is None:
+                continue
 
-        #     for row in self.root.findall('result/rowset/row'):
-        #         new.append(ContractItem(
-        #             contract_id=contract.contract_id,
-        #             item_id=row.attrib['typeID'],
-        #             quantity=row.attrib['quantity'],
-        #             raw_quantity=row.attrib.get('rawQuantity', 0),
-        #             singleton=row.attrib['singleton'] == '1',
-        #             included=row.attrib['included'] == '1',
-        #         ))
+            for row in self.root.findall('result/rowset/row'):
+                new.append(ContractItem(
+                    contract_id=contract.contract_id,
+                    item_id=row.attrib['typeID'],
+                    quantity=row.attrib['quantity'],
+                    raw_quantity=row.attrib.get('rawQuantity', 0),
+                    singleton=row.attrib['singleton'] == '1',
+                    included=row.attrib['included'] == '1',
+                ))
 
-        #     seen_contracts.append(contract.contract_id)
+            seen_contracts.append(contract.contract_id)
 
-        # if new:
-        #     ContractItem.objects.bulk_create(new)
-        #     c_filter.filter(contract_id__in=seen_contracts).update(retrieved_items=True)
+        if new:
+            ContractItem.objects.bulk_create(new)
+            c_filter.filter(contract_id__in=seen_contracts).update(retrieved_items=True)
 
         return True

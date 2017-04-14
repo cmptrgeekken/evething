@@ -83,7 +83,7 @@
                   {%- endif %}
                 </td>
                 <td>
-                  <span class="tip" rel="tooltip" title="{{transaction.station.name }}">{{ transaction.station.short_name }}</span>
+                  <span class="tip" rel="tooltip" title="{{transaction.station.name }}">{{ transaction.station.short_name or transaction.station.name }}</span>
                 </td>
                 <td>
                   {% if transaction.other_char -%}

@@ -72,6 +72,7 @@ GLOBAL_TASKS = (
     ('thing.conquerable_station_list', '/eve/ConquerableStationList.xml.aspx', 'et_medium'),
     ('thing.ref_types', '/eve/RefTypes.xml.aspx', 'et_medium'),
     ('thing.server_status', '/server/ServerStatus.xml.aspx', 'et_high'),
+    ('thing.citadels', 'https://stop.hammerti.me.uk/api/structure/all', 'et_medium')
 )
 
 

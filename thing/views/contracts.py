@@ -123,3 +123,38 @@ def contracts(request):
         character_ids,
         corporation_ids,
     )
+
+@login_required
+def contract_items(request):
+    """Contracts"""
+    character_ids = list(Character.objects.filter(
+        apikeys__user=request.user.id,
+        apikeys__valid=True,
+        apikeys__key_type__in=[APIKey.ACCOUNT_TYPE, APIKey.CHARACTER_TYPE]
+    ).distinct().values_list(
+        'id',
+        flat=True,
+    ))
+
+    corporation_ids = Corporation.get_ids_with_access(request.user, APIKey.CORP_CONTRACTS_MASK)
+
+    # Whee~
+    contracts = Contract.objects.select_related('issuer_char', 'issuer_corp', 'start_station', 'end_station', 'contract_items')
+    contracts = contracts.filter(
+        Q(character__in=character_ids, corporation__isnull=True)
+        |
+        Q(corporation__in=corporation_ids)
+    )
+
+    contract_id = request.GET.get('id')
+
+    contracts = contracts.filter(
+        Q(id=int(contract_id))
+    )
+
+    return render_page(
+        'thing/contract_items.html',
+        dict(
+            contracts
+        )
+    )
