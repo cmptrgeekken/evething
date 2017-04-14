@@ -95,7 +95,7 @@ class AssetList(APITask):
 
                 self.log_warn('Unknown Station: %d', location_id)
 
-                Station.objects.save(station)
+                station.save()
 
                 station_map = Station.objects.select_related('system').in_bulk(data['locations'])
             elif system is None:

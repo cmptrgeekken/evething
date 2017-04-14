@@ -44,7 +44,7 @@ class Citadels(APITask):
         new_citadels = []
         for citadel_id in citadels:
             citadel = citadels[citadel_id]
-            existing_citadel = station_map.get(citadel_id)
+            existing_citadel = station_map.get(int(citadel_id))
             if existing_citadel is None:
                 new_citadel = Station(
                     id=citadel_id,

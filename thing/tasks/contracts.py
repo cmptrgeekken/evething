@@ -51,12 +51,12 @@ class Contracts(APITask):
         # Initialise for corporate query
         if self.apikey.key_type == APIKey.CORPORATION_TYPE:
             c_filter = Contract.objects.filter(corporation=self.apikey.corporation)
-
+            params = {}
         # Initialise for character query
         else:
             c_filter = Contract.objects.filter(character=character, corporation__isnull=True)
+            params = {'characterID': character_id}
 
-        params = {'characterID': character_id}
         if self.fetch_api(url, params) is False or self.root is None:
             return
 
@@ -79,19 +79,19 @@ class Contracts(APITask):
         for row in self.root.findall('result/rowset/row'):
             if self.apikey.key_type == APIKey.CORPORATION_TYPE:
                 # corp keys don't care about non-corp orders
-                if row.attrib['forCorp'] == '0':
-                    continue
+                #if row.attrib['forCorp'] == '0':
+                #    continue
                 # corp keys don't care about orders they didn't issue - another fun
                 # bug where corp keys see alliance contracts they didn't make  :ccp:
                 if self.apikey.corporation.id not in (
                         int(row.attrib['issuerCorpID']), int(row.attrib['assigneeID']), int(row.attrib['acceptorID'])
                 ):
-                    # logger.info('Skipping non-corp contract :ccp:')
+                    logger.info('Skipping non-corp contract :ccp:')
                     continue
 
             # non-corp keys don't care about corp orders
-            if self.apikey.key_type != APIKey.CORPORATION_TYPE and row.attrib['forCorp'] == '1':
-                continue
+            #if self.apikey.key_type != APIKey.CORPORATION_TYPE and row.attrib['forCorp'] == '1':
+            #    continue
 
             contract_ids.add(int(row.attrib['contractID']))
 

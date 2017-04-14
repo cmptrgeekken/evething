@@ -218,7 +218,7 @@ class APITask(Task):
 
         cache_key = self._get_cache_key(url, params)
         cached_data = cache.get(cache_key)
-
+        
         # Data is not cached, fetch new data
         if cached_data is None:
             # Sleep now if we have to
