@@ -19,64 +19,69 @@ urlpatterns = patterns(
 )
 
 urlpatterns += patterns(
+    'pgsus.views',
+    url(r'^$', 'index', name='index'),
+    url(r'^stats$', 'stats', name='stats'),
+)
+
+urlpatterns += patterns(
     'thing.views',
-    url(r'^$', 'home', name='home'),
+    url(r'^thing/$', 'home', name='home'),
+    (r'^thing/account/$', 'account'),
+    (r'^thing/account/change_password/$', 'account_change_password'),
+    (r'^thing/account/settings/$', 'account_settings'),
+    (r'^thing/account/apikey/add/$', 'account_apikey_add'),
+    (r'^thing/account/apikey/delete/$', 'account_apikey_delete'),
+    (r'^thing/account/apikey/edit/$', 'account_apikey_edit'),
+    (r'^thing/account/apikey/purge/$', 'account_apikey_purge'),
+    (r'^thing/account/skillplan/add/$', 'account_skillplan_add'),
+    (r'^thing/account/skillplan/delete/$', 'account_skillplan_delete'),
+    (r'^thing/account/skillplan/edit/$', 'account_skillplan_edit'),
 
-    (r'^account/$', 'account'),
-    (r'^account/change_password/$', 'account_change_password'),
-    (r'^account/settings/$', 'account_settings'),
-    (r'^account/apikey/add/$', 'account_apikey_add'),
-    (r'^account/apikey/delete/$', 'account_apikey_delete'),
-    (r'^account/apikey/edit/$', 'account_apikey_edit'),
-    (r'^account/apikey/purge/$', 'account_apikey_purge'),
-    (r'^account/skillplan/add/$', 'account_skillplan_add'),
-    (r'^account/skillplan/delete/$', 'account_skillplan_delete'),
-    (r'^account/skillplan/edit/$', 'account_skillplan_edit'),
+    (r'^thing/assets/$', 'assets_summary'),
+    (r'^thing/assets/filter/$', 'assets_filter'),
 
-    (r'^assets/$', 'assets_summary'),
-    (r'^assets/filter/$', 'assets_filter'),
+    url(r'^thing/blueprints/$', 'blueprints', name='blueprints'),
+    (r'^thing/blueprints/add/$', 'blueprints_add'),
+    (r'^thing/blueprints/del/$', 'blueprints_del'),
+    (r'^thing/blueprints/edit/$', 'blueprints_edit'),
+    (r'^thing/blueprints/export/$', 'blueprints_export'),
+    (r'^thing/blueprints/import/$', 'blueprints_import'),
 
-    url(r'^blueprints/$', 'blueprints', name='blueprints'),
-    (r'^blueprints/add/$', 'blueprints_add'),
-    (r'^blueprints/del/$', 'blueprints_del'),
-    (r'^blueprints/edit/$', 'blueprints_edit'),
-    (r'^blueprints/export/$', 'blueprints_export'),
-    (r'^blueprints/import/$', 'blueprints_import'),
+    (r'^thing/bpcalc/$', 'bpcalc'),
 
-    (r'^bpcalc/$', 'bpcalc'),
+    (r'^thing/character/(?P<character_name>[\w\'\- ]+)/$', 'character_sheet'),
+    (r'^thing/character/(?P<character_name>[\w\'\- ]+)/settings/', 'character_settings'),
+    (r'^thing/character/(?P<character_name>[\w\'\- ]+)/mastery/', 'character_mastery'),
+    (r'^thing/character/(?P<character_name>[\w\'\- ]+)/skillplan/(?P<skillplan_id>\d+)$', 'character_skillplan'),
+    (r'^thing/character_anon/(?P<anon_key>[a-z0-9]+)/$', 'character_anonymous',),
+    (r'^thing/character_anon/(?P<anon_key>[a-z0-9]+)/mastery/', 'character_anonymous_mastery'),
+    (r'^thing/character_anon/(?P<anon_key>[a-z0-9]+)/skillplan/(?P<skillplan_id>\d+)$', 'character_anonymous_skillplan'),
 
-    (r'^character/(?P<character_name>[\w\'\- ]+)/$', 'character_sheet'),
-    (r'^character/(?P<character_name>[\w\'\- ]+)/settings/', 'character_settings'),
-    (r'^character/(?P<character_name>[\w\'\- ]+)/mastery/', 'character_mastery'),
-    (r'^character/(?P<character_name>[\w\'\- ]+)/skillplan/(?P<skillplan_id>\d+)$', 'character_skillplan'),
-    (r'^character_anon/(?P<anon_key>[a-z0-9]+)/$', 'character_anonymous',),
-    (r'^character_anon/(?P<anon_key>[a-z0-9]+)/mastery/', 'character_anonymous_mastery'),
-    (r'^character_anon/(?P<anon_key>[a-z0-9]+)/skillplan/(?P<skillplan_id>\d+)$', 'character_anonymous_skillplan'),
+    (r'^thing/contracts/', 'contracts'),
 
-    (r'^contracts/', 'contracts'),
+    (r'^thing/events/$', 'events'),
 
-    (r'^events/$', 'events'),
+    (r'^thing/industry/$', 'industry'),
 
-    (r'^industry/$', 'industry'),
+    (r'^thing/mail/$', 'mail'),
+    (r'^thing/mail/json/body/(?P<message_id>\d+)/$', 'mail_json_body'),
+    (r'^thing/mail/json/headers/$', 'mail_json_headers'),
+    (r'^thing/mail/mark_read/$', 'mail_mark_read'),
 
-    (r'^mail/$', 'mail'),
-    (r'^mail/json/body/(?P<message_id>\d+)/$', 'mail_json_body'),
-    (r'^mail/json/headers/$', 'mail_json_headers'),
-    (r'^mail/mark_read/$', 'mail_mark_read'),
+    (r'^thing/orders/$', 'orders'),
 
-    (r'^orders/$', 'orders'),
+    (r'^thing/trade/$', 'trade'),
+    (r'^thing/trade/(?P<year>\d{4})-(?P<month>\d{2})/$', 'trade_timeframe'),
+    (r'^thing/trade/(?P<period>all)/$', 'trade_timeframe'),
+    (r'^thing/trade/(?P<slug>[-\w]+)/$', 'trade_timeframe'),
 
-    (r'^trade/$', 'trade'),
-    (r'^trade/(?P<year>\d{4})-(?P<month>\d{2})/$', 'trade_timeframe'),
-    (r'^trade/(?P<period>all)/$', 'trade_timeframe'),
-    (r'^trade/(?P<slug>[-\w]+)/$', 'trade_timeframe'),
+    (r'^thing/transactions/$', 'transactions'),
 
-    (r'^transactions/$', 'transactions'),
+    (r'^thing/wallet_journal/$', 'wallet_journal'),
+    (r'^thing/wallet_journal/aggregate/$', 'wallet_journal_aggregate'),
 
-    (r'^wallet_journal/$', 'wallet_journal'),
-    (r'^wallet_journal/aggregate/$', 'wallet_journal_aggregate'),
-
-    (r'^pi/$', 'pi'),
+    (r'^thing/pi/$', 'pi'),
 )
 
 if getattr(settings, 'ENABLE_GSFAPI', None):

@@ -36,6 +36,15 @@ WHERE   corporation_id IN (
 ORDER BY c.name, cw.account_key
 """
 
+fuel_block_industry = """
+SELECT i.name AS name,SUM(runs)*40 AS qty
+FROM thing_industryjob ij 
+INNER JOIN thing_item i ON ij.product_id=i.id
+WHERE status IN (1,3) and activity=1 and i.name LIKE '%Fuel Block' group by i.name
+ORDER BY i.name
+"""
+
+
 order_aggregation = """
 SELECT  mo.creator_character_id,
         c.name,
@@ -123,6 +132,12 @@ WHERE   a.item_id = i.id
         AND i.item_group_id = ig.id
 """
 
+pricing_item_ids = """
+SELECT  DISTINCT pw.item_id
+FROM    thing_pricewatch pw
+WHERE   pw.active = 1
+"""
+
 journal_aggregate_char = """
 SELECT  EXTRACT(YEAR FROM date) AS year,
         EXTRACT(MONTH FROM date) AS month,
@@ -205,4 +220,19 @@ skillqueue_delete = """
 DELETE
 FROM    thing_skillqueue
 WHERE   character_id = %s
+"""
+
+
+# statistics
+fuelblock_purchase_stats = """
+SELECT i.name,SUM(ci.quantity)
+FROM thing_contract c 
+    INNER JOIN thing_contractitem ci ON c.contract_id=ci.contract_id
+    INNER JOIN thing_item i ON ci.item_id=i.id 
+WHERE c.type = 'Item Exchange' 
+    AND c.status = 'Completed'
+    AND i.name LIKE '%Fuel Block'
+    AND ((c.corporation_id=c.issuer_corp_id AND ci.included=1)
+          OR (c.assignee_id=c.corporation_id AND ci.included=0))
+GROUP BY i.name
 """

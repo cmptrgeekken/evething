@@ -1,0 +1,197 @@
+﻿<!DOCTYPE html>
+<!--[if IE 9]> <html lang="en" class="js-no ie9"> <![endif]-->
+<!--[if IE 10]> <html lang="en" class="js-no ie10"> <![endif]-->
+<!--[if !IE]><!-->
+<html lang="en">
+<!--<![endif]-->
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Penny's Flying Circus | {% block title %}{% endblock %}</title>
+
+    <link rel="apple-touch-icon" sizes="57x57" href="{{ STATIC_URL }}/pgsus/img/icons/apple-icon-57x57.png">
+    <link rel="apple-touch-icon" sizes="60x60" href="{{ STATIC_URL }}/pgsus/img/icons/apple-icon-60x60.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="{{ STATIC_URL }}/pgsus/img/icons/apple-icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="76x76" href="{{ STATIC_URL }}/pgsus/img/icons/apple-icon-76x76.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="{{ STATIC_URL }}/pgsus/img/icons/apple-icon-114x114.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="{{ STATIC_URL }}/pgsus/img/icons/apple-icon-120x120.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="{{ STATIC_URL }}/pgsus/img/icons/apple-icon-144x144.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="{{ STATIC_URL }}/pgsus/img/icons/apple-icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ STATIC_URL }}/pgsus/img/icons/apple-icon-180x180.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="{{ STATIC_URL }}/pgsus/img/icons/android-icon-192x192.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ STATIC_URL }}/pgsus/img/icons/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="96x96" href="{{ STATIC_URL }}/pgsus/img/icons/favicon-96x96.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ STATIC_URL }}/pgsus/img/icons/favicon-16x16.png">
+    <link rel="manifest" href="{{ STATIC_URL }}/pgsus/img/icons/manifest.json">
+    <meta name="msapplication-TileColor" content="#ffffff">
+    <meta name="msapplication-TileImage" content="{{ STATIC_URL }}/pgsus/img/icons/ms-icon-144x144.png">
+    <meta name="theme-color" content="#ffffff">
+
+    <!--  Boostrap Framework  -->
+    <link href="{{ STATIC_URL }}/pgsus/css/bootstrap.min.css" rel="stylesheet">
+
+    <!--=== CSS - Dragonfly ===-->
+    <link href="{{ STATIC_URL }}/pgsus/css/themes/light-blue.css" rel="stylesheet" id="colors">
+
+    <!--=== LESS - Dragonfly ===-->
+    <!--<link href="{{ STATIC_URL }}/pgsus/less/main.less" rel="stylesheet/less">-->
+    <!-- Google Fonts - Lato -->
+    <link href="//fonts.googleapis.com/css?family=Lato:300,400" rel="stylesheet">
+
+    <!-- Font Awesome Icons -->
+    <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet">
+
+    <!-- CSS Animations -->
+    <link href="//cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="//ajax.googleapis.com/ajax/libs/angular_material/1.1.0/angular-material.min.css">
+
+
+    <!--  Slippry Slideshow -->
+    <link href="{{ STATIC_URL }}/pgsus/css/slippry.min.css" rel="stylesheet">
+
+    <link href="//cdnjs.cloudflare.com/ajax/libs/angular-css/1.0.8/angular-css.min.js" rel="stylesheet"/>
+
+    <link href="{{ STATIC_URL }}/pgsus/css/custom.css" rel="stylesheet" />
+
+</head>
+<body>
+    <!--===    NAVBAR     ===-->
+    <nav class="navbar navbar-default" role="navigation" id="navbarSettings">
+        <div class="container">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-navbar-collapse-1">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="@Url.Action("Index", "Home")">Penny's <span class="text-primary">Flying Circus</span></a>
+            </div>
+
+            <div class="collapse navbar-collapse" id="bs-navbar-collapse-1">
+                <ul class="nav navbar-nav navbar-right ">
+                    <li>
+                        <a href="@Url.Action("Index", "Home")" >
+                            Home
+                        </a>
+                    </li>
+                    <!--Home Pages -->
+                    <li class="dropdown">
+                        <a href="javascript:void(0);" class="dropdown-toggle" data-toggle="dropdown" data-hover="dropdown" data-delay="0">
+                            Calculators
+                        </a>
+                        <ul class="dropdown-menu ">
+                            <li>
+                                <a href="@Url.Action("OreCalculator", "Calculator")">Ore Calculator</a>
+                            </li>
+                        </ul>
+                    </li>
+                    <li>
+                        <a href="@Url.Action("CrestLogin", "Account")"><img src="{{ STATIC_URL }}/pgsus/img/EVE_SSO_Login_Buttons_Small_Black.png" alt="Login with Eve"/></a>
+                    </li>
+                </ul>
+            </div>
+            <!-- /.navbar-collapse -->
+        </div>
+    </nav>
+    <!-- If navbar is fixed to top and it has the class navbar-default or navbar-inverse this div will add space below the navbar-->
+    <div id="navbarSpaceBottom"></div>
+    <!--===/END    Navbar     ===-->
+    {% block content %}{% endblock %}
+    <!-- Modernizr -->
+    <script src="{{ STATIC_URL }}/pgsus/js/min/modernizr.custom.min.js"></script>
+
+    <!-- jQuery -->
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+    <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/jquery-ui.min.js"></script>
+
+    <!-- Bootstrap JS -->
+    <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+
+    <!-- Bootstrap Plugin - open dropdown on hover -->
+    <script src="{{ STATIC_URL }}/pgsus/js/min/bootstrap-hover-dropdown.min.js"></script>
+
+    <!-- LESS preprocessor -->
+    <script src="//cdnjs.cloudflare.com/ajax/libs/less.js/1.7.4/less.min.js"></script>
+
+    <!-- WOW.js - loading animations -->
+    <script src="//cdnjs.cloudflare.com/ajax/libs/wow/0.1.6/wow.min.js"></script>
+
+    <!-- Knobs - our skills -->
+    <script src="//cdn.jsdelivr.net/jquery.knob/1.2.9/jquery.knob.min.js"></script>
+
+    <!-- Slippry - Slideshow -->
+    <script src="{{ STATIC_URL }}/pgsus/js/min/slippry.min.js"></script>
+
+    <!-- Mixitup plugin - Portfolio Filter Grid -->
+    <script src="//cdnjs.cloudflare.com/ajax/libs/mixitup/1.5.6/jquery.mixitup.min.js"></script>
+
+    <!-- Make sticky whatever elements -->
+    <script src="//cdn.jsdelivr.net/jquery.sticky/1.0.0/jquery.sticky.min.js"></script>
+
+    <script src="{{ STATIC_URL }}/pgsus/js/jquery.timeago.js"></script>
+
+    <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.5.8/angular.min.js"></script>
+    <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.5.8/angular-animate.min.js"></script>
+    <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.5.8/angular-aria.min.js"></script>
+    <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.5.8/angular-messages.min.js"></script>
+    <script src="//ajax.googleapis.com/ajax/libs/angular_material/1.1.0/angular-material.min.js"></script>
+
+    <!-- Must be last of all scripts -->
+    <script src="{{ STATIC_URL }}/pgsus/js/scripts.js"></script>
+    <script src="{{ STATIC_URL }}/pgsus/js/custom.js"></script>
+    
+
+<!--[if lt IE 9]>
+          <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7/html5shiv.min.js"></script>
+          <script src="//cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+    <!--===/END    SCRIPTS     ===-->
+
+    <!--=== FOOTER ===-->
+    <footer class="footer">
+        <div class="footer-top">
+            <div class="container">
+                <div class="row">
+                    <div class="col-md-4 col-lg-4 col-sm-12 col-xs-12">
+                        <h4>Contact</h4>
+                        <ul class="info-list md-list i-primary">
+                            <li>
+                                <i class="fa fa-envelope fa-fw"></i>
+                                Penny's Flying Circus
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="space-sm visible-sm visible-xs"></div>
+                    <div class="col-md-4 col-lg-4 col-xs-12">
+                        <h4>Quick Links</h4>
+                        <ul class="info-list md-list i-primary">
+                            <li>
+                                <i class="fa fa-angle-right fa-fw"></i>
+                                <a href="@Url.Action("OreCalculator", "Calculator")">
+                                    <span class="link-title">Ore Calculator</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="space-sm visible-sm visible-xs"></div>
+                    <div class="col-md-4 col-lg-4  col-xs-12">
+                        <h4>About Us</h4>
+                        <p> We're just a simple industry corp specializing in capital ship and fuel block production.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <div class="container">
+                <p>© Penny's Flying Circus. All rights reserved.</p>
+                <div class="well-sm"></div>
+                <p class="small">EVE Online and the EVE logo are the registered trademarks of CCP hf. All rights are reserved worldwide. All other trademarks are the property of their respective owners. EVE Online, the EVE logo, EVE and all associated logos and designs are the intellectual property of CCP hf. All artwork, screenshots, characters, vehicles, storylines, world facts or other recognizable features of the intellectual property relating to these trademarks are likewise the intellectual property of CCP hf. CCP hf. has granted permission to pennysflyingcircus.com to use EVE Online and all associated logos and designs for promotional and information purposes on its website but does not endorse, and is not in any way affiliated with, pennysflyingcircus.com. CCP is in no way responsible for the content on or functioning of this website, nor can it be liable for any damage arising from the use of this website.</p>
+            </div>
+        </div>
+    </footer>
+    <!--===/END FOOTER ===-->
+
+</body>
+</html>

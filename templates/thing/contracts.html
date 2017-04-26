@@ -32,6 +32,9 @@
                 <th>Status</th>
                 <th>Assigned To</th>
                 <th>Accepted By</th>
+                <th>Price</th>
+                <th>Reward</th>
+                <th>Collateral</th>
                 <th>Last Changed</th>
               </tr>
             </thead>
@@ -80,6 +83,26 @@
                   --
                   {%- endif %}
                 </td>
+                <td>
+                    {% if contract.price > 0 -%}
+                    {{ "{:,.0f}".format(contract.price) }}
+                    {%- else -%}
+                    --
+                    {%- endif %}
+                </td>
+                <td>
+                    {% if contract.reward > 0 -%}
+                    {{ "{:,.0f}".format(contract.reward) }}
+                    {%- else -%}
+                    --
+                    {%- endif %}
+                </td>
+                <td>
+                    {% if contract.collateral > 0 -%}
+                    {{ "{:,.0f}".format(contract.collateral) }}
+                    {%- else -%}
+                    --
+                    {%- endif %}
                 <td class="con-date">
                   {% if contract.date_completed -%}
                   {{ contract.date_completed }}

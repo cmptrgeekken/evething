@@ -38,21 +38,21 @@ CAPITAL_SHIP_GROUPS = (
     'Titan',
 )
 PRICE_PER_REQUEST = 100
-
+PRICE_STATION_ID = 60003760
 
 class PriceUpdater(APITask):
     name = 'thing.price_updater'
 
-    def run(self):
-        if self.init() is False:
+    def run(self, api_url, taskstate_id, apikey_id, zero):
+        if self.init(taskstate_id) is False:
             return
 
         # Get a list of all item_ids
         cursor = self.get_cursor()
-        cursor.execute(queries.all_item_ids)
+        cursor.execute(queries.pricing_item_ids)
 
         # init XML_BASE_PATH from PRICE_URL, as it depends on which one we use
-        XML_BASE_PATH = settings.PRICE_URL.split('?')[0].strip('/').rsplit('/', 1)[1]
+        XML_BASE_PATH = api_url.split('?')[0].strip('/').rsplit('/', 1)[1]
 
         item_ids = [row[0] for row in cursor]
 
@@ -63,7 +63,8 @@ class PriceUpdater(APITask):
 
         for i in range(0, len(item_ids), PRICE_PER_REQUEST):
             # Retrieve market data and parse the XML
-            url = settings.PRICE_URL % (','.join(str(item_id) for item_id in item_ids[i:i + PRICE_PER_REQUEST]))
+            url = api_url % (PRICE_STATION_ID, ','.join(str(item_id) for item_id in item_ids[i:i + PRICE_PER_REQUEST]))
+            self.log_warn('API URL: %s', url)
             data = self.fetch_url(url, {})
             if data is False:
                 return
@@ -74,7 +75,16 @@ class PriceUpdater(APITask):
             for t in root.findall(XML_BASE_PATH + '/type'):
                 item = item_map[int(t.attrib['id'])]
                 item.buy_price = t.find('buy/max').text
+                item.buy_std_dev = t.find('buy/stddev').text
+                item.buy_median = t.find('buy/median').text
+                item.buy_percentile = t.find('buy/percentile').text
+                item.buy_volume = t.find('buy/volume').text
+
                 item.sell_price = t.find('sell/min').text
+                item.sell_std_dev = t.find('sell/stddev').text
+                item.sell_median = t.find('sell/median').text
+                item.sell_percentile = t.find('sell/percentile').text
+                item.sell_volume = t.find('sell/volume').text
                 item.save()
 
         # Calculate capital ship costs now

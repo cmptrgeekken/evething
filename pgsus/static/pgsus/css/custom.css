@@ -1,0 +1,45 @@
+﻿.modal-body-scroll {
+    height: 400px;
+    overflow-y: auto;
+}
+
+.modal-dialog {
+    width: 850px;
+}
+
+.modal {
+    z-index: 10000 !important;
+}
+
+.market-order-buy td {
+    background-color: #00ff7f !important;
+}
+
+.market-order-buy abbr {
+    font-weight: bold;
+}
+
+tr:nth-child(odd).market-order-buy>td, .table-striped>tbody>tr:nth-child(odd).market-order-buy>th {
+    background-color: #00ff00 !important;
+}
+
+.align-right {
+    text-align: right;
+}
+
+.buy-best {
+    background-color: #00FF00;
+}
+
+.bg-19 {
+    background-image: url(../img/shots/orca-boost.png);
+}
+
+.component-list .col {
+    height: 35px;
+    padding: 10px;
+}
+
+.component-list.striped {
+    background-color: #CCC;
+}

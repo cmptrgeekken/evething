@@ -28,20 +28,21 @@ from .apitask import APITask
 from thing import queries
 from thing.models import PriceHistory
 
-HISTORY_PER_REQUEST = 50
-HISTORY_URL = 'http://goonmetrics.com/api/price_history/?region_id=10000002&type_id=%s'
+import json
 
+HISTORY_PER_REQUEST = 50
+
+REGION_ID = 10000002
 
 class HistoryUpdater(APITask):
     name = 'thing.history_updater'
-
-    def run(self):
-        if self.init() is False:
+    def run(self, api_url, taskstate_id, apikey_id, zero):
+        if self.init(taskstate_id) is False:
             return
 
         # Get a list of all item_ids
         cursor = self.get_cursor()
-        cursor.execute(queries.all_item_ids)
+        cursor.execute(queries.pricing_item_ids)
 
         item_ids = [row[0] for row in cursor]
 
@@ -49,39 +50,34 @@ class HistoryUpdater(APITask):
 
         # Collect data
         new = []
-        for i in range(0, len(item_ids), 50):
+        for i in range(0, len(item_ids)):
+            item_id = item_ids[i]
             # Fetch the XML
-            url = HISTORY_URL % (','.join(str(z) for z in item_ids[i:i + 50]))
+            url = api_url % (REGION_ID, item_id)
             data = self.fetch_url(url, {})
             if data is False:
                 return
 
-            root = self.parse_xml(data)
+            item_history = json.loads(data)
 
-            # Do stuff
-            for t in root.findall('price_history/type'):
-                item_id = int(t.attrib['id'])
+            data = {}
+            for history in item_history:
+                data[history['date']] = history
 
-                data = {}
-                for hist in t.findall('history'):
-                    data[hist.attrib['date']] = hist
+            for ph in PriceHistory.objects.filter(region=REGION_ID,item=item_id,date__in=data.keys()):
+                del data[str(ph.date)]
 
-                # Query that shit
-                for ph in PriceHistory.objects.filter(region=10000002, item=item_id, date__in=data.keys()):
-                    del data[str(ph.date)]
-
-                # Add new ones
-                for date, hist in data.items():
-                    new.append(PriceHistory(
-                        region_id=10000002,
-                        item_id=item_id,
-                        date=hist.attrib['date'],
-                        minimum=hist.attrib['minPrice'],
-                        maximum=hist.attrib['maxPrice'],
-                        average=hist.attrib['avgPrice'],
-                        movement=hist.attrib['movement'],
-                        orders=hist.attrib['numOrders'],
-                    ))
+            for date, history in data.items():
+                new.append(PriceHistory(
+                    region_id = REGION_ID,
+                    item_id = item_id,
+                    date = history['date'],
+                    minimum = history['lowest'],
+                    maximum = history['highest'],
+                    average = history['average'],
+                    movement = history['volume'],
+                    orders = history['order_count']
+                ))
 
         if new:
             PriceHistory.objects.bulk_create(new)

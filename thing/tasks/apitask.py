@@ -303,7 +303,7 @@ class APITask(Task):
                     # Work out if we need a cache multiplier for this key
                     last_seen = APIKey.objects.filter(keyid=self.apikey.keyid, vcode=self.apikey.vcode).aggregate(m=Max('user__profile__last_seen'))['m']
                     secs = max(0, total_seconds(utcnow - last_seen))
-                    mult = 1 + (min(20, max(0, secs / PENALTY_TIME)) * PENALTY_MULT)
+                    mult = 1 #+ (min(20, max(0, secs / PENALTY_TIME)) * PENALTY_MULT)
 
                     # Generate a delta for cache penalty value
                     cache_expires = max(0, total_seconds(self._cache_delta) * mult) + 10

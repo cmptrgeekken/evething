@@ -59,7 +59,7 @@
                       </td>
                       <td>
                         {% if job.z_station -%}
-                        <span class="tip" rel="tooltip" title="{{ job.z_station.name }}">{{ job.z_station.short_name }}</span>
+                        <span class="tip" rel="tooltip" title="{{ job.z_station.name }}">{{ job.z_station.short_name or job.z_station.name }}</span>
                         {%- else -%}
                         {{ job.system.name }}
                         {%- endif %}

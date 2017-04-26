@@ -71,14 +71,16 @@ class Station(models.Model):
             self.short_name = self.name
         else:
             a_parts = parts[0].split()
-            # Change the roman annoyance to a proper digit
-            out.append('%s %s' % (a_parts[0], str(roman_to_int(a_parts[1]))))
-
-            # Moooon
-            if parts[1].startswith('Moon') and len(parts) == 3:
-                out[0] = '%s-%s' % (out[0], parts[1][5:])
-                out.append(''.join(s[0] for s in parts[2].split()))
+            if len(a_parts) > 1:
+                # Change the roman annoyance to a proper digit
+                out.append('%s %s' % (a_parts[0], str(roman_to_int(a_parts[1]))))
+                # Moooon
+                if parts[1].startswith('Moon') and len(parts) == 3:
+                    out[0] = '%s-%s' % (out[0], parts[1][5:])
+                    out.append(''.join(s[0] for s in parts[2].split()))
+                else:
+                    out.append(''.join(s[0] for s in parts[1].split()))
             else:
-                out.append(''.join(s[0] for s in parts[1].split()))
+                out.append(a_parts[0])
 
             self.short_name = ' - '.join(out)

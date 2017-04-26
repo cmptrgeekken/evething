@@ -49,6 +49,7 @@ from thing.models.mailinglist import MailingList
 from thing.models.mailmessage import MailMessage
 from thing.models.marketorder import MarketOrder
 from thing.models.pricehistory import PriceHistory
+from thing.models.pricewatch import PriceWatch
 from thing.models.skillplan import SkillPlan
 from thing.models.skillqueue import SkillQueue
 from thing.models.spentry import SPEntry

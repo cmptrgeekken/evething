@@ -1,0 +1,34 @@
+{% extends "web_template.html" %}
+{% import 'macros/common.html' as common %}
+
+{% block title %}Statistics{% endblock %}
+
+{% block content %}
+
+<section class="bg-19 bg-center bg-cover">
+    <div>
+        <div class="container section-lg">
+            <h1 class="top-title">Statistics</h1>
+        </div>
+    </div>
+</section>
+
+<section class="container section-lg">
+    <div class="row">
+        <div class="col-md-4">
+            <h2>Fuel Blocks Sold</h2>
+            <ul>
+                {% for stat in fuel_purchase_stats -%}
+                <li><b>{{ stat['name'].replace(' Fuel Block', '') }}:</b> {{ stat['quantity']|commas }}
+                {%- endfor %}
+            </ul>
+        </div>
+        <div class="col-md-4">
+            <h2>Courier Contracts</h2>
+        </div>
+        <div class="col-md-4">
+            <h2>Buyback</h2>
+        </div>
+    </div>
+</section>
+{% endblock %}

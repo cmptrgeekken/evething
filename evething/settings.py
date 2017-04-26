@@ -106,6 +106,7 @@ INSTALLED_APPS = (
     'django.contrib.admindocs',
     'mptt',
     'thing',
+    'pgsus',
 )
 
 # A sample logging configuration. The only tangible logging
