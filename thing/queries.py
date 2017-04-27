@@ -287,7 +287,7 @@ SELECT
 	COUNT(*) AS ttl_contracts,
 	COUNT(DISTINCT c.issuer_char_id) AS distinct_users,
 	AVG(JULIANDAY(c.date_accepted)-JULIANDAY(c.date_issued))*24*60*60 AS avg_acceptance_secs,
-	AVG(JULIANDAY(c.date_completed)-JULIANDAY(c.date_issued))*24*60*60 AS avg_completion_secs
+	AVG(JULIANDAY(c.date_completed)-JULIANDAY(c.date_accepted))*24*60*60 AS avg_completion_secs
 FROM thing_contract c
 WHERE c.assignee_id=c.corporation_id
 AND c.status = 'Completed'
