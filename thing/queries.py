@@ -225,7 +225,7 @@ WHERE   character_id = %s
 
 # statistics
 fuelblock_purchase_stats = """
-SELECT i.name,SUM(ci.quantity)
+SELECT i.name,SUM(ci.quantity) AS quantity
 FROM thing_contract c 
     INNER JOIN thing_contractitem ci ON c.contract_id=ci.contract_id
     INNER JOIN thing_item i ON ci.item_id=i.id 
@@ -235,4 +235,91 @@ WHERE c.type = 'Item Exchange'
     AND ((c.corporation_id=c.issuer_corp_id AND ci.included=1)
           OR (c.assignee_id=c.corporation_id AND ci.included=0))
 GROUP BY i.name
+"""
+
+fuelblock_pending_stats = """
+SELECT i.name,SUM(ci.quantity) AS quantity
+FROM thing_contract c 
+    INNER JOIN thing_contractitem ci ON c.contract_id=ci.contract_id
+    INNER JOIN thing_item i ON ci.item_id=i.id 
+WHERE c.type = 'Item Exchange' 
+    AND c.status = 'Outstanding'
+    AND i.name LIKE '%Fuel Block'
+    AND ((c.corporation_id=c.issuer_corp_id AND ci.included=1)
+          OR (c.assignee_id=c.corporation_id AND ci.included=0))
+GROUP BY i.name
+"""
+
+fuelblock_job_stats = """
+SELECT i.name,SUM(ij.runs)*bp.count AS quantity
+FROM thing_industryjob ij 
+    INNER JOIN thing_item i ON ij.product_id=i.id 
+    INNER JOIN thing_blueprintproduct bp ON ij.blueprint_id=bp.blueprint_id AND ij.product_id=bp.item_id
+WHERE ij.status = 1
+    AND i.name LIKE '%Fuel Block'
+GROUP BY i.name
+"""
+
+courier_completed_stats = """
+SELECT
+    SUM(c.volume) AS ttl_volume,
+	SUM(c.collateral) AS ttl_collateral,
+	COUNT(*) AS ttl_contracts,
+	COUNT(DISTINCT c.issuer_char_id) AS distinct_users,
+	AVG(JULIANDAY(c.date_accepted)-JULIANDAY(c.date_issued))*24*60*60 AS avg_acceptance_secs,
+	AVG(JULIANDAY(c.date_completed)-JULIANDAY(c.date_issued))*24*60*60 AS avg_completion_secs
+FROM thing_contract c
+WHERE c.assignee_id=c.corporation_id
+AND c.status = 'Completed'
+AND c.type = 'Courier'
+"""
+
+courier_pending_stats = """
+SELECT
+    SUM(c.volume) AS ttl_volume,
+	SUM(c.collateral) AS ttl_collateral,
+	COUNT(*) AS ttl_contracts,
+	COUNT(DISTINCT c.issuer_char_id) AS distinct_users,
+	AVG(JULIANDAY()-JULIANDAY(c.date_issued))*24*60*60 AS avg_age_secs,
+	AVG(JULIANDAY(c.date_completed)-JULIANDAY(c.date_issued))*24*60*60 AS avg_completion_secs
+FROM thing_contract c
+WHERE c.assignee_id=c.corporation_id
+AND c.status IN ('Outstanding', 'InProgress')
+AND c.type = 'Courier'
+"""
+
+buyback_completed_stats = """
+SELECT 
+	SUM(c.price) AS ttl_price,
+	COUNT(*) AS ttl_contracts,
+	COUNT(DISTINCT c.issuer_char_id) AS distinct_users,
+	AVG(JULIANDAY(c.date_completed)-JULIANDAY(c.date_issued))*24*60*60 AS avg_completion_secs	
+FROM thing_contract c
+WHERE c.assignee_id=c.corporation_id
+AND c.status = 'Completed'
+AND c.type = 'Item Exchange'
+AND c.issuer_corp_id != c.corporation_id
+AND EXISTS
+	(SELECT 1 
+	 FROM thing_contractitem ci 
+		INNER JOIN thing_pricewatch pw ON ci.item_id=pw.item_id 
+	 WHERE ci.contract_id=c.contract_id AND ci.included=1 AND pw.active=1)
+"""
+
+buyback_pending_stats = """
+SELECT 
+	SUM(c.price) AS ttl_price,
+	COUNT(*) AS ttl_contracts,
+	COUNT(DISTINCT c.issuer_char_id) AS distinct_users,
+	AVG(JULIANDAY()-JULIANDAY(c.date_issued))*24*60*60 AS avg_age_secs	
+FROM thing_contract c
+WHERE c.assignee_id=c.corporation_id
+AND c.status = 'Outstanding'
+AND c.type = 'Item Exchange'
+AND c.issuer_corp_id != c.corporation_id
+AND EXISTS
+	(SELECT 1 
+	 FROM thing_contractitem ci 
+		INNER JOIN thing_pricewatch pw ON ci.item_id=pw.item_id 
+	 WHERE ci.contract_id=c.contract_id AND ci.included=1 AND pw.active=1)
 """

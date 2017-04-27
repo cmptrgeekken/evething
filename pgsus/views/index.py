@@ -43,43 +43,50 @@ EXPIRE_WARNING = 10 * ONE_DAY
 
 
 def index(request):
-    """Index page"""
-    tt = TimerThing('index')
+    return stats(request)
 
-    profile = request.user.profile
+    #"""Index page"""
+    #tt = TimerThing('index')
 
-    tt.add_time('profile')
+    # profile = request.user.profile
+
+    #tt.add_time('profile')
 
     # Render template
-    out = render_page(
-        'pgsus/index.html',
-        {
-            'profile': 'hello!'
-        },
-        request,
-    )
+    #out = render_page(
+    #    'pgsus/index.html',
+    #    {
+    #        'profile': 'hello!'
+    #    },
+    #    request,
+    #)
 
-    tt.add_time('template')
-    if settings.DEBUG:
-        tt.finished()
+    #tt.add_time('template')
+    #if settings.DEBUG:
+    #    tt.finished()
 
-    return out
+    #return out
 
 def stats(request):
 
-    cursor = get_cursor()
-    cursor.execute(queries.fuelblock_purchase_stats)
-
-    fuel_purchase_stats = []
-    for row in cursor.fetchall():
-        fuel_purchase_stats.append(dict(zip(['name','quantity'], row)))
-
-    cursor.close()
+    fuel_purchase_stats = dictfetchall(queries.fuelblock_purchase_stats)
+    fuel_pending_stats = dictfetchall(queries.fuelblock_pending_stats)
+    fuel_job_stats = dictfetchall(queries.fuelblock_job_stats)
+    courier_completed_stats = dictfetchall(queries.courier_completed_stats)
+    courier_pending_stats = dictfetchall(queries.courier_pending_stats)
+    buyback_completed_stats = dictfetchall(queries.buyback_completed_stats)
+    buyback_pending_stats = dictfetchall(queries.buyback_pending_stats)
 
     out = render_page(
         'pgsus/stats.html',
         dict(
             fuel_purchase_stats=fuel_purchase_stats,
+            fuel_pending_stats=fuel_pending_stats,
+            fuel_job_stats=fuel_job_stats,
+            courier_completed_stats=courier_completed_stats[0],
+            courier_pending_stats=courier_pending_stats[0],
+            buyback_completed_stats=buyback_completed_stats[0],
+            buyback_pending_stats=buyback_pending_stats[0],
         ),
         request,
     )
@@ -88,3 +95,17 @@ def stats(request):
 
 def get_cursor(db='default'):
     return connections[db].cursor()
+
+def dictfetchall(query):
+    "Returns all rows from a cursor as a dict"
+    cursor = get_cursor()
+    cursor.execute(query)
+    desc = cursor.description
+    results = [
+            dict(zip([col[0] for col in desc], row))
+            for row in cursor.fetchall()
+    ]
+
+    cursor.close()
+
+    return results

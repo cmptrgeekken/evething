@@ -4,37 +4,38 @@
 <!--[if !IE]><!-->
 <html lang="en">
 <!--<![endif]-->
+{% set authed = user.is_authenticated() %}
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Penny's Flying Circus | {% block title %}{% endblock %}</title>
 
-    <link rel="apple-touch-icon" sizes="57x57" href="{{ STATIC_URL }}/pgsus/img/icons/apple-icon-57x57.png">
-    <link rel="apple-touch-icon" sizes="60x60" href="{{ STATIC_URL }}/pgsus/img/icons/apple-icon-60x60.png">
-    <link rel="apple-touch-icon" sizes="72x72" href="{{ STATIC_URL }}/pgsus/img/icons/apple-icon-72x72.png">
-    <link rel="apple-touch-icon" sizes="76x76" href="{{ STATIC_URL }}/pgsus/img/icons/apple-icon-76x76.png">
-    <link rel="apple-touch-icon" sizes="114x114" href="{{ STATIC_URL }}/pgsus/img/icons/apple-icon-114x114.png">
-    <link rel="apple-touch-icon" sizes="120x120" href="{{ STATIC_URL }}/pgsus/img/icons/apple-icon-120x120.png">
-    <link rel="apple-touch-icon" sizes="144x144" href="{{ STATIC_URL }}/pgsus/img/icons/apple-icon-144x144.png">
-    <link rel="apple-touch-icon" sizes="152x152" href="{{ STATIC_URL }}/pgsus/img/icons/apple-icon-152x152.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="{{ STATIC_URL }}/pgsus/img/icons/apple-icon-180x180.png">
-    <link rel="icon" type="image/png" sizes="192x192" href="{{ STATIC_URL }}/pgsus/img/icons/android-icon-192x192.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="{{ STATIC_URL }}/pgsus/img/icons/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="96x96" href="{{ STATIC_URL }}/pgsus/img/icons/favicon-96x96.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="{{ STATIC_URL }}/pgsus/img/icons/favicon-16x16.png">
-    <link rel="manifest" href="{{ STATIC_URL }}/pgsus/img/icons/manifest.json">
+    <link rel="apple-touch-icon" sizes="57x57" href="{{ STATIC_URL }}pgsus/img/icons/apple-icon-57x57.png">
+    <link rel="apple-touch-icon" sizes="60x60" href="{{ STATIC_URL }}pgsus/img/icons/apple-icon-60x60.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="{{ STATIC_URL }}pgsus/img/icons/apple-icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="76x76" href="{{ STATIC_URL }}pgsus/img/icons/apple-icon-76x76.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="{{ STATIC_URL }}pgsus/img/icons/apple-icon-114x114.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="{{ STATIC_URL }}pgsus/img/icons/apple-icon-120x120.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="{{ STATIC_URL }}pgsus/img/icons/apple-icon-144x144.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="{{ STATIC_URL }}pgsus/img/icons/apple-icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ STATIC_URL }}pgsus/img/icons/apple-icon-180x180.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="{{ STATIC_URL }}pgsus/img/icons/android-icon-192x192.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ STATIC_URL }}pgsus/img/icons/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="96x96" href="{{ STATIC_URL }}pgsus/img/icons/favicon-96x96.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ STATIC_URL }}pgsus/img/icons/favicon-16x16.png">
+    <link rel="manifest" href="{{ STATIC_URL }}pgsus/img/icons/manifest.json">
     <meta name="msapplication-TileColor" content="#ffffff">
-    <meta name="msapplication-TileImage" content="{{ STATIC_URL }}/pgsus/img/icons/ms-icon-144x144.png">
+    <meta name="msapplication-TileImage" content="{{ STATIC_URL }}pgsus/img/icons/ms-icon-144x144.png">
     <meta name="theme-color" content="#ffffff">
 
     <!--  Boostrap Framework  -->
-    <link href="{{ STATIC_URL }}/pgsus/css/bootstrap.min.css" rel="stylesheet">
+    <link href="{{ STATIC_URL }}pgsus/css/bootstrap.min.css" rel="stylesheet">
 
     <!--=== CSS - Dragonfly ===-->
-    <link href="{{ STATIC_URL }}/pgsus/css/themes/light-blue.css" rel="stylesheet" id="colors">
+    <link href="{{ STATIC_URL }}pgsus/css/themes/light-blue.css" rel="stylesheet" id="colors">
 
     <!--=== LESS - Dragonfly ===-->
-    <!--<link href="{{ STATIC_URL }}/pgsus/less/main.less" rel="stylesheet/less">-->
+    <!--<link href="{{ STATIC_URL }}pgsus/less/main.less" rel="stylesheet/less">-->
     <!-- Google Fonts - Lato -->
     <link href="//fonts.googleapis.com/css?family=Lato:300,400" rel="stylesheet">
 
@@ -47,11 +48,11 @@
 
 
     <!--  Slippry Slideshow -->
-    <link href="{{ STATIC_URL }}/pgsus/css/slippry.min.css" rel="stylesheet">
+    <link href="{{ STATIC_URL }}pgsus/css/slippry.min.css" rel="stylesheet">
 
     <link href="//cdnjs.cloudflare.com/ajax/libs/angular-css/1.0.8/angular-css.min.js" rel="stylesheet"/>
 
-    <link href="{{ STATIC_URL }}/pgsus/css/custom.css" rel="stylesheet" />
+    <link href="{{ STATIC_URL }}pgsus/css/custom.css" rel="stylesheet" />
 
 </head>
 <body>
@@ -65,18 +66,18 @@
                     <span class="icon-bar"></span>
                     <span class="icon-bar"></span>
                 </button>
-                <a class="navbar-brand" href="@Url.Action("Index", "Home")">Penny's <span class="text-primary">Flying Circus</span></a>
+                <a class="navbar-brand" href="{{ url('pgsus.views.index') }}">Penny's <span class="text-primary">Flying Circus</span></a>
             </div>
 
             <div class="collapse navbar-collapse" id="bs-navbar-collapse-1">
                 <ul class="nav navbar-nav navbar-right ">
                     <li>
-                        <a href="@Url.Action("Index", "Home")" >
+                        <a href="{{ url('pgsus.views.index') }}" >
                             Home
                         </a>
                     </li>
                     <!--Home Pages -->
-                    <li class="dropdown">
+                    <!--<li class="dropdown">
                         <a href="javascript:void(0);" class="dropdown-toggle" data-toggle="dropdown" data-hover="dropdown" data-delay="0">
                             Calculators
                         </a>
@@ -87,8 +88,8 @@
                         </ul>
                     </li>
                     <li>
-                        <a href="@Url.Action("CrestLogin", "Account")"><img src="{{ STATIC_URL }}/pgsus/img/EVE_SSO_Login_Buttons_Small_Black.png" alt="Login with Eve"/></a>
-                    </li>
+                        <a href="@Url.Action("CrestLogin", "Account")"><img src="{{ STATIC_URL }}pgsus/img/EVE_SSO_Login_Buttons_Small_Black.png" alt="Login with Eve"/></a>
+                    </li>-->
                 </ul>
             </div>
             <!-- /.navbar-collapse -->
@@ -99,7 +100,7 @@
     <!--===/END    Navbar     ===-->
     {% block content %}{% endblock %}
     <!-- Modernizr -->
-    <script src="{{ STATIC_URL }}/pgsus/js/min/modernizr.custom.min.js"></script>
+    <script src="{{ STATIC_URL }}pgsus/js/min/modernizr.custom.min.js"></script>
 
     <!-- jQuery -->
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
@@ -109,7 +110,7 @@
     <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
 
     <!-- Bootstrap Plugin - open dropdown on hover -->
-    <script src="{{ STATIC_URL }}/pgsus/js/min/bootstrap-hover-dropdown.min.js"></script>
+    <script src="{{ STATIC_URL }}pgsus/js/min/bootstrap-hover-dropdown.min.js"></script>
 
     <!-- LESS preprocessor -->
     <script src="//cdnjs.cloudflare.com/ajax/libs/less.js/1.7.4/less.min.js"></script>
@@ -121,7 +122,7 @@
     <script src="//cdn.jsdelivr.net/jquery.knob/1.2.9/jquery.knob.min.js"></script>
 
     <!-- Slippry - Slideshow -->
-    <script src="{{ STATIC_URL }}/pgsus/js/min/slippry.min.js"></script>
+    <script src="{{ STATIC_URL }}pgsus/js/min/slippry.min.js"></script>
 
     <!-- Mixitup plugin - Portfolio Filter Grid -->
     <script src="//cdnjs.cloudflare.com/ajax/libs/mixitup/1.5.6/jquery.mixitup.min.js"></script>
@@ -129,7 +130,7 @@
     <!-- Make sticky whatever elements -->
     <script src="//cdn.jsdelivr.net/jquery.sticky/1.0.0/jquery.sticky.min.js"></script>
 
-    <script src="{{ STATIC_URL }}/pgsus/js/jquery.timeago.js"></script>
+    <script src="{{ STATIC_URL }}pgsus/js/jquery.timeago.js"></script>
 
     <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.5.8/angular.min.js"></script>
     <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.5.8/angular-animate.min.js"></script>
@@ -138,9 +139,9 @@
     <script src="//ajax.googleapis.com/ajax/libs/angular_material/1.1.0/angular-material.min.js"></script>
 
     <!-- Must be last of all scripts -->
-    <script src="{{ STATIC_URL }}/pgsus/js/scripts.js"></script>
-    <script src="{{ STATIC_URL }}/pgsus/js/custom.js"></script>
-    
+    <script src="{{ STATIC_URL }}pgsus/js/scripts.js"></script>
+    <script src="{{ STATIC_URL }}pgsus/js/custom.js"></script>
+
 
 <!--[if lt IE 9]>
           <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7/html5shiv.min.js"></script>
@@ -165,14 +166,14 @@
                     <div class="space-sm visible-sm visible-xs"></div>
                     <div class="col-md-4 col-lg-4 col-xs-12">
                         <h4>Quick Links</h4>
-                        <ul class="info-list md-list i-primary">
+                        <!--<ul class="info-list md-list i-primary">
                             <li>
                                 <i class="fa fa-angle-right fa-fw"></i>
                                 <a href="@Url.Action("OreCalculator", "Calculator")">
                                     <span class="link-title">Ore Calculator</span>
                                 </a>
                             </li>
-                        </ul>
+                        </ul>-->
                     </div>
                     <div class="space-sm visible-sm visible-xs"></div>
                     <div class="col-md-4 col-lg-4  col-xs-12">

@@ -19,15 +19,58 @@
             <h2>Fuel Blocks Sold</h2>
             <ul>
                 {% for stat in fuel_purchase_stats -%}
-                <li><b>{{ stat['name'].replace(' Fuel Block', '') }}:</b> {{ stat['quantity']|commas }}
+                <li><b>{{ stat['name'].replace(' Fuel Block', '') }}:</b> {{ stat['quantity']|humanize }}
                 {%- endfor %}
             </ul>
+            {% if authed -%}
+                <h2>Fuel Blocks Pending</h2>
+                <ul>
+                    {% for stat in fuel_pending_stats -%}
+                    <li><b>{{ stat['name'].replace(' Fuel Block', '') }}:</b> {{ stat['quantity']|humanize }}
+                    {%- endfor %}
+                </ul>
+                <h2>Fuel Blocks in Production</h2>
+                <ul>
+                    {% for stat in fuel_job_stats -%}
+                    <li><b>{{ stat['name'].replace(' Fuel Block', '') }}:</b> {{ stat['quantity']|humanize }}
+                    {% endfor %}
+                </ul>
+            {%- endif %}
         </div>
         <div class="col-md-4">
             <h2>Courier Contracts</h2>
+            <ul>
+                <li><b>Total Contracts:</b> {{ courier_completed_stats.ttl_contracts|commas }}</li>
+                <li><b>Total Volume:</b> {{ courier_completed_stats.ttl_volume|humanize }} m<sup>3</sup></li>
+                <li><b>Total Collateral:</b> {{ courier_completed_stats.ttl_collateral|humanize }} ISK</li>
+                <li><b>Average Acceptance Time:</b> {{ courier_completed_stats.avg_acceptance_secs|duration }}</li>
+                <li><b>Average Completion Time:</b> {{ courier_completed_stats.avg_completion_secs|duration }}</li>
+            </ul>
+            {% if authed and courier_pending_stats.ttl_contracts > 0 -%}
+            <h2>Pending Courier Contracts</h2>
+            <ul>
+                <li><b>Total Contracts:</b> {{ courier_pending_stats.ttl_contracts|commas }}</li>
+                <li><b>Total Volume:</b> {{ courier_pending_stats.ttl_volume|humanize }} m<sup>3</sup></li>
+                <li><b>Total Collateral:</b> {{ courier_pending_stats.ttl_collateral|humanize }} ISK</li>
+                <li><b>Average Age:</b> {{ courier_pending_stats.avg_age_secs|duration }}</li>
+            </ul>
+            {%- endif %}
         </div>
         <div class="col-md-4">
-            <h2>Buyback</h2>
+            <h2>Buybacks</h2>
+            <ul>
+                <li><b>Total Contracts:</b> {{ buyback_completed_stats.ttl_contracts|commas }}</li>
+                <li><b>Total Price:</b> {{ buyback_completed_stats.ttl_price|humanize }} ISK</li>
+                <li><b>Average Acceptance Time:</b> {{ buyback_completed_stats.avg_completion_secs|duration }}</li>
+            </ul>
+            {% if authed and buyback_pending_stats['ttl_contracts'] > 0 -%}
+            <h2>Pending Buybacks</h2>
+            <ul>
+                <li><b>Total Contracts:</b> {{ buyback_pending_stats.ttl_contracts|commas }}</li>
+                <li><b>Total Price:</b> {{ buyback_pending_stats.ttl_price|humanize }} ISK</li>
+                <li><b>Average Age:</b> {{ buyback_pending_stats.avg_age_secs|duration }}</li>
+            </ul>
+            {%- endif %}
         </div>
     </div>
 </section>

@@ -20,6 +20,7 @@ urlpatterns = patterns(
 
 urlpatterns += patterns(
     'pgsus.views',
+    #url(r'^$', 'index', name='index'),
     url(r'^$', 'index', name='index'),
     url(r'^stats$', 'stats', name='stats'),
 )
