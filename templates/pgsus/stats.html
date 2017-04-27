@@ -19,7 +19,8 @@
             <h2>Fuel Blocks Sold</h2>
             <ul>
                 <li><b>First Contract:</b> {{ fuel_purchase_ttl['start_date'] }}</li>
-                <li><b>Total Value:</b> {{ fuel_purchase_ttl['ttl_reward']|humanize }}</li>
+                <li><b>Total Contracts:</b> {{ fuel_purchase_ttl['ttl_contracts']|commas }}</li>
+                <li><b>Total Value:</b> {{ fuel_purchase_ttl['ttl_reward']|humanize }} ISK</li>
             </ul>
             <ul>
                 {% for stat in fuel_purchase_stats -%}
@@ -27,18 +28,22 @@
                 {%- endfor %}
             </ul>
             {% if authed -%}
+                {% if fuel_pending_stats|length > 0 -%}
                 <h2>Fuel Blocks Pending</h2>
                 <ul>
                     {% for stat in fuel_pending_stats -%}
                     <li><b>{{ stat['name'].replace(' Fuel Block', '') }}:</b> {{ stat['quantity']|humanize }}
                     {%- endfor %}
                 </ul>
+                {%- endif %}
+                {% if fuel_job_stats|length > 0 -%}
                 <h2>Fuel Blocks in Production</h2>
                 <ul>
                     {% for stat in fuel_job_stats -%}
                     <li><b>{{ stat['name'].replace(' Fuel Block', '') }}:</b> {{ stat['quantity']|humanize }}
                     {% endfor %}
                 </ul>
+                {%- endif %}
             {%- endif %}
         </div>
         <div class="col-md-4">

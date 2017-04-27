@@ -243,6 +243,7 @@ fuelblock_purchase_ttl = """
 SELECT i.name,
        SUM(ci.quantity) AS quantity,
        SUM(c.reward)+SUM(C.price) AS ttl_reward,
+       COUNT(c.contract_id) AS ttl_contracts,
        strftime('%m-%d-%Y', MIN(c.date_issued)) AS start_date
 FROM thing_contract c 
     INNER JOIN thing_contractitem ci ON c.contract_id=ci.contract_id

@@ -36,6 +36,7 @@ REGION_ID = 10000002
 
 class HistoryUpdater(APITask):
     name = 'thing.history_updater'
+
     def run(self, api_url, taskstate_id, apikey_id, zero):
         if self.init(taskstate_id) is False:
             return
