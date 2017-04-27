@@ -290,7 +290,7 @@ class Contracts(APITask):
                 contract_item = ContractItem(
                     contract_id=contract.contract_id,
                     item_id=row.attrib['typeID'],
-                    quantity=row.attrib['quantity'],
+                    quantity=int(row.attrib['quantity']),
                     raw_quantity=row.attrib.get('rawQuantity', 0),
                     singleton=row.attrib['singleton'] == '1',
                     included=row.attrib['included'] == '1',
@@ -299,9 +299,9 @@ class Contracts(APITask):
                 if contract_item.item.id not in contract_items:
                     contract_items[contract_item.item.id] = contract_item
                 else:
-                    contract_items[contract_item.item.id] += contract_item.quantity
+                    contract_items[contract_item.item.id].quantity += int(contract_item.quantity)
 
-            new.append(contract_items.values())
+            new = new + contract_items.values()
 
             seen_contracts.append(contract.contract_id)
 
