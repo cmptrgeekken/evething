@@ -79,8 +79,8 @@ class Contracts(APITask):
         for row in self.root.findall('result/rowset/row'):
             if self.apikey.key_type == APIKey.CORPORATION_TYPE:
                 # corp keys don't care about non-corp orders
-                #if row.attrib['forCorp'] == '0':
-                #    continue
+                if row.attrib['forCorp'] == '0':
+                    continue
                 # corp keys don't care about orders they didn't issue - another fun
                 # bug where corp keys see alliance contracts they didn't make  :ccp:
                 if self.apikey.corporation.id not in (
@@ -90,8 +90,8 @@ class Contracts(APITask):
                     continue
 
             # non-corp keys don't care about corp orders
-            #if self.apikey.key_type != APIKey.CORPORATION_TYPE and row.attrib['forCorp'] == '1':
-            #    continue
+            if self.apikey.key_type != APIKey.CORPORATION_TYPE and row.attrib['forCorp'] == '1':
+                continue
 
             contract_ids.add(int(row.attrib['contractID']))
 
