@@ -284,15 +284,24 @@ class Contracts(APITask):
             if self.fetch_api(items_url, params) is False or self.root is None:
                 continue
 
+            contract_items = dict()
+
             for row in self.root.findall('result/rowset/row'):
-                new.append(ContractItem(
+                contract_item = ContractItem(
                     contract_id=contract.contract_id,
                     item_id=row.attrib['typeID'],
                     quantity=row.attrib['quantity'],
                     raw_quantity=row.attrib.get('rawQuantity', 0),
                     singleton=row.attrib['singleton'] == '1',
                     included=row.attrib['included'] == '1',
-                ))
+                )
+
+                if contract_item.item.id not in contract_items:
+                    contract_items[contract_item.item.id] = contract_item
+                else:
+                    contract_items[contract_item.item.id] += contract_item.quantity
+
+            new.append(contract_items.values())
 
             seen_contracts.append(contract.contract_id)
 
