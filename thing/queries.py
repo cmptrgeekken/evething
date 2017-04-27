@@ -264,6 +264,7 @@ courier_completed_stats = """
 SELECT
     SUM(c.volume) AS ttl_volume,
 	SUM(c.collateral) AS ttl_collateral,
+	SUM(c.reward) AS ttl_reward,
 	COUNT(*) AS ttl_contracts,
 	COUNT(DISTINCT c.issuer_char_id) AS distinct_users,
 	AVG(JULIANDAY(c.date_accepted)-JULIANDAY(c.date_issued))*24*60*60 AS avg_acceptance_secs,
@@ -278,6 +279,7 @@ courier_pending_stats = """
 SELECT
     SUM(c.volume) AS ttl_volume,
 	SUM(c.collateral) AS ttl_collateral,
+	SUM(c.reward) AS ttl_reward,
 	COUNT(*) AS ttl_contracts,
 	COUNT(DISTINCT c.issuer_char_id) AS distinct_users,
 	AVG(JULIANDAY()-JULIANDAY(c.date_issued))*24*60*60 AS avg_age_secs,

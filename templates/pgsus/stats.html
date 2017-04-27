@@ -43,6 +43,9 @@
                 <li><b>Total Contracts:</b> {{ courier_completed_stats.ttl_contracts|commas }}</li>
                 <li><b>Total Volume:</b> {{ courier_completed_stats.ttl_volume|humanize }} m<sup>3</sup></li>
                 <li><b>Total Collateral:</b> {{ courier_completed_stats.ttl_collateral|humanize }} ISK</li>
+                {% if authed -%}
+                <li><b>Total Reward:</b> {{ courier_completed_stats.ttl_reward|humanize }} ISK</li>
+                {%- endif %}
                 <li><b>Average Acceptance Time:</b> {{ courier_completed_stats.avg_acceptance_secs|duration }}</li>
                 <li><b>Average Completion Time:</b> {{ courier_completed_stats.avg_completion_secs|duration }}</li>
             </ul>
@@ -52,6 +55,7 @@
                 <li><b>Total Contracts:</b> {{ courier_pending_stats.ttl_contracts|commas }}</li>
                 <li><b>Total Volume:</b> {{ courier_pending_stats.ttl_volume|humanize }} m<sup>3</sup></li>
                 <li><b>Total Collateral:</b> {{ courier_pending_stats.ttl_collateral|humanize }} ISK</li>
+                <li><b>Total Reward:</b> {{ courier_pending_stats.ttl_reward|humanize }} ISK</li>
                 <li><b>Average Age:</b> {{ courier_pending_stats.avg_age_secs|duration }}</li>
             </ul>
             {%- endif %}
