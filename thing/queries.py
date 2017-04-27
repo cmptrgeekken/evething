@@ -225,7 +225,9 @@ WHERE   character_id = %s
 
 # statistics
 fuelblock_purchase_stats = """
-SELECT i.name,SUM(ci.quantity) AS quantity
+SELECT i.name,
+       SUM(ci.quantity) AS quantity,
+       strftime('%m-%d-%Y', MIN(c.date_issued)) AS start_date
 FROM thing_contract c 
     INNER JOIN thing_contractitem ci ON c.contract_id=ci.contract_id
     INNER JOIN thing_item i ON ci.item_id=i.id 
@@ -235,6 +237,21 @@ WHERE c.type = 'Item Exchange'
     AND ((c.corporation_id=c.issuer_corp_id AND ci.included=1)
           OR (c.assignee_id=c.corporation_id AND ci.included=0))
 GROUP BY i.name
+"""
+
+fuelblock_purchase_ttl = """
+SELECT i.name,
+       SUM(ci.quantity) AS quantity,
+       SUM(c.reward)+SUM(C.price) AS ttl_reward,
+       strftime('%m-%d-%Y', MIN(c.date_issued)) AS start_date
+FROM thing_contract c 
+    INNER JOIN thing_contractitem ci ON c.contract_id=ci.contract_id
+    INNER JOIN thing_item i ON ci.item_id=i.id 
+WHERE c.type = 'Item Exchange' 
+    AND c.status = 'Completed'
+    AND i.name LIKE '%Fuel Block'
+    AND ((c.corporation_id=c.issuer_corp_id AND ci.included=1)
+          OR (c.assignee_id=c.corporation_id AND ci.included=0))
 """
 
 fuelblock_pending_stats = """
@@ -262,6 +279,7 @@ GROUP BY i.name
 
 courier_completed_stats = """
 SELECT
+    strftime('%m-%d-%Y', MIN(c.date_issued)) AS start_date,
     SUM(c.volume) AS ttl_volume,
 	SUM(c.collateral) AS ttl_collateral,
 	SUM(c.reward) AS ttl_reward,
@@ -292,6 +310,7 @@ AND c.type = 'Courier'
 
 buyback_completed_stats = """
 SELECT 
+    strftime('%m-%d-%Y', MIN(c.date_issued)) AS start_date,
 	SUM(c.price) AS ttl_price,
 	COUNT(*) AS ttl_contracts,
 	COUNT(DISTINCT c.issuer_char_id) AS distinct_users,

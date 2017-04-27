@@ -70,6 +70,7 @@ def index(request):
 def stats(request):
 
     fuel_purchase_stats = dictfetchall(queries.fuelblock_purchase_stats)
+    fuel_purchase_ttl = dictfetchall(queries.fuelblock_purchase_ttl)
     fuel_pending_stats = dictfetchall(queries.fuelblock_pending_stats)
     fuel_job_stats = dictfetchall(queries.fuelblock_job_stats)
     courier_completed_stats = dictfetchall(queries.courier_completed_stats)
@@ -81,6 +82,7 @@ def stats(request):
         'pgsus/stats.html',
         dict(
             fuel_purchase_stats=fuel_purchase_stats,
+            fuel_purchase_ttl=fuel_purchase_ttl[0],
             fuel_pending_stats=fuel_pending_stats,
             fuel_job_stats=fuel_job_stats,
             courier_completed_stats=courier_completed_stats[0],
