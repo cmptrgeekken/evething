@@ -199,6 +199,10 @@ class APITask(Task):
         else:
             self._taskstate.next_time = utcnow + datetime.timedelta(minutes=30)
 
+        # Weird error where the next task time sometimes get set to ten years in the future
+        if self._taskstate.next_time - utcnow > datetime.timedelta(days=1):
+            self._taskstate.next_time = utcnow + datetime.timedelta(minutes=30)
+
         self._taskstate.save(update_fields=('state', 'mod_time', 'next_time'))
 
     # ---------------------------------------------------------------------------
