@@ -31,6 +31,7 @@ from django.core.cache import cache
 from django.db.models import Count, Q
 from django.shortcuts import render_to_response
 from django.template import RequestContext
+from django.conf import settings
 
 
 def render_page(template, data, request, character_ids=None, corporation_ids=None):
@@ -41,6 +42,7 @@ def render_page(template, data, request, character_ids=None, corporation_ids=Non
 
     data['server_open'] = cache.get('server_open')
     data['online_players'] = cache.get('online_players')
+    data['ga_tracking_code'] = getattr(settings, 'GA_TRACKING_CODE', None)
 
     if request.user.is_authenticated():
         # Get nav counts data
