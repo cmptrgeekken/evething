@@ -26,7 +26,7 @@
 from decimal import Decimal
 
 from django.db import models
-from django.db.models import Sum
+from django.db.models import Sum, F
 
 from thing.models.itemgroup import ItemGroup
 from thing.models.marketgroup import MarketGroup
@@ -62,6 +62,18 @@ class Item(models.Model):
 
     def __unicode__(self):
         return self.name
+
+    def get_history_avg(self, days=5):
+        from thing.models.pricehistory import PriceHistory
+
+        results = PriceHistory.objects.filter(
+            item_id=self.id,
+        ).order_by('-date').all()[:days].aggregate(
+            total_value=Sum('average', field='average*movement'),
+            total_volume=Sum('movement')
+        )
+
+        return round(results['total_value'] / results['total_volume'], 2)
 
     def get_volume(self, days=7):
         iph_days = self.pricehistory_set.all()[:days]

@@ -7,7 +7,6 @@
  * */
 
 $(document).ready(function() {
-
     /*
      * ===================================
      * Back To Top
@@ -598,5 +597,20 @@ $(document).ready(function() {
             }
 
         }
+    });
+
+    // Clipboard Copying
+    var cb = new Clipboard('.btn');
+    cb.on('success', function(e){
+        console.log('here');
+        $(e.trigger).tooltip({
+            title: 'Copied!',
+            container: 'body'
+        });
+        $(e.trigger).tooltip('show');
+
+        setTimeout(function() {
+            $(e.trigger).tooltip('destroy');
+        }, 3000)
     });
 });

@@ -23,6 +23,7 @@ urlpatterns += patterns(
     #url(r'^$', 'index', name='index'),
     url(r'^$', 'index', name='index'),
     url(r'^stats$', 'stats', name='stats'),
+    url(r'^buyback$', 'buyback', name='buyback'),
 )
 
 urlpatterns += patterns(

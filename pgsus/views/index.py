@@ -23,24 +23,16 @@
 # OF SUCH DAMAGE.
 # ------------------------------------------------------------------------------
 
-import datetime
-import operator
-from collections import OrderedDict
-
-from django.conf import settings
-from django.contrib.auth.decorators import login_required
-from django.db.models import Q, Sum
 from django.db import connections
 
 from thing import queries
 
 from thing.models import *  # NOPEP8
 from thing.stuff import *  # NOPEP8
-from thing.templatetags.thing_extras import shortduration
 
-ONE_DAY = 24 * 60 * 60
-EXPIRE_WARNING = 10 * ONE_DAY
+from pgsus.parser import *
 
+from pprint import pprint,pformat
 
 def index(request):
     return stats(request)
@@ -68,7 +60,6 @@ def index(request):
     #return out
 
 def stats(request):
-
     fuel_purchase_stats = dictfetchall(queries.fuelblock_purchase_stats)
     fuel_purchase_ttl = dictfetchall(queries.fuelblock_purchase_ttl)
     fuel_pending_stats = dictfetchall(queries.fuelblock_pending_stats)
@@ -89,6 +80,64 @@ def stats(request):
             courier_pending_stats=courier_pending_stats[0],
             buyback_completed_stats=buyback_completed_stats[0],
             buyback_pending_stats=buyback_pending_stats[0],
+        ),
+        request,
+    )
+
+    return out
+
+
+def buyback(request):
+    buyback_items = PriceWatch.objects.filter(
+            active=True,
+            price_group__isnull=False
+        ).order_by('price_group', 'item__name').distinct()
+
+    parse_results = None
+    buyback_input = ''
+
+    if request.method == 'POST':
+        buyback_input = request.POST.get('buyback_input')
+
+        try:
+            parse_results = parse(buyback_input)
+        except evepaste.Unparsable:
+            parse_results = None
+
+    total_reward = 0
+    total_volume = 0
+
+    pprinted = ''
+
+    buyback_qty = dict()
+
+    if parse_results is not None:
+        for kind, results in parse_results['results']:
+            for entry in results:
+                buyback_item = buyback_items.filter(
+                    item__name__iexact=entry['name']
+                ).first()
+
+                if buyback_item is not None:
+                    if buyback_qty.get(buyback_item.item_id) is None:
+                        buyback_qty[buyback_item.item_id] = 0
+                    buyback_qty[buyback_item.item_id] += entry['quantity']
+
+                    total_reward += entry['quantity'] * buyback_item.item.get_history_avg()
+                    total_volume += entry['quantity'] * buyback_item.item.volume
+                else:
+                    parse_results['bad_lines'].append(entry['name'])
+
+    out = render_page(
+        'pgsus/buyback.html',
+        dict(
+            items=buyback_items,
+            buyback_qty=buyback_qty,
+            buyback_input=buyback_input,
+            parse_results=parse_results,
+            total_reward=total_reward,
+            total_volume=total_volume,
+            pprinted=pprinted,
         ),
         request,
     )
