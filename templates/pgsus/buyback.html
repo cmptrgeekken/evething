@@ -48,15 +48,12 @@
             <h2>Items to Sell</h2>
             <table class="table table-bordered table-hover">
                 {% set vars = {'current_group': False} %}
+                <tr>
+                    <th>Qty</th>
+                    <th>Item</th>
+                    <th>Reward</th>
+                </tr>
                 {% for item in items if buyback_qty.get(item.item_id) > 0 %}
-                    {% if vars['current_group'] != item.price_group: -%}
-                    <tr>
-                        <th>Qty</th>
-                        <th>{{ item.price_group }}</th>
-                        <th>Reward</th>
-                        {% if vars.update({'current_group': item.price_group}) %}{% endif %}
-                    </tr>
-                    {%- endif %}
                 <tr>
                     <td>
                         {{ buyback_qty.get(item.item_id)|commas }}
