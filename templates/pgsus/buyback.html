@@ -16,32 +16,25 @@
 <section class="container section-md">
     <div class="row">
         <div class="col-md-6">
-            <h2>What would you like to sell?</h2>
-            <form id="formEntry" class="form-horizontal" method="post" action="{{ url('pgsus.views.buyback') }}">
-                <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
-
-                {% if parse_results and parse_results['bad_lines']|length > 0 %}
-                <div class="alert alert-danger" role="alert">
-                    <h4 class="alert-heading">The following lines could not be parsed or are not a part of this buyback:</h4>
-                    <ul>
-                        {% for bad_line in parse_results['bad_lines'] %}
-                            <li>{{bad_line}}</li>
-                        {% endfor %}
-                    </ul>
-                </div>
-                {% endif %}
-                <div class="form-group">
-                    <textarea name="buyback_input" rows="15" style="width: 100%;" placeholder="Paste items to sell here (e.g., 1000 Robotics)">{{ buyback_input }}</textarea>
-                </div>
-                <div class="form-group">
-                    <button type="submit" class="btn btn-primary">
-                        Submit
+            {% if parse_results and parse_results['results']|length > 0 %}
+            <div class="row">
+                <div class="col-md-6">
+                    <h3>Total Reward:</h3>
+                    <b><span id="total_reward">{{ total_reward | commas }}</span> ISK</b>
+                    <!-- Trigger -->
+                    <button class="btn btn-xs" type="button" data-clipboard-text="{{ total_reward|int }}">
+                        <img src="{{ STATIC_URL }}pgsus/img/clippy.svg" width="13" title="Copy to clipboard">
                     </button>
                 </div>
-            </form>
-        </div>
-        <div class="col-md-6">
-            {% if parse_results and parse_results['results']|length > 0 %}
+                <div class="col-md-6">
+                    <h3>Make Contracts To:</h3>
+                    <b id="contract_target">Penny's Flying Circus</b>
+                    <!-- Trigger -->
+                    <button class="btn btn-xs" type="button" data-clipboard-text="Penny's Flying Circus">
+                        <img src="{{ STATIC_URL }}pgsus/img/clippy.svg" width="13" title="Copy to clipboard">
+                    </button>
+                </div>
+            </div>
             <h2>Items to Sell</h2>
             <table class="table table-bordered table-hover">
                 {% set vars = {'current_group': False} %}
@@ -62,30 +55,43 @@
                 </tr>
                 {% endfor %}
             </table>
+
             <div class="row">
                 <div class="col-md-6">
-                    <h3>Total Reward:</h3>
-                    <b><span id="total_reward">{{ total_reward | commas }}</span> ISK</b>
-                    <!-- Trigger -->
-                    <button class="btn btn-xs" type="button" data-clipboard-text="{{ total_reward|int }}">
-                        <img src="{{ STATIC_URL }}pgsus/img/clippy.svg" width="13" title="Copy to clipboard">
-                    </button>
-                </div>
-                <div class="col-md-6">
-                    <h3>Make Contracts To:</h3>
-                    <b id="contract_target">Penny's Flying Circus</b>
-                    <!-- Trigger -->
-                    <button class="btn btn-xs" type="button" data-clipboard-text="Penny's Flying Circus">
-                        <img src="{{ STATIC_URL }}pgsus/img/clippy.svg" width="13" title="Copy to clipboard">
-                    </button>
-                </div>
-                <div class="col-md-6 col-md-push-6">
                     <h4>Total Volume:</h4>
                     <b>{{ total_volume | humanize }} m<sup>3</sup></b>
                 </div>
             </div>
-
             {% endif %}
+            <h2>What would you like to sell?</h2>
+            <form id="formEntry" class="form-horizontal" method="post" action="{{ url('pgsus.views.buyback') }}">
+                <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+
+                {% if parse_results and parse_results['bad_lines']|length > 0 %}
+                <div class="alert alert-danger" role="alert">
+                    <h4 class="alert-heading">The following lines could not be parsed or are not a part of this buyback:</h4>
+                    <ul>
+                        {% for bad_line in parse_results['bad_lines'] %}
+                            <li>{{bad_line}}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+                <div class="form-group">
+                    <div class="col-sm-12">
+                        <textarea name="buyback_input" rows="15" style="width: 85%;" placeholder="Paste items to sell here (e.g., 1000 Robotics)">{{ buyback_input }}</textarea>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="col-sm-6">
+                        <button type="submit" class="btn btn-primary">
+                            Submit
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="col-md-4 col-md-push-2">
             <h2>Accepted Items</h2>
             <table class="table table-bordered table-hover">
                 {% set vars = {'current_group': False} %}
