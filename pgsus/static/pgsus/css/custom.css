@@ -7,6 +7,10 @@
     width: 850px;
 }
 
+.modal-dialog.modal-sm {
+    width: 500px;
+}
+
 .modal {
     z-index: 10000 !important;
 }

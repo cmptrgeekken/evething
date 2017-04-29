@@ -128,7 +128,7 @@
             <div><b>Max Volume: </b> {{ price_model.max_m3|humanize }} m<sup>3</sup></div>
             <!-- Modal -->
             <div class="modal fade" id="systems-{{price_model.id}}" tabindex="-1" role="dialog" aria-labelledby="systems-{{price_model.id}}-label" aria-hidden="true">
-              <div class="modal-dialog" role="document">
+              <div class="modal-dialog modal-sm" role="document">
                 <div class="modal-content">
                   <div class="modal-header">
                     <h3 class="modal-title" id="systems-{{price_model.id}}-label">{{ price_model.name }} Service Systems
@@ -141,14 +141,13 @@
                     <div class="row">
                     {% set supported_systems = price_model.supported_systems() %}
                     {% for region in supported_systems %}
-                      <div class="col-sm-2">
+                      <div class="col-sm-3">
                           <div class="form-group">
                             <h4>{{region}}</h4>
                             {% for system in supported_systems[region] %}
                             <div>{{ system }}</div>
                             {% endfor %}
                           </div>
-
                       </div>
                     {% endfor %}
                     </div>
