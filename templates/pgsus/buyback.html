@@ -90,7 +90,7 @@
         </div>
         <div class="col-md-5 col-md-push-1">
             <h2>Accepted Items</h2>
-            <i>Pricing is the 5-day Jita average.</i>
+            <i>Pricing is the 5-day Jita average (Last Updated: {{ price_last_updated.strftime('%Y-%m-%d') }})</i>
             <table class="table table-bordered table-hover">
                 {% set vars = {'current_group': False} %}
                 {% for item in items %}

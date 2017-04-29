@@ -33,6 +33,8 @@ from thing.models import *  # NOPEP8
 from thing.stuff import *  # NOPEP8
 from thing.helpers import humanize
 
+from math import ceil
+
 import re
 
 from pgsus.parser import parse
@@ -102,6 +104,9 @@ def buyback(request):
     parse_results = None
     buyback_input = ''
 
+    latest_price = PriceHistory.objects.order_by('-date').first()
+    price_last_updated = latest_price.date
+
     if request.method == 'POST':
         buyback_input = request.POST.get('buyback_input')
 
@@ -143,6 +148,7 @@ def buyback(request):
             parse_results=parse_results,
             total_reward=total_reward,
             total_volume=total_volume,
+            price_last_updated=price_last_updated,
             pprinted=pprinted,
         ),
         request,
@@ -152,10 +158,52 @@ def buyback(request):
 
 
 def fuel(request):
+
+    fuel_blocks = Item.objects.filter(
+        name__endswith='Fuel Block',
+        market_group_id__gt=0,
+    )
+
+    latest_price = PriceHistory.objects.order_by('-date').first()
+    price_last_updated = latest_price.date
+    delivery_system_name=''
+
+    all_systems = defaultdict(list)
+    for result in FreighterSystem.objects.values('system__constellation__region__name', 'system__name').distinct().order_by('system__constellation__region__name', 'system__name'):
+        all_systems[result['system__constellation__region__name']].append(result['system__name'])
+
+    qty = dict()
+
+    ttl_reward = 0
+    ttl_blocks = 0
+
+    if request.method == 'POST':
+        delivery_system_name = request.POST.get('delivery_system')
+
+        for block in fuel_blocks:
+            block_qty = request.POST.get('qty-%s' % block.id)
+            block_qty = re.sub('[^\d+]', '', block_qty)
+
+            try:
+                qty[block.id] = int(block_qty)
+                ttl_reward += qty[block.id] * block.get_history_avg()
+                ttl_blocks += qty[block.id]
+            except ValueError:
+                qty[block.id] = 0
+
+        # TODO: Move delivery configuration to database
+        if delivery_system_name != 'B-9C24':
+            ttl_reward += ceil(ttl_blocks / 25000) * 5000000
+
     out = render_page(
         'pgsus/fuel.html',
         dict(
-
+            all_systems=all_systems,
+            delivery_system_name=delivery_system_name,
+            fuel_blocks=fuel_blocks,
+            price_last_updated=price_last_updated,
+            total_reward=ttl_reward,
+            qty=qty,
         ),
         request
     )
