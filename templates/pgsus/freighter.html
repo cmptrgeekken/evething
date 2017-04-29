@@ -1,0 +1,226 @@
+{% extends "web_template.html" %}
+{% import 'macros/common.html' as common %}
+
+{% block title %}Freighter{% endblock %}
+
+{% block content %}
+
+<section class="bg-19 bg-center bg-cover">
+    <div>
+        <div class="container section-sm">
+            <h1 class="top-title">Freighter Service</h1>
+        </div>
+    </div>
+</section>
+<section class="container section-md">
+    <div class="row">
+        <div class="col-md-6">
+            {% if errors|length > 0 %}
+            <div class="alert alert-danger" role="alert">
+                <ul>
+                    {% for error in errors %}
+                        <li>{{error}}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+            {% if shipping_info != None %}
+            <div class="row">
+                <div class="col-md-6">
+                    <h3>Contract to:</h3>
+                    <b id="contract_target">Penny's Flying Circus</b>
+                    <!-- Trigger -->
+                    <button class="btn btn-xs" type="button" data-clipboard-text="Penny's Flying Circus">
+                        <img src="{{ STATIC_URL }}pgsus/img/clippy.svg" width="13" title="Copy to clipboard">
+                    </button>
+                </div>
+                <div class="col-md-6">
+                    <h3>Reward:</h3>
+                    <b><span id="shipping_rate">{{ shipping_info['rate'] | commas }}</span> ISK</b>
+                    <!-- Trigger -->
+                    <button class="btn btn-xs" type="button" data-clipboard-text="{{ shipping_info['rate']|int }}">
+                        <img src="{{ STATIC_URL }}pgsus/img/clippy.svg" width="13" title="Copy to clipboard">
+                    </button>
+                </div>
+                <div class="col-md-6">
+                    <h3>Method:</h3>
+                    <p>{{ shipping_info['method']|safe }}</p>
+                </div>
+                <div class="col-md-6">
+                    <h3>Collateral:</h3>
+                    <b>{{ shipping_collateral | commas }} ISK</b>
+                    <!-- Trigger -->
+                    <button class="btn btn-xs" type="button" data-clipboard-text="{{ shipping_collateral|int }}">
+                        <img src="{{ STATIC_URL }}pgsus/img/clippy.svg" width="13" title="Copy to clipboard">
+                    </button>
+                </div>
+            </div>
+            {% endif %}
+
+            <h2>Shipping Information</h2>
+
+            <form method="post" class="form-horizontal" action="{{ url('pgsus.views.freighter') }}">
+                <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                <div class="form-group">
+                    <label class="col-sm-4 col-form-label" for="start_system">Start System:</label>
+                    <div class="col-sm-8">
+                        <select name="start_system" id="start_system" required="required" class="js-select2 input-lg">
+                            <option value="">Select One</option>
+                            {% for region in all_systems.keys() %}
+                            <optgroup label="{{region}}">
+                                {% for system in all_systems[region] %}
+                                <option value="{{system}}"{%if start_system_name==system%}selected{% endif %}>{{system}}</option>
+                                {% endfor %}
+                            </optgroup>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="col-sm-4 col-form-label" for="end_system">End System:</label>
+                    <div class="col-sm-8">
+                        <select name="end_system" id="end_system" required="required" class="js-select2 input-lg">
+                            <option value="">Select One</option>
+                            {% for region in all_systems.keys() %}
+                            <optgroup label="{{region}}">
+                                {% for system in all_systems[region] %}
+                                <option value="{{system}}"{%if end_system_name==system%}selected{% endif %}>{{system}}</option>
+                                {% endfor %}
+                            </optgroup>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="col-sm-4 col-form-label" for="shipping_collateral">Collateral:</label>
+                    <div class="col-sm-4">
+                        <input class="form-control js-formatNumber" required="required" type="text" name="shipping_collateral" id="shipping_collateral" value="{{shipping_collateral}}" placeholder="ISK"/>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-4 col-form-label" for="shipping_m3">Volume:</label>
+                    <div class="col-sm-4">
+                        <input class="form-control js-formatNumber" required="required" type="text" name="shipping_m3" id="shipping_m3" value="{{shipping_m3}}" placeholder="m3"/>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <div class="col-sm-6">
+                        <button type="submit" class="btn btn-primary">
+                            Submit
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="col-md-6">
+            <h2>Shipping Methods</h2>
+            {% for price_model in price_models %}
+            <h3>
+                {{ price_model.name }}
+                <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#systems-{{price_model.id}}">
+                  Systems
+                </button>
+            </h3>
+            <div><b>Max Collateral: </b> {{ price_model.max_collateral|humanize }} ISK</div>
+            <div><b>Max Volume: </b> {{ price_model.max_m3|humanize }} m<sup>3</sup></div>
+            <!-- Modal -->
+            <div class="modal fade" id="systems-{{price_model.id}}" tabindex="-1" role="dialog" aria-labelledby="systems-{{price_model.id}}-label" aria-hidden="true">
+              <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h3 class="modal-title" id="systems-{{price_model.id}}-label">{{ price_model.name }} Service Systems
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                      <span aria-hidden="true">&times;</span>
+                    </button>
+                    </h3>
+                  </div>
+                  <div class="modal-body">
+                    <div class="row">
+                    {% set supported_systems = price_model.supported_systems() %}
+                    {% for region in supported_systems %}
+                      <div class="col-sm-2">
+                          <div class="form-group">
+                            <h4>{{region}}</h4>
+                            {% for system in supported_systems[region] %}
+                            <div>{{ system }}</div>
+                            {% endfor %}
+                          </div>
+
+                      </div>
+                    {% endfor %}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="row">
+                {% if price_model.calc_in_system(1,1) > 0 %}
+                <div class="col-sm-4">
+                    <h4>In System:</h4>
+                    {% if price_model.in_system_base >0 %}
+                    <div>
+                        <b>Base:</b> {{ price_model.in_system_base|commas }}
+                    </div>
+                    {% endif %}
+                    {% if price_model.in_system_m3 >0 %}
+                    <div>
+                        {{ price_model.in_system_m3|commas }} ISK/m<sup>3</sup>
+                    </div>
+                    {% endif %}
+                    {% if price_model.in_system_collateral >0 %}
+                    <div>
+                        {{ price_model.in_system_collateral*100 }}% Collateral
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+                {% if price_model.calc_in_region(1,1) > 0 %}
+                <div class="col-sm-4">
+                    <h4>In Region:</h4>
+                    {% if price_model.in_region_base >0 %}
+                    <div>
+                        <b>Base:</b> {{ price_model.in_region_base|humanize }} ISK
+                    </div>
+                    {% endif %}
+                    {% if price_model.in_region_m3 >0 %}
+                    <div>
+                        {{ price_model.in_region_m3|commas }} ISK/m<sup>3</sup>
+                    </div>
+                    {% endif %}
+                    {% if price_model.in_region_collateral >0 %}
+                    <div>
+                        {{ price_model.in_region_collateral*100 }}% Collateral
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+                {% if price_model.calc_cross_region(1,1) > 0 %}
+                <div class="col-sm-4">
+                    <h4>Cross Region:</h4>
+                    {% if price_model.cross_region_base >0 %}
+                    <div>
+                        <b>Base:</b> {{ price_model.cross_region_base|humanize }} ISK
+                    </div>
+                    {% endif %}
+                    {% if price_model.cross_region_m3 >0 %}
+                    <div>
+                        {{ price_model.cross_region_m3|commas }} ISK/m<sup>3</sup>
+                    </div>
+                    {% endif %}
+                    {% if price_model.cross_region_collateral >0 %}
+                    <div>
+                        {{ price_model.cross_region_collateral*100 }}% Collateral
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endblock %}

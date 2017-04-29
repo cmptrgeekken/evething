@@ -613,4 +613,13 @@ $(document).ready(function() {
             $(e.trigger).tooltip('destroy');
         }, 3000)
     });
+
+    // Select2
+    $('.js-select2').select2();
+
+    $('.js-formatNumber').on('blur', function(){
+        var elem = $(this);
+
+        elem.val(accounting.formatNumber(elem.val()));
+    }).trigger('blur');
 });

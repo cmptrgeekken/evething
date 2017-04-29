@@ -24,6 +24,7 @@ urlpatterns += patterns(
     url(r'^$', 'index', name='index'),
     url(r'^stats$', 'stats', name='stats'),
     url(r'^buyback$', 'buyback', name='buyback'),
+    url(r'^freighter$', 'freighter', name='freighter')
 )
 
 urlpatterns += patterns(

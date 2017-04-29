@@ -52,6 +52,8 @@
 
     <link href="//cdnjs.cloudflare.com/ajax/libs/angular-css/1.0.8/angular-css.min.js" rel="stylesheet"/>
 
+    <link href="{{ STATIC_URL }}pgsus/css/select2.css" rel="stylesheet" />
+
     <link href="{{ STATIC_URL }}pgsus/css/custom.css" rel="stylesheet" />
 
     {% if ga_tracking_code -%}
@@ -90,6 +92,11 @@
                     <li>
                         <a href="{{ url('pgsus.views.buyback') }}">
                             Buyback
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ url('pgsus.views.freighter') }}">
+                            Freighter Service
                         </a>
                     </li>
                     <!--Home Pages -->
@@ -156,9 +163,11 @@
     <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.5.8/angular-messages.min.js"></script>
     <script src="//ajax.googleapis.com/ajax/libs/angular_material/1.1.0/angular-material.min.js"></script>
 
+    <script src="{{ STATIC_URL }}pgsus/js/select2.js"></script>
+    <script src="{{ STATIC_URL }}pgsus/js/accounting.js"></script>
+
     <!-- Must be last of all scripts -->
     <script src="{{ STATIC_URL }}pgsus/js/scripts.js"></script>
-    <script src="{{ STATIC_URL }}pgsus/js/custom.js"></script>
 
 
 <!--[if lt IE 9]>
@@ -189,6 +198,12 @@
                                 <i class="fa fa-angle-right fa-fw"></i>
                                 <a href="{{ url('pgsus.views.buyback') }}">
                                     Buyback
+                                </a>
+                            </li>
+                            <li>
+                                <i class="fa fa-angle-right fa-fw"></i>
+                                <a href="{{ url('pgsus.views.freighter') }}">
+                                    Freighter
                                 </a>
                             </li>
                         </ul>

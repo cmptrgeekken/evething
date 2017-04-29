@@ -60,3 +60,7 @@ from thing.models.transaction import Transaction
 from thing.models.userprofile import UserProfile
 from thing.models.planetarycolony import Colony
 from thing.models.planetarypin import Pin, PinContent
+
+# freighter
+from thing.models.freightersystem import FreighterSystem
+from thing.models.freighterpricemodel import FreighterPriceModel

@@ -25,12 +25,18 @@
 
 from django.db import connections
 
+from collections import defaultdict
+
 from thing import queries
 
 from thing.models import *  # NOPEP8
 from thing.stuff import *  # NOPEP8
+from thing.helpers import humanize
 
-from pgsus.parser import *
+import re
+
+from pgsus.parser import parse
+import evepaste
 
 from pprint import pprint,pformat
 
@@ -140,6 +146,136 @@ def buyback(request):
             pprinted=pprinted,
         ),
         request,
+    )
+
+    return out
+
+
+def fuel(request):
+    out = render_page(
+        'pgsus/fuel.html',
+        dict(
+
+        ),
+        request
+    )
+
+    return out
+
+
+def freighter(request):
+    all_price_models = FreighterPriceModel.objects.distinct()
+
+    all_systems = defaultdict(list)
+    for result in FreighterSystem.objects.values('system__constellation__region__name', 'system__name').distinct().order_by('system__constellation__region__name', 'system__name'):
+        all_systems[result['system__constellation__region__name']].append(result['system__name'])
+
+    start_system_name = ''
+    end_system_name = ''
+    shipping_m3 = ''
+    shipping_collateral = ''
+    shipping_info = None
+
+    errors = []
+
+    if request.method == 'POST':
+        start_system_name = request.POST.get('start_system')
+        end_system_name = request.POST.get('end_system')
+        try:
+            shipping_m3_input = request.POST.get('shipping_m3')
+            shipping_m3_input = re.sub('[^\d]+', '', shipping_m3_input)
+            shipping_m3 = int(shipping_m3_input)
+        except ValueError:
+            errors.append('Volume invalid')
+
+        try:
+            shipping_collateral_input = request.POST.get('shipping_collateral')
+            shipping_collateral_input = re.sub('[^\d]+', '', shipping_collateral_input)
+            shipping_collateral = int(shipping_collateral_input)
+        except ValueError:
+            errors.append('Collateral invalid')
+
+        start_system = System.objects.filter(
+            name=start_system_name
+        ).first()
+
+        end_system = System.objects.filter(
+            name=end_system_name
+        ).first()
+
+        if start_system is None:
+            errors.append('Please select a valid start system.')
+
+        if end_system is None:
+            errors.append('Please select a valid end system.')
+
+        start_systems = FreighterSystem.objects.filter(
+            system__name=start_system_name
+        )
+
+        end_systems = FreighterSystem.objects.filter(
+            system__name=end_system_name
+        )
+
+        if len(errors) == 0:
+            price_models = []
+            for start in start_systems:
+                for end in end_systems:
+                    if start.price_model.id == end.price_model.id:
+                        price_models.append(start.price_model)
+
+            shipping_info = dict(
+                rate=None,
+                max_collateral_exceeded=False,
+                max_m3_exceeded=False,
+                max_collateral=None,
+                max_m3=None,
+                method=None
+            )
+            for price_model in price_models:
+                rate, method = price_model.calc(start_system, end_system, shipping_collateral, shipping_m3)
+                if rate > 0 and (shipping_info['rate'] is None or shipping_info['rate'] > rate):
+                    shipping_info['max_m3_exceeded'] = price_model.max_m3 < shipping_m3
+                    shipping_info['max_collateral_exceeded'] = price_model.max_collateral < shipping_collateral
+                    shipping_info['max_collateral'] = price_model.max_collateral
+                    shipping_info['max_m3'] = price_model.max_m3
+                    shipping_info['rate'] = rate
+                    shipping_info['method'] = '<b>%s</b> (%s)' % (price_model.name, method)
+
+            if shipping_info['rate'] is None:
+                errors.append('Cannot ship between the selected systems.')
+
+            if shipping_info['max_m3_exceeded']:
+                errors.append('Max Volume for this route: %s m3' % humanize(shipping_info['max_m3']))
+            if shipping_info['max_collateral_exceeded']:
+                errors.append('Max Collateral for this route: %s ISK' % humanize(shipping_info['max_collateral']))
+
+    out = render_page(
+        'pgsus/freighter.html',
+        dict(
+            all_systems=all_systems,
+            system_names=FreighterSystem.objects.values_list('system__name', flat=True).distinct(),
+            shipping_info=shipping_info,
+            price_models=all_price_models,
+            start_system_name=start_system_name,
+            end_system_name=end_system_name,
+            shipping_m3=shipping_m3,
+            shipping_collateral=shipping_collateral,
+            errors=errors
+        ),
+        request,
+    )
+
+    return out
+
+
+def couriers(request):
+    out = render_page(
+        'pgsus/couriers.html',
+        dict(
+
+        ),
+        request
     )
 
     return out
