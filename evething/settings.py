@@ -228,6 +228,7 @@ CELERYBEAT_SCHEDULE = {
         'args': (),
     },
 
+'''
     # update history data every 4 hours
     'history_updater': {
         'task': 'thing.history_updater',
@@ -237,7 +238,9 @@ CELERYBEAT_SCHEDULE = {
         },
         'args': (),
     },
+'''
 
+'''
     # update price data every 30 minutes
     'price_updater': {
         'task': 'thing.price_updater',
@@ -247,6 +250,7 @@ CELERYBEAT_SCHEDULE = {
         },
         'args': (),
     },
+'''
 
     # update unknown character/corporation names every hour
     'fix-names': {
