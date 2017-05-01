@@ -86,6 +86,8 @@ class APITask(Task):
     _session.mount('http://', requests.adapters.HTTPAdapter(pool_connections=1, pool_maxsize=1))
     _session.mount('https://', requests.adapters.HTTPAdapter(pool_connections=1, pool_maxsize=1))
 
+    _taskstate = None
+
     # -----------------------------------------------------------------------
 
     def init(self, taskstate_id=None, apikey_id=None):

@@ -34,6 +34,7 @@ HISTORY_PER_REQUEST = 50
 
 REGION_ID = 10000002
 
+
 class HistoryUpdater(APITask):
     name = 'thing.history_updater'
 

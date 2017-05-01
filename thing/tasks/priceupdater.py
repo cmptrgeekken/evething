@@ -40,6 +40,7 @@ CAPITAL_SHIP_GROUPS = (
 PRICE_PER_REQUEST = 100
 PRICE_STATION_ID = 60003760
 
+
 class PriceUpdater(APITask):
     name = 'thing.price_updater'
 
