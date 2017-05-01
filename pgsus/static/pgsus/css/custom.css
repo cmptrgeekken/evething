@@ -51,3 +51,7 @@ tr:nth-child(odd).market-order-buy>td, .table-striped>tbody>tr:nth-child(odd).ma
 .js-select2.select2-hidden-accessible {
     top: 30px;
 }
+
+input[type="date"] {
+    line-height: 100%;
+}

@@ -166,7 +166,10 @@ def fuel(request):
 
     latest_price = PriceHistory.objects.order_by('-date').first()
     price_last_updated = latest_price.date
-    delivery_system_name=''
+    delivery_system_name = ''
+    main_char_name = ''
+
+    delivery_date = datetime.datetime.utcnow() + datetime.timedelta(days=14)
 
     all_systems = defaultdict(list)
     for result in FreighterSystem.objects.values('system__constellation__region__name', 'system__name').distinct().order_by('system__constellation__region__name', 'system__name'):
@@ -179,6 +182,13 @@ def fuel(request):
 
     if request.method == 'POST':
         delivery_system_name = request.POST.get('delivery_system')
+
+        main_char_name = request.POST.get('main_char_name')
+
+        try:
+            delivery_date = datetime.datetime.strptime(request.POST.get('delivery_date'), '%m/%d/%Y')
+        except ValueError:
+            delivery_date = datetime.datetime.utcnow() + datetime.timedelta(days=14)
 
         for block in fuel_blocks:
             block_qty = request.POST.get('qty-%s' % block.id)
@@ -199,6 +209,8 @@ def fuel(request):
         'pgsus/fuel.html',
         dict(
             all_systems=all_systems,
+            main_char_name=main_char_name,
+            delivery_date=delivery_date,
             delivery_system_name=delivery_system_name,
             fuel_blocks=fuel_blocks,
             price_last_updated=price_last_updated,
