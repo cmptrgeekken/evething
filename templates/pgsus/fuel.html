@@ -34,12 +34,7 @@
                         <img src="{{ STATIC_URL }}pgsus/img/clippy.svg" width="13" title="Copy to clipboard">
                     </button>
                 </div>
-
-                <div class="col-md-6">
-                    <h3>Pricing valid for:</h3>
-                    <b>{{ delivery_system_name }}</b>
-                </div>
-                <div class="col-md-6">
+                <div class="col-md-12">
                     <h3>Contract Description:</h3>
                     <b>{{ delivery_date.strftime('%b %m') }} ({{ main_char_name }})</b>
                     <button class="btn btn-xs" type="button" data-clipboard-text="{{ delivery_date.strftime('%b %m') }} ({{ main_char_name }})">
