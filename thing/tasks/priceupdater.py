@@ -65,7 +65,6 @@ class PriceUpdater(APITask):
         for i in range(0, len(item_ids), PRICE_PER_REQUEST):
             # Retrieve market data and parse the XML
             url = api_url % (PRICE_STATION_ID, ','.join(str(item_id) for item_id in item_ids[i:i + PRICE_PER_REQUEST]))
-            self.log_warn('API URL: %s', url)
             data = self.fetch_url(url, {})
             if data is False:
                 return
