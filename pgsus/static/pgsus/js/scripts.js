@@ -622,4 +622,8 @@ $(document).ready(function() {
 
         elem.val(accounting.formatNumber(elem.val()));
     }).trigger('blur');
+
+    $(':input').on('click', function(){
+        this.setSelectionRange&&this.setSelectionRange(0, this.value.length);
+    });
 });

@@ -47,3 +47,7 @@ tr:nth-child(odd).market-order-buy>td, .table-striped>tbody>tr:nth-child(odd).ma
 .component-list.striped {
     background-color: #CCC;
 }
+
+.js-select2.select2-hidden-accessible {
+    top: 30px;
+}
