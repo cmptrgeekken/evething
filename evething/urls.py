@@ -26,7 +26,6 @@ urlpatterns += patterns(
     url(r'^buyback$', 'buyback', name='buyback'),
     url(r'^freighter$', 'freighter', name='freighter'),
     url(r'^fuel$', 'fuel', name='fuel'),
-    url(r'^buyback_contracts$', 'buyback_contracts', name='buyback_contracts')
 
 )
 
