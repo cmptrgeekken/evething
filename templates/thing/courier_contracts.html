@@ -27,7 +27,7 @@
             <thead>
               <tr class="c">
                 <th>Issued</th>
-                <th>Issued By</th>
+                <th style="width:300px;">Issued By</th>
                 <th>Status</th>
                 <th>Method</th>
                 <th>Reward</th>
@@ -35,7 +35,7 @@
                 <th>Volume</th>
                 <th>Origin</th>
                 <th>Destination</th>
-                <th>Last Changed</th>
+                <th>Latest</th>
               </tr>
             </thead>
             <tbody>
@@ -49,6 +49,11 @@
                   {%- else -%}
                   {{ icons.player() }}
                   {{ contract.issuer_char.name }}
+                  {%- endif %}
+
+                  {% if contract.title -%}
+                  <br/>
+                  <i>NOTE: {{ contract.title }}</i>
                   {%- endif %}
                 </td>
                 <td class="con-status">
