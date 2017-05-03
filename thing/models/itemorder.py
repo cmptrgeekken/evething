@@ -26,20 +26,27 @@
 from django.db import models
 
 from thing.models.item import Item
-from thing.models.contract import Contract
+from thing.models.station import Station
 
 
-class ContractItem(models.Model):
-    """Contract items"""
-    contract_id = models.IntegerField(db_index=True)
-    item = models.ForeignKey(Item, related_name='contract_items')
+class ItemOrder(models.Model):
+    """Item orders"""
+    id = models.BigIntegerField(primary_key=True)
 
-    quantity = models.IntegerField()
-    raw_quantity = models.IntegerField()
-    singleton = models.BooleanField(default=False)
-    included = models.BooleanField(default=False)
+    location = models.ForeignKey(Station)
+    item = models.ForeignKey(Item)
 
-    calculated_price = models.DecimalField(max_digits=15, decimal_places=2, null=True)
+    price = models.DecimalField(max_digits=14, decimal_places=2)
+    total_price = models.DecimalField(max_digits=17, decimal_places=2)
+
+    buy_order = models.BooleanField(default=False)
+    volume_entered = models.IntegerField()
+    volume_remaining = models.IntegerField()
+    minimum_volume = models.IntegerField()
+    issued = models.DateTimeField(db_index=True)
+    expires = models.DateTimeField(db_index=True)
+    range = models.CharField(max_length=20)
 
     class Meta:
         app_label = 'thing'
+        ordering = ('buy_order', 'item__name')

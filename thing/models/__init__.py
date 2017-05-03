@@ -21,6 +21,7 @@ from thing.models.marketgroup import MarketGroup
 from thing.models.itemcategory import ItemCategory
 from thing.models.itemgroup import ItemGroup
 from thing.models.item import Item
+from thing.models.itemorder import ItemOrder
 from thing.models.blueprint import Blueprint
 from thing.models.skill import Skill
 from thing.models.implant import Implant

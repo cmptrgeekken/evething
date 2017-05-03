@@ -25,20 +25,15 @@
 
 from .apitask import APITask
 
-from django.conf import settings
+from decimal import Decimal
+from datetime import datetime
 
-from thing import queries
-from thing.models import Item
+import json
+from thing.models import ItemOrder
 
-CAPITAL_SHIP_GROUPS = (
-    'Capital Industrial Ship',
-    'Carrier',
-    'Dreadnought',
-    'Supercarrier',
-    'Titan',
-)
 PRICE_PER_REQUEST = 100
-PRICE_STATION_ID = 60003760
+PRICE_STATION_ID = 60003760  # Jita 4-4
+PRICE_REGION_ID = 10000002  # The Forge
 
 
 class PriceUpdater(APITask):
@@ -48,56 +43,74 @@ class PriceUpdater(APITask):
         if self.init(taskstate_id) is False:
             return
 
-        # Get a list of all item_ids
-        cursor = self.get_cursor()
-        cursor.execute(queries.pricing_item_ids)
+        page_number = 1
 
-        # init XML_BASE_PATH from PRICE_URL, as it depends on which one we use
-        XML_BASE_PATH = api_url.split('?')[0].strip('/').rsplit('/', 1)[1]
+        all_orders = dict()
 
-        item_ids = [row[0] for row in cursor]
-
-        cursor.close()
-
-        # Bulk retrieve items
-        item_map = Item.objects.in_bulk(item_ids)
-
-        for i in range(0, len(item_ids), PRICE_PER_REQUEST):
-            # Retrieve market data and parse the XML
-            url = api_url % (PRICE_STATION_ID, ','.join(str(item_id) for item_id in item_ids[i:i + PRICE_PER_REQUEST]))
+        all_order_ids = []
+        while True:
+            # Retrieve market data and parse the JSON
+            url = api_url % (PRICE_REGION_ID, page_number)
             data = self.fetch_url(url, {})
             if data is False:
                 return
 
-            root = self.parse_xml(data)
+            orders = json.loads(data)
 
-            # Update item prices
-            for t in root.findall(XML_BASE_PATH + '/type'):
-                item = item_map[int(t.attrib['id'])]
-                item.buy_price = t.find('buy/max').text
-                item.buy_std_dev = t.find('buy/stddev').text
-                item.buy_median = t.find('buy/median').text
-                item.buy_percentile = t.find('buy/percentile').text
-                item.buy_volume = t.find('buy/volume').text
+            if len(orders) == 0:
+                break
 
-                item.sell_price = t.find('sell/min').text
-                item.sell_std_dev = t.find('sell/stddev').text
-                item.sell_median = t.find('sell/median').text
-                item.sell_percentile = t.find('sell/percentile').text
-                item.sell_volume = t.find('sell/volume').text
-                item.save()
+            for order in orders:
+                # Create the new order object
+                remaining = int(order['remaining'])
+                price = Decimal(order['price'])
+                issued = self.parse_api_date(order['issued'])
 
-        # Calculate capital ship costs now
-        # for bp in Blueprint.objects.select_related('item').filter(item__item_group__name__in=CAPITAL_SHIP_GROUPS):
-        #    bpi = BlueprintInstance(
-        #        user=None,
-        #        blueprint=bp,
-        #        original=True,
-        #        material_level=2,
-        #        productivity_level=0,
-        #    )
-        #    bp.item.sell_price = bpi.calc_capital_production_cost()
-        #    bp.item.save()
-        # TODO: Fix this all when BP stuff is resolved
+                item_order = ItemOrder(
+                    id=int(order['order_id']),
+                    item_id=int(order['type_id']),
+                    location_id=int(order['location_id']),
+                    price=price,
+                    total_price=price*remaining,
+                    buy_order=order['is_buy_order'],
+                    volume_entered=int(order['volume_total']),
+                    volume_remaining=remaining,
+                    minimum_volume=int(order['min_volume']),
+                    issued=order['issued'],
+                    expires=issued + datetime.timedelta(int(order['duration'])),
+                    range=order['range'],
+                    last_updated=datetime.utcnow()
+                )
+
+                all_order_ids.append(item_order.id)
+                all_orders[item_order.id] = item_order
+
+            page_number += 1
+
+        # Find existing orders
+        existing_orders = ItemOrder.objects.filter(
+            id__in=all_order_ids
+        ).values_list('id')
+
+        existing_orders = set([o[0] for o in existing_orders])
+
+        new_orders = []
+        updated_orders = []
+        for order_id in all_orders:
+            order = all_orders[order_id]
+
+            if order_id not in existing_orders:
+                new_orders.append(order)
+            else:
+                updated_orders.append(order)
+
+        # Insert new orders
+        ItemOrder.objects.bulk_insert(new_orders)
+
+        # Update existing orders
+        ItemOrder.objects.bulk_update(updated_orders, ['price', 'total_price', 'last_updated', 'volume_remaining'])
+
+        # Delete non-existent orders:
+        ItemOrder.objects.exclude(id__in=all_order_ids).delete()
 
         return True

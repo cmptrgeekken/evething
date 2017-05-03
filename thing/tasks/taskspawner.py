@@ -74,7 +74,9 @@ GLOBAL_TASKS = (
     ('thing.ref_types', '/eve/RefTypes.xml.aspx', 'et_medium'),
     ('thing.server_status', '/server/ServerStatus.xml.aspx', 'et_high'),
     ('thing.citadels', 'https://stop.hammerti.me.uk/api/structure/all', 'et_medium'),
-    ('thing.price_updater', 'http://api.eve-central.com/api/marketstat/?station_id=%s&typeid=%s', 'et_medium'),
+    ('thing.price_updater',
+     'https://esi.tech.ccp.is/latest/markets/%d/orders?datasource=tranquility&order_type=all&page=%d',
+     'et_medium'),
     ('thing.history_updater', 'https://esi.tech.ccp.is/latest/markets/%d/history/?datasource=tranquility&type_id=%d', 'et_medium')
 )
 
