@@ -37,6 +37,11 @@
                     {% if nav_contracts %}<span class="text-success">[{{ nav_contracts }}]</span>{% endif %}
                   </a>
                 </li>
+               <li>
+                  <a href="{{ url('thing.views.courier_contracts') }}">
+                    Courier Contracts
+                  </a>
+                </li>
 {% endif %}{# profile.show_contracts #}
 {% if profile.show_industry %}
                 <li>

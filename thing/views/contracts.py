@@ -24,13 +24,155 @@
 # ------------------------------------------------------------------------------
 
 from django.contrib.auth.decorators import login_required
+from django.db import connections
+
+from collections import defaultdict
 
 from thing.models import *  # NOPEP8
 from thing.stuff import *  # NOPEP8
+from thing import queries
 
+from pprint import pformat
+
+
+def get_ids(request):
+    """Contracts"""
+    character_ids = list(Character.objects.filter(
+        apikeys__user=request.user.id,
+        apikeys__valid=True,
+        apikeys__key_type__in=[APIKey.ACCOUNT_TYPE, APIKey.CHARACTER_TYPE]
+    ).distinct().values_list(
+        'id',
+        flat=True,
+    ))
+
+    corporation_ids = Corporation.get_ids_with_access(request.user, APIKey.CORP_CONTRACTS_MASK)
+
+    return character_ids, corporation_ids
 
 @login_required
 def contracts(request):
+    """Contracts"""
+    character_ids, corporation_ids = get_ids(request)
+
+    # Whee~
+    contracts = Contract.objects.select_related('issuer_char', 'issuer_corp', 'start_station', 'end_station')
+    contracts = contracts.filter(
+        Q(character__in=character_ids, corporation__isnull=True)
+        |
+        Q(corporation__in=corporation_ids)
+    )
+
+    contract_list, char_map, corp_map, alliance_map = populate_contracts(contracts)
+
+    # Render template
+    return render_page(
+        'thing/contracts.html',
+        dict(
+            characters=character_ids,
+            contracts=contract_list,
+            char_map=char_map,
+            corp_map=corp_map,
+            alliance_map=alliance_map,
+        ),
+        request,
+        character_ids,
+        corporation_ids,
+    )
+
+
+@login_required
+def courier_contracts(request):
+    character_ids, corporation_ids = get_ids(request)
+
+    cursor = get_cursor()
+    cursor.execute(queries.courier_contracts)
+
+    contract_ids = [col[0] for col in cursor.fetchall()]
+
+    contracts_to_display = Contract.objects.select_related('issuer_char', 'issuer_corp', 'start_station', 'end_station').filter(
+        contract_id__in=contract_ids,
+    ).exclude(status__in=['Completed', 'Deleted'])
+
+    contract_list, char_map, corp_map, alliance_map = populate_contracts(contracts_to_display)
+
+    freighter_systems = FreighterSystem.objects.distinct()
+
+    freighter_map = defaultdict()
+    for system in freighter_systems:
+        if system.system_id not in freighter_map:
+            freighter_map[system.system_id] = list()
+        freighter_map[system.system_id].append(system.price_model)
+
+    for contract in contract_list:
+        contract.z_price_model = None
+        contract.z_shipping_rate = None
+        contract.z_shipping_method = None
+        contract.z_collateral_invalid = False
+        contract.z_m3_invalid = False
+        contract.z_shipping_invalid = False
+        contract.z_reward_high = False
+        contract.z_reward_low = False
+        contract.z_reward_diff = 0
+
+        start_system_id = contract.start_station.system_id
+        end_system_id = contract.end_station.system_id
+
+        if start_system_id in freighter_map and end_system_id in freighter_map:
+            start_systems = freighter_map[contract.start_station.system.id]
+            end_systems = freighter_map[contract.end_station.system.id]
+        else:
+            continue
+
+        price_models = []
+        if start_systems is not None and end_systems is not None:
+            for start in start_systems:
+                for end in end_systems:
+                    if start.id == end.id:
+                        price_models.append(start)
+
+            for price_model in price_models:
+                rate, method = price_model.calc(contract.start_station.system, contract.end_station.system,
+                                                contract.collateral, contract.volume)
+                if rate > 0 and (contract.z_shipping_rate is None or contract.z_shipping_rate > rate):
+                    contract.z_shipping_rate = rate
+                    contract.z_shipping_method = method
+                    contract.z_price_model = price_model
+
+        if contract.z_price_model is None:
+            contract.z_shipping_invalid = True
+        else:
+            if contract.z_price_model.max_m3 < contract.volume:
+                contract.z_volume_invalid = True
+            if contract.z_price_model.max_collateral < contract.collateral:
+                contract.z_collateral_invalid = True
+
+            contract.z_reward_diff = contract.z_shipping_rate - contract.reward
+            if contract.reward == 0:
+                contract.z_reward_low = True
+            elif float(contract.z_reward_diff) / float(contract.reward) > 0.05:
+                contract.z_reward_low = True
+            elif float(contract.z_reward_diff) / float(contract.reward) < -0.05:
+                contract.z_reward_high = True
+
+    # Render template
+    return render_page(
+        'thing/courier_contracts.html',
+        dict(
+            characters=character_ids,
+            contracts=contract_list,
+            char_map=char_map,
+            corp_map=corp_map,
+            alliance_map=alliance_map,
+        ),
+        request,
+        character_ids,
+        corporation_ids,
+    )
+
+
+@login_required
+def contract_items(request):
     """Contracts"""
     character_ids = list(Character.objects.filter(
         apikeys__user=request.user.id,
@@ -44,13 +186,32 @@ def contracts(request):
     corporation_ids = Corporation.get_ids_with_access(request.user, APIKey.CORP_CONTRACTS_MASK)
 
     # Whee~
-    contracts = Contract.objects.select_related('issuer_char', 'issuer_corp', 'start_station', 'end_station')
+    contracts = Contract.objects.select_related('issuer_char', 'issuer_corp', 'start_station', 'end_station', 'contract_items')
     contracts = contracts.filter(
         Q(character__in=character_ids, corporation__isnull=True)
         |
         Q(corporation__in=corporation_ids)
     )
 
+    contract_id = request.GET.get('id')
+
+    contracts = contracts.filter(
+        Q(id=int(contract_id))
+    )
+
+
+
+    return render_page(
+        'thing/contract_items.html',
+        dict(
+            contracts=contracts,
+            stuff=stuff,
+        ),
+        request
+    )
+
+
+def populate_contracts(contracts):
     lookup_ids = set()
     for contract in contracts:
         # Add the ids to the lookup set
@@ -109,52 +270,7 @@ def contracts(request):
             if corp is not None:
                 contract.z_acceptor_corp = corp
 
-    # Render template
-    return render_page(
-        'thing/contracts.html',
-        dict(
-            characters=character_ids,
-            contracts=contract_list,
-            char_map=char_map,
-            corp_map=corp_map,
-            alliance_map=alliance_map,
-        ),
-        request,
-        character_ids,
-        corporation_ids,
-    )
+    return contract_list, char_map, corp_map, alliance_map
 
-@login_required
-def contract_items(request):
-    """Contracts"""
-    character_ids = list(Character.objects.filter(
-        apikeys__user=request.user.id,
-        apikeys__valid=True,
-        apikeys__key_type__in=[APIKey.ACCOUNT_TYPE, APIKey.CHARACTER_TYPE]
-    ).distinct().values_list(
-        'id',
-        flat=True,
-    ))
-
-    corporation_ids = Corporation.get_ids_with_access(request.user, APIKey.CORP_CONTRACTS_MASK)
-
-    # Whee~
-    contracts = Contract.objects.select_related('issuer_char', 'issuer_corp', 'start_station', 'end_station', 'contract_items')
-    contracts = contracts.filter(
-        Q(character__in=character_ids, corporation__isnull=True)
-        |
-        Q(corporation__in=corporation_ids)
-    )
-
-    contract_id = request.GET.get('id')
-
-    contracts = contracts.filter(
-        Q(id=int(contract_id))
-    )
-
-    return render_page(
-        'thing/contract_items.html',
-        dict(
-            contracts
-        )
-    )
+def get_cursor(db='default'):
+    return connections[db].cursor()

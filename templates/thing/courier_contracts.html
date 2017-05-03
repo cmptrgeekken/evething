@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% import 'macros/icons.html' as icons %}
+  
+{% block title %}Contracts{% endblock %}
+
+{% block extra_js %}
+    <script type="text/javascript">
+      $(document).ready(function () {
+        // call the tablesorter plugin
+        $("#contracts-table").tablesorter({
+          widgets: ['uitheme', 'filter'],
+          theme: 'bootstrap',
+          widthFixed: true,
+          sortList: [[0, 1]],
+          headerTemplate : '{content} {icon}'
+        });
+      });
+    </script>
+{% endblock %}
+
+{% block content %}
+    {{ stuff }}
+      <div class="row">
+        <div class="col-sm-12">
+          <h2>Contracts</h2>
+          <table id="contracts-table" class="table table-striped table-bordered table-condensed">
+            <thead>
+              <tr class="c">
+                <th>Issued</th>
+                <th>Issued By</th>
+                <th>Status</th>
+                <th>Method</th>
+                <th>Reward</th>
+                <th>Collateral</th>
+                <th>Volume</th>
+                <th>Origin</th>
+                <th>Destination</th>
+                <th>Last Changed</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for contract in contracts -%}
+              <tr>
+                <td class="con-date">{{ contract.date_issued }}</td>
+                <td class="con-issuer">
+                  {% if contract.for_corp -%}
+                  {{ icons.corporation() }}
+                  {{ contract.issuer_corp.name }}
+                  {%- else -%}
+                  {{ icons.player() }}
+                  {{ contract.issuer_char.name }}
+                  {%- endif %}
+                </td>
+                <td class="con-status">
+                  {{ icons.contract_status(contract.status) }}
+                  {{ contract.status }}
+                </td>
+                <td>
+                  {% if contract.z_shipping_invalid %}
+                    <b class="neg">Invalid!</b>
+                  {% else %}
+                    {{ contract.z_price_model.name }}
+                  {% endif %}
+                </td>
+                <td>
+                    {% if contract.reward > 0 -%}
+                      <b class="{% if contract.z_reward_low %}neg{% else %}pos{% endif %}">
+                        {{ contract.reward|commas }}
+                        {% if contract.z_reward_low %}
+                        <br/>
+                        <i>EXPECTED: {{ contract.z_shipping_rate|int|commas }}</i>
+                        {% endif %}
+                      </b>
+                    {%- else -%}
+                    --
+                    {%- endif %}
+                </td>
+                <td>
+                    {% if contract.collateral > 0 -%}
+                    <b class="{% if contract.z_collateral_invalid %}neg{% else %}pos{% endif %}">
+                    {{ "{:,.0f}".format(contract.collateral) }}
+                    </b>
+                    {%- else -%}
+                    --
+                    {%- endif %}
+                </td>
+                <td>
+                  {% if contract.volume > 0 -%}
+                    <b class="{% if contract.z_volume_invalid %}neg{% else %}pos{% endif %}">
+                    {{ "{:,.0f}".format(contract.volume) }}
+                    {% if contract.z_volume_invalid %}
+                    <br/>
+                    <i>MAX: {{ contract.z_price_model.max_m3|commas }}</i>
+                    {% endif %}
+                    </b>
+                  {%- else -%}
+                  --
+                  {%- endif %}
+                </td>
+                <td>
+                  {{ contract.start_station.system.name }}
+                </td>
+                <td>
+                  {{ contract.end_station.system.name }}
+                </td>
+                <td class="con-date">
+                  {% if contract.date_completed -%}
+                  {{ contract.date_completed }}
+                  {%- elif contract.date_accepted -%}
+                  {{ contract.date_accepted }}
+                  {%- else -%}
+                  --
+                  {%- endif %}
+                </td>
+              </tr>
+              {%- else -%}
+              <tr>
+                <td colspan="8">No contracts.</td>
+              </tr>
+              {%- endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+{% endblock %}

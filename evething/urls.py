@@ -25,7 +25,8 @@ urlpatterns += patterns(
     url(r'^stats$', 'stats', name='stats'),
     url(r'^buyback$', 'buyback', name='buyback'),
     url(r'^freighter$', 'freighter', name='freighter'),
-    url(r'^fuel$', 'fuel', name='fuel')
+    url(r'^fuel$', 'fuel', name='fuel'),
+    url(r'^buyback_contracts$', 'buyback_contracts', name='buyback_contracts')
 
 )
 
@@ -64,6 +65,7 @@ urlpatterns += patterns(
     (r'^thing/character_anon/(?P<anon_key>[a-z0-9]+)/skillplan/(?P<skillplan_id>\d+)$', 'character_anonymous_skillplan'),
 
     (r'^thing/contracts/', 'contracts'),
+    (r'^thing/courier_contracts/', 'courier_contracts'),
 
     (r'^thing/events/$', 'events'),
 

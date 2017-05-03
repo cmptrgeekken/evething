@@ -126,10 +126,13 @@ WHERE   a.item_id = i.id
         AND ig.category_id != 9
 """ '''
 all_item_ids = """
-SELECT  DISTINCT a.item_id
-FROM    thing_asset a, thing_item i, thing_itemgroup ig
-WHERE   a.item_id = i.id
-        AND i.item_group_id = ig.id
+SELECT a.item_id AS item_id FROM thing_asset a
+UNION
+SELECT ci.item_id AS item_id FROM thing_contractitem ci
+UNION
+SELECT ij.product_id AS item_id FROM thing_industryjob ij
+UNION
+SELECT t.item_id AS item_id FROM thing_transaction t
 """
 
 pricing_item_ids = """
@@ -224,6 +227,38 @@ WHERE   character_id = %s
 
 
 # statistics
+fuelblock_purchase_contracts = """
+SELECT DISTINCT c.contract_id
+FROM thing_contract c 
+    INNER JOIN thing_contractitem ci ON c.contract_id=ci.contract_id
+    INNER JOIN thing_item i ON ci.item_id=i.id 
+WHERE c.type = 'Item Exchange' 
+    AND i.name LIKE '%Fuel Block'
+    AND ((c.corporation_id=c.issuer_corp_id AND ci.included=1)
+          OR (c.assignee_id=c.corporation_id AND ci.included=0))
+"""
+
+courier_contracts = """
+SELECT DISTINCT c.contract_id
+FROM thing_contract c
+WHERE c.assignee_id=c.corporation_id
+AND c.type = 'Courier'
+"""
+
+buyback_contracts = """
+SELECT DISTINCT c.contract_id	
+FROM thing_contract c
+WHERE c.assignee_id=c.corporation_id
+AND c.type = 'Item Exchange'
+AND c.issuer_corp_id != c.corporation_id
+AND EXISTS
+	(SELECT 1 
+	 FROM thing_contractitem ci 
+		INNER JOIN thing_pricewatch pw ON ci.item_id=pw.item_id 
+	 WHERE ci.contract_id=c.contract_id AND ci.included=1 AND pw.active=1)
+"""
+
+
 fuelblock_purchase_stats = """
 SELECT i.name,
        SUM(ci.quantity) AS quantity,

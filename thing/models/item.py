@@ -56,18 +56,18 @@ class Item(models.Model):
     buy_median = models.DecimalField(max_digits=15, decimal_places=2, default=0)
     buy_percentile = models.DecimalField(max_digits=15, decimal_places=2, default=0)
 
-
     class Meta:
         app_label = 'thing'
 
     def __unicode__(self):
         return self.name
 
-    def get_history_avg(self, days=5):
+    def get_history_avg(self, days=5, region_id=10000002):
         from thing.models.pricehistory import PriceHistory
 
         results = PriceHistory.objects.filter(
             item_id=self.id,
+            region_id=region_id
         ).order_by('-date').all()[:days].aggregate(
             total_value=Sum('average', field='average*movement'),
             total_volume=Sum('movement')
