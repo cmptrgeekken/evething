@@ -485,11 +485,14 @@ class APITask(Task):
 
     # -----------------------------------------------------------------------
 
-    def parse_api_date(self, apidate):
+    def parse_api_date(self, apidate, tzd=False):
         """
         Parse a date from API XML into a datetime object.
         """
-        return datetime.datetime.strptime(apidate, '%Y-%m-%d %H:%M:%S')
+        if not tzd:
+            return datetime.datetime.strptime(apidate, '%Y-%m-%d %H:%M:%S')
+        else:
+            return datetime.datetime.strptime(apidate, '%Y-%m-%dT%H:%M:%SZ')
 
     # -----------------------------------------------------------------------
     # Logging shortcut functions :v

@@ -26,7 +26,7 @@
 from .apitask import APITask
 
 from decimal import Decimal
-from datetime import datetime
+from datetime import datetime,timedelta
 
 import json
 from thing.models import ItemOrder
@@ -62,9 +62,9 @@ class PriceUpdater(APITask):
 
             for order in orders:
                 # Create the new order object
-                remaining = int(order['remaining'])
+                remaining = int(order['volume_remain'])
                 price = Decimal(order['price'])
-                issued = self.parse_api_date(order['issued'])
+                issued = self.parse_api_date(order['issued'], True)
 
                 item_order = ItemOrder(
                     id=int(order['order_id']),
@@ -76,8 +76,8 @@ class PriceUpdater(APITask):
                     volume_entered=int(order['volume_total']),
                     volume_remaining=remaining,
                     minimum_volume=int(order['min_volume']),
-                    issued=order['issued'],
-                    expires=issued + datetime.timedelta(int(order['duration'])),
+                    issued=issued,
+                    expires=issued + timedelta(int(order['duration'])),
                     range=order['range'],
                     last_updated=datetime.utcnow()
                 )
