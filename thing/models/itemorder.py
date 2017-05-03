@@ -47,6 +47,8 @@ class ItemOrder(models.Model):
     expires = models.DateTimeField(db_index=True)
     range = models.CharField(max_length=20)
 
+    last_updated = models.DateTimeField(default=None)
+
     class Meta:
         app_label = 'thing'
         ordering = ('buy_order', 'item__name')
