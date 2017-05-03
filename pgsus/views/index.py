@@ -186,7 +186,7 @@ def fuel(request):
         main_char_name = request.POST.get('main_char_name')
 
         try:
-            delivery_date = datetime.datetime.strptime(request.POST.get('delivery_date'), '%m/%d/%Y')
+            delivery_date = datetime.datetime.strptime(request.POST.get('delivery_date'), '%Y-%m-%d')
         except ValueError:
             delivery_date = datetime.datetime.utcnow() + datetime.timedelta(days=14)
 
