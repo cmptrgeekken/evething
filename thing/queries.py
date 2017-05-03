@@ -279,7 +279,8 @@ SELECT i.name,
        SUM(ci.quantity) AS quantity,
        SUM(c.reward)+SUM(C.price) AS ttl_reward,
        COUNT(c.contract_id) AS ttl_contracts,
-       strftime('%m-%d-%Y', MIN(c.date_issued)) AS start_date
+       strftime('%m-%d-%Y', MIN(c.date_issued)) AS start_date,
+       AVG(JULIANDAY(c.date_completed)-JULIANDAY(c.date_issued))*24*60*60 AS avg_completion_secs
 FROM thing_contract c 
     INNER JOIN thing_contractitem ci ON c.contract_id=ci.contract_id
     INNER JOIN thing_item i ON ci.item_id=i.id 

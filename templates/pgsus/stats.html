@@ -21,6 +21,7 @@
                 <li><b>First Contract:</b> {{ fuel_purchase_ttl['start_date'] }}</li>
                 <li><b>Total Contracts:</b> {{ fuel_purchase_ttl['ttl_contracts']|commas }}</li>
                 <li><b>Total Value:</b> {{ fuel_purchase_ttl['ttl_reward']|humanize }} ISK</li>
+                <li><b>Average Completion Time:</b> {{ fuel_purchase_ttl['avg_completion_secs']|duration }}</li>
             </ul>
             <ul>
                 {% for stat in fuel_purchase_stats -%}
