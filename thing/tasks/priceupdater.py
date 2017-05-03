@@ -45,7 +45,11 @@ class PriceUpdater(APITask):
 
         page_number = 1
 
-        all_orders = dict()
+        existing_orders = ItemOrder.objects.filter(
+            region_id=PRICE_REGION_ID,
+        ).values_list('id')
+
+        existing_order_ids = set([o[0] for o in existing_orders])
 
         all_order_ids = []
         while True:
@@ -60,6 +64,8 @@ class PriceUpdater(APITask):
             if len(orders) == 0:
                 break
 
+            new_orders = []
+            updated_orders = []
             for order in orders:
                 # Create the new order object
                 remaining = int(order['volume_remain'])
@@ -69,6 +75,7 @@ class PriceUpdater(APITask):
                 item_order = ItemOrder(
                     id=int(order['order_id']),
                     item_id=int(order['type_id']),
+                    region_id=PRICE_REGION_ID,
                     location_id=int(order['location_id']),
                     price=price,
                     total_price=price*remaining,
@@ -82,35 +89,25 @@ class PriceUpdater(APITask):
                     last_updated=datetime.utcnow()
                 )
 
+                if item_order.id in existing_order_ids:
+                    updated_orders.append(item_order)
+                else:
+                    new_orders.append(item_order)
+
                 all_order_ids.append(item_order.id)
-                all_orders[item_order.id] = item_order
+
+            # Insert new orders
+            ItemOrder.objects.bulk_insert(new_orders)
+
+            # Update existing orders
+            ItemOrder.objects.bulk_update(updated_orders, ['price', 'total_price', 'last_updated', 'volume_remaining'])
 
             page_number += 1
 
-        # Find existing orders
-        existing_orders = ItemOrder.objects.filter(
-            id__in=all_order_ids
-        ).values_list('id')
-
-        existing_orders = set([o[0] for o in existing_orders])
-
-        new_orders = []
-        updated_orders = []
-        for order_id in all_orders:
-            order = all_orders[order_id]
-
-            if order_id not in existing_orders:
-                new_orders.append(order)
-            else:
-                updated_orders.append(order)
-
-        # Insert new orders
-        ItemOrder.objects.bulk_insert(new_orders)
-
-        # Update existing orders
-        ItemOrder.objects.bulk_update(updated_orders, ['price', 'total_price', 'last_updated', 'volume_remaining'])
-
         # Delete non-existent orders:
-        ItemOrder.objects.exclude(id__in=all_order_ids).delete()
+        ItemOrder.objects.exclude(
+            id__in=all_order_ids,
+            region_id=PRICE_REGION_ID,
+        ).delete()
 
         return True

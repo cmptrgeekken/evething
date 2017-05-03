@@ -27,11 +27,14 @@ from django.db import models
 
 from thing.models.item import Item
 from thing.models.station import Station
+from thing.models.region import Region
 
 
 class ItemOrder(models.Model):
     """Item orders"""
     id = models.BigIntegerField(primary_key=True)
+
+    region = models.ForeignKey(Region, default=None)
 
     location = models.ForeignKey(Station)
     item = models.ForeignKey(Item)
