@@ -27,6 +27,8 @@ from django.contrib.auth.decorators import login_required
 from django.db import connections
 from django.db.models import F
 
+from math import ceil
+
 from collections import defaultdict
 
 from thing.models import *  # NOPEP8
@@ -114,9 +116,14 @@ def item_contracts(request):
             contract_id=contract.contract_id
         )
 
+
         for contract_item in contract_items:
             contract.z_calculated_reward += contract_item.quantity * contract_item.item.get_history_avg(issued=contract.date_issued)
             contract.z_items += '<div>%s %s</div>' % (commas(contract_item.quantity), contract_item.item.name)
+
+            if contract_item.item.name.endswith("Fuel Block") and not contract_item.included:
+                if contract.start_station.system.name != 'B-9C24':
+                    contract.z_calculated_reward += ceil(float(contract_item.quantity) / 25000) * 5000000
 
         if contract.z_calculated_reward < contract.z_reward:
             contract.z_reward_high = True
