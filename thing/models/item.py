@@ -62,16 +62,26 @@ class Item(models.Model):
     def __unicode__(self):
         return self.name
 
-    def get_history_avg(self, days=5, region_id=10000002):
+    def get_history_avg(self, days=5, region_id=10000002, issued=None):
         from thing.models.pricehistory import PriceHistory
 
-        results = PriceHistory.objects.filter(
+        query = PriceHistory.objects.filter(
             item_id=self.id,
             region_id=region_id
-        ).order_by('-date').all()[:days].aggregate(
+        ).order_by('-date')
+
+        if issued is not None:
+            query = query.filter(
+                date__lte=issued
+            )
+
+        results = query.all()[:days].aggregate(
             total_value=Sum('average', field='average*movement'),
             total_volume=Sum('movement')
         )
+
+        if results['total_value'] is None:
+            return 0
 
         return round(results['total_value'] / results['total_volume'], 2)
 

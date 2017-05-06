@@ -46,9 +46,16 @@
                   {% if nav_contracts %}<span class="text-success">[{{ nav_contracts }}]</span>{% endif %}
                 </a>
               </li>
+                <li>
+                    <a href="{{ url('thing.views.item_contracts') }}">
+                        Item Contracts
+                        {% if nav_item_contracts %}<span class="text-success">[{{ nav_item_contracts }}]</span>{% endif %}
+                    </a>
+                </li>
                <li>
                   <a href="{{ url('thing.views.courier_contracts') }}">
                     Courier Contracts
+                      {% if nav_courier_contracts %}<span class="text-success">[{{ nav_courier_contracts }}]</span>{% endif %}
                   </a>
                 </li>
 {% endif %}{# profile.show_contracts #}

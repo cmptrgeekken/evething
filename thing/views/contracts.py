@@ -25,11 +25,13 @@
 
 from django.contrib.auth.decorators import login_required
 from django.db import connections
+from django.db.models import F
 
 from collections import defaultdict
 
 from thing.models import *  # NOPEP8
 from thing.stuff import *  # NOPEP8
+from thing.helpers import commas
 from thing import queries
 
 from pprint import pformat
@@ -68,6 +70,62 @@ def contracts(request):
     # Render template
     return render_page(
         'thing/contracts.html',
+        dict(
+            characters=character_ids,
+            contracts=contract_list,
+            char_map=char_map,
+            corp_map=corp_map,
+            alliance_map=alliance_map,
+        ),
+        request,
+        character_ids,
+        corporation_ids,
+    )
+
+
+@login_required
+def item_contracts(request):
+    character_ids, corporation_ids = get_ids(request)
+
+    cursor = get_cursor()
+    cursor.execute(queries.buyback_contracts + ' UNION ' + queries.fuelblock_purchase_contracts)
+
+    contract_ids = [col[0] for col in cursor.fetchall()]
+
+    contracts_to_display = Contract.objects.select_related('issuer_char', 'issuer_corp', 'start_station', 'end_station').filter(
+        contract_id__in=contract_ids,
+    ).exclude(
+        status__in=['Completed', 'Deleted', 'Rejected'],
+    ).exclude(
+        issuer_char_id=F('corporation_id'),
+    )
+
+    contract_list, char_map, corp_map, alliance_map = populate_contracts(contracts_to_display)
+
+    for contract in contract_list:
+        contract.z_reward_high = False
+        contract.z_reward_low = False
+        contract.z_reward_diff = 0
+        contract.z_reward = max(contract.reward, contract.price)
+        contract.z_calculated_reward = 0
+        contract.z_items = ''
+
+        contract_items = ContractItem.objects.select_related('item').filter(
+            contract_id=contract.contract_id
+        )
+
+        for contract_item in contract_items:
+            contract.z_calculated_reward += contract_item.quantity * contract_item.item.get_history_avg(issued=contract.date_issued)
+            contract.z_items += '<div>%s %s</div>' % (commas(contract_item.quantity), contract_item.item.name)
+
+        if contract.z_calculated_reward < contract.z_reward:
+            contract.z_reward_high = True
+        elif contract.z_calculated_reward > contract.z_reward:
+            contract.z_reward_low = True
+
+    # Render template
+    return render_page(
+        'thing/item_contracts.html',
         dict(
             characters=character_ids,
             contracts=contract_list,
@@ -205,7 +263,6 @@ def contract_items(request):
         'thing/contract_items.html',
         dict(
             contracts=contracts,
-            stuff=stuff,
         ),
         request
     )

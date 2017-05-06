@@ -65,6 +65,7 @@ urlpatterns += patterns(
 
     (r'^thing/contracts/', 'contracts'),
     (r'^thing/courier_contracts/', 'courier_contracts'),
+    (r'^thing/item_contracts/', 'item_contracts'),
 
     (r'^thing/events/$', 'events'),
 
