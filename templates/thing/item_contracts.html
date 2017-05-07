@@ -61,13 +61,19 @@
                 <td>
                     {% if contract.z_reward > 0 -%}
                       <b class="{% if contract.z_reward_low %}neg{% else %}pos{% endif %}">
-                        {{ contract.z_reward|commas }} ({{contract.z_diff_pct}}%)
+                        {{ contract.z_reward|commas }} ({% if contract.z_diff_pct > 0%}+{%endif%}{{contract.z_diff_pct}}%)
                       </b>
                     {%- else -%}
                     --
                     {%- endif %}
                     <br/>
-                    <i class="{% if contract.z_reward_low %}neg{% else %}pos{% endif %}">EXPECTED: {{ contract.z_calculated_reward|int|commas }}</i>
+                    <i class="{% if contract.z_reward_low %}neg{% else %}pos{% endif %}">
+                      EXPECTED: {{ contract.z_calculated_reward|int|commas }}
+                      {% if contract.z_reward != contract.z_calculated_reward %}
+                      <br/>
+                      DIFF: {{ contract.z_diff|int|commas }}
+                      {% endif %}
+                    </i>
                 </td>
                 <td>
                   {% if contract.volume > 0 -%}
