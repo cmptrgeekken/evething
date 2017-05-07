@@ -116,7 +116,6 @@ def item_contracts(request):
             contract_id=contract.contract_id
         )
 
-
         for contract_item in contract_items:
             contract.z_calculated_reward += contract_item.quantity * contract_item.item.get_history_avg(issued=contract.date_issued)
             contract.z_items += '<div>%s %s</div>' % (commas(contract_item.quantity), contract_item.item.name)
@@ -125,10 +124,14 @@ def item_contracts(request):
                 if contract.start_station.system.name != 'B-9C24':
                     contract.z_calculated_reward += ceil(float(contract_item.quantity) / 25000) * 5000000
 
-        if contract.z_calculated_reward < contract.z_reward:
+        # Allow for 2% wiggle room
+        if float(contract.z_calculated_reward) < float(contract.z_reward)*.98:
             contract.z_reward_high = True
-        elif contract.z_calculated_reward > contract.z_reward:
+        elif float(contract.z_calculated_reward) > float(contract.z_reward) * 1.02:
             contract.z_reward_low = True
+
+        contract.z_diff = float(contract.z_reward) - contract.z_calculated_reward
+        contract.z_diff_pct = round(contract.z_diff / contract.z_calculated_reward, 4)*100
 
     # Render template
     return render_page(
