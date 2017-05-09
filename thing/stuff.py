@@ -52,8 +52,7 @@ def render_page(template, data, request, character_ids=None, corporation_ids=Non
         cache_key = 'nav_counts:%s' % (request.user.id)
         cc = cache.get(cache_key)
 
-        if False:
-            print 'cached'
+        if cc:
             data['nav_contracts'] = cc[0]
             data['nav_industryjobs'] = cc[1]
             data['nav_mail'] = cc[2]
