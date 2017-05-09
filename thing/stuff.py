@@ -29,9 +29,12 @@ from urllib import urlencode
 
 from django.core.cache import cache
 from django.db.models import Count, Q
+from django.db import connections
 from django.shortcuts import render_to_response
 from django.template import RequestContext
 from django.conf import settings
+
+from thing import queries
 
 
 def render_page(template, data, request, character_ids=None, corporation_ids=None):
@@ -49,7 +52,7 @@ def render_page(template, data, request, character_ids=None, corporation_ids=Non
         cache_key = 'nav_counts:%s' % (request.user.id)
         cc = cache.get(cache_key)
 
-        if cc:
+        if False:
             print 'cached'
             data['nav_contracts'] = cc[0]
             data['nav_industryjobs'] = cc[1]
@@ -87,6 +90,26 @@ def render_page(template, data, request, character_ids=None, corporation_ids=Non
             ).values(
                 'message_id',
             ).distinct().count()
+
+            cursor = get_cursor()
+            cursor.execute(queries.buyback_contracts + ' UNION ' + queries.fuelblock_purchase_contracts)
+            buyback_ids = [c[0] for c in cursor.fetchall()]
+            cursor.close()
+
+            data['nav_item_contracts'] = Contract.objects.filter(
+                contract_id__in=buyback_ids,
+                status='Outstanding'
+            ).aggregate(t=Count('contract_id'))['t']
+
+            cursor = get_cursor()
+            cursor.execute(queries.courier_contracts)
+            courier_ids = [c[0] for c in cursor.fetchall()]
+            cursor.close()
+            data['nav_courier_contracts'] = Contract.objects.filter(
+                contract_id__in=courier_ids,
+                status__in=['Outstanding','InProgress']
+            ).aggregate(t=Count('contract_id'))['t']
+
 
             # Cache data
             cache_data = (data['nav_contracts'], data['nav_industryjobs'], data['nav_mail'])
@@ -200,3 +223,10 @@ def q_reduce_or(a, b):
 
 def q_reduce_and(a, b):
     return a & b
+
+
+def get_cursor(db='default'):
+    """
+    Get a database connection cursor for db.
+    """
+    return connections[db].cursor()

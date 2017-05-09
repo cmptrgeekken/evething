@@ -249,15 +249,21 @@ buyback_contracts = """
 SELECT DISTINCT c.contract_id	
 FROM thing_contract c
 WHERE c.assignee_id=c.corporation_id
-AND c.type = 'Item Exchange'
-AND c.issuer_corp_id != c.corporation_id
-AND EXISTS
-	(SELECT 1 
-	 FROM thing_contractitem ci 
-		INNER JOIN thing_pricewatch pw ON ci.item_id=pw.item_id 
-	 WHERE ci.contract_id=c.contract_id AND ci.included=1 AND pw.active=1)
+    AND c.type = 'Item Exchange'
+    AND c.issuer_corp_id != c.corporation_id
+AND EXISTS (SELECT 1 FROM thing_contractitem ci INNER JOIN thing_pricewatch pw ON ci.item_id=pw.item_id WHERE ci.contract_id=c.contract_id AND ci.included=1 AND pw.active=1)
 """
 
+buyback_item_summary = """
+SELECT i1.name, SUM(ci1.quantity)
+FROM thing_contract c1
+    INNER JOIN thing_contractitem ci1 ON c1.contract_id=ci1.contract_id
+    INNER JOIN thing_item i1 ON ci1.item_id=i1.id
+WHERE
+    c1.contract_id IN (%s)
+    AND EXISTS (SELECT 1 FROM thing_pricewatch pw WHERE pw.item_id=ci1.item_id AND pw.active=1)
+GROUP BY i1.name
+""" % buyback_contracts
 
 fuelblock_purchase_stats = """
 SELECT i.name,
@@ -289,6 +295,27 @@ WHERE c.type = 'Item Exchange'
     AND i.name LIKE '%Fuel Block'
     AND ((c.corporation_id=c.issuer_corp_id AND ci.included=1)
           OR (c.assignee_id=c.corporation_id AND ci.included=0))
+"""
+
+fuelblock_stock = """
+SELECT i.name, a.quantity, s.name 
+FROM thing_asset a 
+    INNER JOIN thing_item i ON a.item_id=i.id 
+    INNER JOIN thing_station s ON s.id = a.station_id 
+WHERE i.name like '%Fuel Block' 
+GROUP BY by i.name,s.name
+ORDER BY s.name,i.name
+"""
+
+fuelblock_component_stock = """
+SELECT i.name, a.quantity, a.inv_flag_id, s.name
+FROM thing_asset a
+    INNER JOIN thing_item i ON a.item_id=i.id
+    INNER JOIN thing_station s ON s.id = a.station_id
+WHERE i.id IN (SELECT item_id FROM thing_pricewatch WHERE price_group != '')
+    AND inv_flag_id=117
+GROUP BY i.name,s.name
+ORDER BY s.name,i.name
 """
 
 fuelblock_pending_stats = """
