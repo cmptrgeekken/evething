@@ -205,10 +205,16 @@ def fuel(request):
         if delivery_system_name != 'B-9C24':
             ttl_reward += ceil(ttl_blocks / 25000) * 5000000
 
+    min_date = datetime.datetime.utcnow() + datetime.timedelta(days=3)
+    max_date = datetime.datetime.utcnow() + datetime.timedelta(days=28)
+
+
     out = render_page(
         'pgsus/fuel.html',
         dict(
             all_systems=all_systems,
+            min_date=min_date,
+            max_date=max_date,
             main_char_name=main_char_name,
             delivery_date=delivery_date,
             delivery_system_name=delivery_system_name,

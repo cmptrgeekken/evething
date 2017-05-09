@@ -42,6 +42,38 @@
                     </button>
                 </div>
             </div>
+            <div class="row">
+                <div class="col-md-12">
+                    <i>Please create a new <b>Item Exchange</b> contract in <b>{{ delivery_system_name }}</b> with the above details! You will need to ensure that you have at least one item in your destination citadel.</i>
+                    <button type="button"
+                            class="btn btn-primary btn-sm"
+                            data-toggle="modal"
+                            data-target="#fuelblock-contract-how"
+                            onclick="$('#fuelblock-contract-gif').attr('src', '');$('#fuelblock-contract-gif').attr('src', $('#fuelblock-contract-gif').data('src'))">
+                      How?
+                    </button>
+                </div>
+            </div>
+            <div class="modal fade" id="fuelblock-contract-how" tabindex="-1" role="dialog" aria-labelledby="fuelblock-contract-how-label" aria-hidden="true">
+              <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h3 class="modal-title" id="fuelblock-contract-how-label">Creating a Fuel Block Contract
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                      <span aria-hidden="true">&times;</span>
+                    </button>
+                    </h3>
+                  </div>
+                  <div class="modal-body">
+                    <div class="row">
+                      <div class="col-md-12">
+                          <img style="border:1px solid #000;" id="fuelblock-contract-gif" data-src="{{ STATIC_URL }}pgsus/img/fuelblock-contract-how.gif" src="#" width="660" height="312" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
             {% endif %}
             <h2>Fuel Block Purchasing</h2>
             <i>Pricing is the 5-day Jita average (Last Updated: {{ price_last_updated.strftime('%Y-%m-%d') }})</i>
@@ -71,7 +103,12 @@
                 <div class="form-group">
                     <label class="col-sm-3 col-form-label" for="delivery_date">Delivery Date:</label>
                     <div class="col-sm-1">
-                        <input type="date" name="delivery_date" id="delivery_date" value="{{delivery_date.strftime('%Y-%m-%d')}}" required="required"/>
+                        <input type="date"
+                               name="delivery_date"
+                               id="delivery_date"
+                               value="{{delivery_date.strftime('%Y-%m-%d')}}" required="required"
+                               min="{{min_date.strftime('%Y-%m-%d')}}"
+                               max="{{max_date.strftime('%Y-%m-%d')}}" />
                     </div>
                 </div>
                 <div class="form-group">
