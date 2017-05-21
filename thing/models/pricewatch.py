@@ -31,6 +31,8 @@ class PriceWatch(models.Model):
     id = models.IntegerField(primary_key=True)
     item = models.ForeignKey(Item, related_name='watch_item', null=True, blank=True)
     price_group = models.CharField(max_length=64, null=True)
+    price_type = models.CharField(max_length=8, default='5day')
+    price_pct = models.DecimalField(max_digits=18, decimal_places=2, default=1)
     active = models.BooleanField(default=False)
 
     class Meta:
