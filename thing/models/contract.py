@@ -56,11 +56,11 @@ class Contract(models.Model):
     date_completed = models.DateTimeField(blank=True, null=True)
     num_days = models.IntegerField()
 
-    price = models.DecimalField(max_digits=15, decimal_places=2)
-    reward = models.DecimalField(max_digits=15, decimal_places=2)
-    collateral = models.DecimalField(max_digits=15, decimal_places=2)
-    buyout = models.DecimalField(max_digits=15, decimal_places=2)
-    volume = models.DecimalField(max_digits=16, decimal_places=4)
+    price = models.DecimalField(max_digits=20, decimal_places=2)
+    reward = models.DecimalField(max_digits=20, decimal_places=2)
+    collateral = models.DecimalField(max_digits=20, decimal_places=2)
+    buyout = models.DecimalField(max_digits=20, decimal_places=2)
+    volume = models.DecimalField(max_digits=20, decimal_places=4)
 
     retrieved_items = models.BooleanField(default=False)
 
