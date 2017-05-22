@@ -134,7 +134,7 @@ def buyback(request):
                         buyback_qty[buyback_item.item_id] = 0
                     buyback_qty[buyback_item.item_id] += entry['quantity']
 
-                    total_reward += entry['quantity'] * buyback_item.item.get_history_avg()
+                    total_reward += entry['quantity'] * buyback_item.item.get_history_avg(pct=.95)
                     total_volume += entry['quantity'] * buyback_item.item.volume
                 else:
                     parse_results['bad_lines'].append(entry['name'])
@@ -346,8 +346,10 @@ def couriers(request):
 
     return out
 
+
 def get_cursor(db='default'):
     return connections[db].cursor()
+
 
 def dictfetchall(query):
     "Returns all rows from a cursor as a dict"

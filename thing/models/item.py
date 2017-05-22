@@ -62,7 +62,7 @@ class Item(models.Model):
     def __unicode__(self):
         return self.name
 
-    def get_history_avg(self, days=5, region_id=10000002, issued=None):
+    def get_history_avg(self, days=5, region_id=10000002, issued=None, pct=1.0):
         from thing.models.pricehistory import PriceHistory
 
         query = PriceHistory.objects.filter(
@@ -83,7 +83,7 @@ class Item(models.Model):
         if results['total_value'] is None:
             return 0
 
-        return round(results['total_value'] / results['total_volume'], 2)
+        return round(float(results['total_value'] / results['total_volume']) * pct, 2)
 
     def get_volume(self, days=7):
         iph_days = self.pricehistory_set.all()[:days]
