@@ -121,7 +121,7 @@ def item_contracts(request):
             contract.z_items += '<div>%s %s</div>' % (commas(contract_item.quantity), contract_item.item.name)
 
             if contract_item.item.name.endswith("Fuel Block") and not contract_item.included:
-                if contract.start_station.system.name != 'B-9C24':
+                if contract.start_station.system != None && contract.start_station.system.name != 'B-9C24':
                     contract.z_calculated_reward += ceil(float(contract_item.quantity) / 25000) * 5000000
 
         # Allow for 2% wiggle room
