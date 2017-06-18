@@ -15,6 +15,7 @@ from citadels import Citadels
 from contracts import Contracts
 from corporationsheet import CorporationSheet
 from industryjobs import IndustryJobs
+from industryjobscurrent import IndustryJobsCurrent
 from locations import Locations
 from mailinglists import MailingLists
 from mailbodies import MailBodies
