@@ -14,6 +14,7 @@ else
 fi
 
 if [ $local_ctime = false ] || [ $local_ctime -lt $remote_ctime ]; then
+    cd /home/kbeck/projects/thingenv/evething
     curl -sS $remote_file > $local_file
     bzip2 -dk -f $local_file
     source ../bin/activate
