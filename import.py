@@ -94,7 +94,11 @@ def time_func(text, f):
     print '=> %s:' % text,
     sys.stdout.flush()
 
-    added = f()
+    try:
+        added = f()
+    except:
+        added = 0
+        print '>> ERROR!'
 
     print '%d (%0.2fs)' % (added, time.time() - start)
 
@@ -114,6 +118,7 @@ class Importer:
         time_func('ItemCategory', self.import_itemcategory)
         time_func('ItemGroup', self.import_itemgroup)
         time_func('Item', self.import_item)
+        time_func('ItemMaterial', self.import_item_material)
         time_func('Implant', self.import_implant)
         time_func('Blueprint', self.import_blueprint)
         time_func('Skill', self.import_skill)
@@ -163,11 +168,9 @@ class Importer:
             if id:
                 bulk_data[id] = row[1:]
 
-        data_map = Constellation.objects.in_bulk(bulk_data.keys())
-
         new = []
         for id, data in bulk_data.items():
-            if id in data_map or not data[0] or not data[1]:
+            if not data[0] or not data[1]:
                 continue
 
             con = Constellation(
@@ -179,6 +182,7 @@ class Importer:
             added += 1
 
         if new:
+            Constellation.objects.all().delete()
             Constellation.objects.bulk_create(new)
 
         return added
@@ -195,11 +199,9 @@ class Importer:
             if id:
                 bulk_data[id] = row[1:]
 
-        data_map = System.objects.in_bulk(bulk_data.keys())
-
         new = []
         for id, data in bulk_data.items():
-            if id in data_map or not data[0] or not data[1]:
+            if not data[0] or not data[1]:
                 continue
 
             system = System(
@@ -211,6 +213,7 @@ class Importer:
             added += 1
 
         if new:
+            System.objects.all().delete()
             System.objects.bulk_create(new)
 
         return added
@@ -452,6 +455,33 @@ class Importer:
 
         if new:
             Item.objects.bulk_create(new)
+
+        return added
+
+    # -----------------------------------------------------------------------
+    def import_item_material(self):
+        self.cursor.execute("""
+            SELECT
+                invTypeMaterials.typeID,
+                invTypeMaterials.materialTypeID,
+                invTypeMaterials.quantity
+            FROM invTypeMaterials
+        """)
+
+        materials = []
+        added = 0
+
+        for row in self.cursor:
+            materials.append(ItemMaterial(
+                item_id=int(row[0]),
+                material_id=int(row[1]),
+                quantity=int(row[2])
+            ))
+
+            added += 1
+
+        ItemMaterial.objects.all().delete()
+        ItemMaterial.objects.bulk_create(materials)
 
         return added
 
