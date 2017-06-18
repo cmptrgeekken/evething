@@ -61,7 +61,7 @@ CORP_URLS = {
     APIKey.CORP_CONTRACTS_MASK: ('thing.contracts', '/corp/Contracts.xml.aspx', 'et_medium'),
     APIKey.CORP_CORPORATION_SHEET_MASK: ('thing.corporation_sheet', '/corp/CorporationSheet.xml.aspx', 'et_medium'),
     #  APIKey.CORP_INDUSTRY_JOBS_MASK: ('thing.industry_jobs', '/corp/IndustryJobsHistory.xml.aspx', 'et_medium'),
-    APIKey.CORP_INDUSTRY_JOBS_CURRENT_MASK: [('thing.industry_jobs_current', '/corp/IndustryJobs.xml.aspx', 'et_medium')],
+    APIKey.CORP_INDUSTRY_JOBS_CURRENT_MASK: ('thing.industry_jobs_current', '/corp/IndustryJobs.xml.aspx', 'et_medium'),
     APIKey.CORP_MARKET_ORDERS_MASK: ('thing.market_orders', '/corp/MarketOrders.xml.aspx', 'et_medium'),
     APIKey.CORP_WALLET_JOURNAL_MASK: ('thing.wallet_journal', '/corp/WalletJournal.xml.aspx', 'et_medium'),
     APIKey.CORP_WALLET_TRANSACTIONS_MASK: ('thing.wallet_transactions', '/corp/WalletTransactions.xml.aspx', 'et_medium'),
