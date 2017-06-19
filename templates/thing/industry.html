@@ -163,6 +163,7 @@
                   <div class="col-sm-6">
                     <table class="table table-striped table-bordered table-condensed">
                       <tr>
+                        <th class="r">Group</th>
                         <th class="r">Char</th>
                         <th colspan="5" class="c">
                           Skills
@@ -175,6 +176,7 @@
                         </th>
                       </tr>
                       <tr class="c">
+                        <th></th>
                         <th></th>
 
                         <th><small><abbr title="Industry">I</abbr></small></th>
@@ -198,6 +200,11 @@
                       <tbody>
                       {% for char in industry_info.usage %}
                       <tr class="c">
+                        <td class="r">
+                          {% if char.show_group %}
+                          <b>{{ char.group_name }}</b>
+                          {% endif %}
+                        </td>
                         <td class="r">{{ char.name }}</td>
 
                         {% autoescape off %}
