@@ -447,7 +447,7 @@ WHERE contract_id IN (SELECT DISTINCT c.contract_id
 """
 
 industry_job_slots = """
-select name, 
+select name, group_name,
 	research_slots_active,research_slots_max-research_slots_active AS research_slots_avail,research_slots_max,research_slots_deliverable,
 	mfg_slots_active,mfg_slots_max-mfg_slots_active AS mfg_slots_avail, mfg_slots_max,mfg_slots_deliverable,
 	industry_level,adv_industry_level,me_time_level,te_time_level,copy_time_level,
@@ -459,6 +459,7 @@ select name,
 	(1+adv_industry_level*.03)*(1+copy_time_level*.05)*(1+copy_time_implant)-1 AS copy_time_bonus 
 FROM
 (SELECT c.name,
+		(select ak.group_name from thing_apikey_characters akc inner join thing_apikey ak ON  akc.apikey_id=ak.id WHERE akc.character_id=c.id) AS group_name,
 	   COALESCE(1+lo.level+alo.level,0) AS research_slots_max,
 	   (SELECT COUNT(*) FROM thing_industryjob ij WHERE ij.installer_id=c.id AND ij.activity IN(3,4,5,8) AND ij.status=1) AS research_slots_active,
 	   (SELECT COUNT(*) FROM thing_industryjob ij WHERE ij.installer_id=c.id AND ij.activity IN(3,4,5,8) AND ij.status=1 AND ij.end_date <= DATETIME('NOW')) AS research_slots_deliverable,
@@ -499,5 +500,5 @@ FROM
 		LEFT JOIN thing_characterdetails_implants imprs ON imprs.characterdetails_id=c.id AND imprs.implant_id in (27180, 27177, 27179) -- Research
 		LEFT JOIN thing_characterdetails_implants impsc ON impsc.characterdetails_id=c.id AND impsc.implant_id in (27185, 27178, 27184) -- Science
 	WHERE lo.level > 0 OR mp.level > 0
-    ORDER BY name) details
+    ORDER BY name) details;
 """

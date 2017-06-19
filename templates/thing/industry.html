@@ -51,17 +51,11 @@
                         <td>
                           {% if char.mfg_slots_deliverable > 0 %}
                           <span class="text-success"><b>{{ char.mfg_slots_deliverable }}</b></span>
-                          {% elif char.mfg_slots_max > 0 %}
-                          0
                           {% endif %}
                         </td>
                         <td>
                           {% if char.mfg_slots_avail > 0 %}
                           <span class="text-success"><b>{{ char.mfg_slots_avail }}</b></span>
-                          {% else %}
-                            {% if char.mfg_slots_max > 0 %}
-                              {{ char.mfg_slots_avail }}
-                            {% endif %}
                           {% endif %}
                         </td>
                         <td>
@@ -72,15 +66,11 @@
                         <td>
                           {% if char.research_slots_deliverable > 0 %}
                           <span class="text-success"><b>{{ char.research_slots_deliverable }}</b></span>
-                          {% elif char.research_slots_max > 0 %}
-                          0
                           {% endif %}
                         </td>
                         <td>
                           {% if char.research_slots_avail > 0 %}
                             <span class="text-success"><b>{{ char.research_slots_avail }}</b></span>
-                            {% else %}
-                            {{ char.research_slots_avail }}
                           {% endif %}
                         </td>
                         <td>
