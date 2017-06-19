@@ -93,8 +93,6 @@ class AssetList(APITask):
                     is_citadel=True,
                 )
 
-                self.log_warn('Unknown Station: %d', location_id)
-
                 station.save()
 
                 station_map = Station.objects.select_related('system').in_bulk(data['locations'])
