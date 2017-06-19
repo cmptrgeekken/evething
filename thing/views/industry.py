@@ -55,13 +55,38 @@ def industry(request):
         'usage': current_job_stats,
     }
 
+    group_stats = {}
+
     for row in current_job_stats:
+        grp = row['group_name']
         stats['mfg_avail'] += row['mfg_slots_avail']
         stats['mfg_max'] += row['mfg_slots_max']
         stats['mfg_deliver'] += row['mfg_slots_deliverable']
         stats['research_avail'] += row['research_slots_avail']
         stats['research_deliver'] += row['research_slots_deliverable']
         stats['research_max'] += row['research_slots_max']
+
+        if grp not in group_stats:
+            row['show_group'] = True
+            group_stats[grp] = {
+                'mfg_avail': 0,
+                'mfg_max': 0,
+                'mfg_deliver': 0,
+                'research_avail': 0,
+                'research_deliver': 0,
+                'research_max': 0,
+            }
+
+        group_stats[grp]['mfg_avail'] += row['mfg_slots_avail']
+        group_stats[grp]['mfg_max'] += row['mfg_slots_max']
+        group_stats[grp]['mfg_deliver'] += row['mfg_slots_deliverable']
+        group_stats[grp]['research_avail'] += row['research_slots_avail']
+        group_stats[grp]['research_deliver'] += row['research_slots_deliverable']
+        group_stats[grp]['research_max'] += row['research_slots_max']
+
+
+
+
 
     # Fetch valid characters/corporations for this user
     characters = Character.objects.filter(
@@ -128,6 +153,7 @@ def industry(request):
             'incomplete': incomplete,
             'complete': complete,
             'industry_info': stats,
+            'group_stats': group_stats,
         },
         request,
         character_ids,

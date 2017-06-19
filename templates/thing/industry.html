@@ -24,7 +24,9 @@
                 <div class="tab-pane active" id="tab_job_stats">
                   <div class="col-sm-4">
                     <table class="table table-striped table-bordered table-condensed">
+                      <thead>
                       <tr>
+                        <th>Group</th>
                         <th class="r">Char</th>
                         <th colspan="3" class="c">
                           Manufacturing
@@ -35,6 +37,7 @@
                       </tr>
                       <tr class="c">
                         <th></th>
+                        <th></th>
                         <th><small><abbr title="Deliverable">D</abbr></small></th>
                         <th><small><abbr title="Available">A</abbr></small></th>
                         <th><small><abbr title="Max">M</abbr></small></th>
@@ -44,9 +47,48 @@
                         <th><small><abbr title="Max">M</abbr></small></th>
                       </tr>
 
+                      {% for group in group_stats %}
+                        <tr class="c">
+                          <th></th>
+                          <th class="r">{{ group }}</th>
+                          <th>
+                            {% if group_stats[group].mfg_deliver > 0 %}
+                              <span class="text-success">{{ group_stats[group].mfg_deliver }}</span>
+                            {% endif %}
+                          </th>
+                          <th>
+                            {% if group_stats[group].mfg_avail > 0 %}
+                              <span class="text-success">{{ group_stats[group].mfg_avail }}</span>
+                            {% else %}
+                              {{ group_stats[group].mfg_avail }}
+                            {% endif %}
+                          </th>
+                          <th>{{ group_stats[group].mfg_max }}</th>
+                          <th>
+                            {% if group_stats[group].research_deliver > 0 %}
+                              <span class="text-success">{{ group_stats[group].research_deliver }}</span>
+                            {% endif %}
+                          </th>
+                          <th>
+                            {% if group_stats[group].research_avail > 0 %}
+                              <span class="text-success">{{ group_stats[group].research_avail }}</span>
+                            {% else %}
+                              {{ group_stats[group].research_avail }}
+                            {% endif %}
+                          </th>
+                          <th>{{ group_stats[group].research_max }}</th>
+                        </tr>
+                        {% endfor %}
+                      </thead>
+
                       <tbody>
                       {% for char in industry_info.usage %}
                       <tr class="c">
+                        <td class="r">
+                          {% if char.show_group %}
+                          <b>{{ char.group_name }}</b>
+                          {% endif %}
+                        </td>
                         <td class="r">{{ char.name }}</td>
                         <td>
                           {% if char.mfg_slots_deliverable > 0 %}
@@ -82,7 +124,9 @@
                       {% endfor %}
                       </tbody>
                       <tfoot>
+
                         <tr class="c">
+                          <th></th>
                           <th class="r">Total</th>
                           <th>
                             {% if industry_info.mfg_deliver > 0 %}

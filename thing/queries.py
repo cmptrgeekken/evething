@@ -500,5 +500,5 @@ FROM
 		LEFT JOIN thing_characterdetails_implants imprs ON imprs.characterdetails_id=c.id AND imprs.implant_id in (27180, 27177, 27179) -- Research
 		LEFT JOIN thing_characterdetails_implants impsc ON impsc.characterdetails_id=c.id AND impsc.implant_id in (27185, 27178, 27184) -- Science
 	WHERE lo.level > 0 OR mp.level > 0
-    ORDER BY name) details;
+    ORDER BY group_name, name) details;
 """
