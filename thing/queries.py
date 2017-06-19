@@ -465,17 +465,17 @@ FROM
 	   COALESCE(1+mp.level+amp.level,0) AS mfg_slots_max,
 	   (SELECT COUNT(*) FROM thing_industryjob ij WHERE ij.installer_id=c.id AND ij.activity=1 AND ij.status=1) AS mfg_slots_active,
 	   (SELECT COUNT(*) FROM thing_industryjob ij WHERE ij.installer_id=c.id AND ij.activity=1 AND ij.status=1 AND ij.end_date <= DATETIME('NOW')) AS mfg_slots_deliverable,
-	   ind.level AS industry_level, -- *.04
-	   ai.level AS adv_industry_level, -- *.03
-	   my.level AS me_time_level, -- *.05
-	   rs.level AS te_time_level, -- *.05
-	   sc.level AS copy_time_level, -- *.05
+	   COALESCE(ind.level,0) AS industry_level, -- *.04
+	   COALESCE(ai.level,0) AS adv_industry_level, -- *.03
+	   COALESCE(my.level,0) AS me_time_level, -- *.05
+	   COALESCE(rs.level,0) AS te_time_level, -- *.05
+	   COALESCE(sc.level,0) AS copy_time_level, -- *.05
 	   --((1 + ind.level * .04)*(1 + ai.level*.03)) AS mfg_time_bonus,
 	   -- ((1 + ai.level*.03)*(1 + my.level*.05)) AS me_time_bonus,
 	   --((1 + ai.level*.03)*(1 + rs.level*.05)) AS te_time_bonus,
 	   --((1 + ai.level*.03)*(1 + sc.level*.05)) AS copy_time_bonus,
-	   sn.level * 5 AS max_research_jumps,
-	   scm.level * 5 AS max_mfg_jumps,
+	   COALESCE(sn.level,0) * 5 AS max_research_jumps,
+	   COALESCE(scm.level,0) * 5 AS max_mfg_jumps,
 	   COALESCE((SELECT CAST(SUBSTR(name, -2) AS INT)*.01 FROM thing_item WHERE id=impi.implant_id),0) AS mfg_time_implant,
 	   COALESCE((SELECT CAST(SUBSTR(name, -2) AS INT)*.01 FROM thing_item WHERE id=impm.implant_id),0) AS me_time_implant,
 	   COALESCE((SELECT CAST(SUBSTR(name, -2) AS INT)*.01 FROM thing_item WHERE id=impr.implant_id),0) AS reprocessing_implant,
