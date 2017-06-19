@@ -177,6 +177,25 @@ BILLION = 10 ** 9
 
 
 @register.filter
+def lvl(value, best=5, better=4, append=""):
+    value_fmt = "<b>%s</b>"
+    if value >= best:
+        cls = 'text-success'
+    elif value >= better:
+        cls = 'text-info'
+    else:
+        cls = 'text-danger'
+        value_fmt = "%s"
+
+    return '<span class="%s">%s%s</span>' % (cls, value_fmt % value, append)
+
+
+@register.filter
+def implant_lvl(value):
+    return lvl(value, 5, 3, "%")
+
+
+@register.filter
 def humanize(value):
     if value is None or value == '':
         return '0'

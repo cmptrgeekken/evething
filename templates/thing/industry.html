@@ -13,106 +13,184 @@
           <h2>Industry Jobs</h2>
 
           <div class="row">
-            <div class="col-sm-4">
-              <table class="table table-striped table-bordered table-condensed">
-                <tr>
-                  <th class="r">Char</th>
-                  <th colspan="3" class="c">
-                    Manufacturing
-                  </th>
-                  <th colspan="3" class="c">
-                    Research
-                  </th>
-                </tr>
-                <tr class="c">
-                  <th></th>
-                  <th><small><abbr title="Deliverable">D</abbr></small></th>
-                  <th><small><abbr title="Available">A</abbr></small></th>
-                  <th><small><abbr title="Max">M</abbr></small></th>
-                  <th><small><abbr title="Deliverable">D</abbr></small></th>
-                  <th><small><abbr title="Available">A</abbr></small></th>
-                  <th><small><abbr title="Max">M</abbr></small></th>
-                </tr>
+            <div class="col-sm-12">
+              <ul class="nav nav-tabs">
+                <li class="active"><a href="#tab_job_stats" data-toggle="tab">Stats</a></li>
+                <li><a href="#tab_skills" data-toggle="tab">Skills</a></li>
+              </ul>
 
-                <tbody>
-                {% for char in industry_info.usage %}
-                <tr class="c">
-                  <td class="r">{{ char.name }}</td>
-                  <td>
-                    {% if char.mfg_slots_deliverable > 0 %}
-                    <span class="text-success"><b>{{ char.mfg_slots_deliverable }}</b></span>
-                    {% elif char.mfg_slots_max > 0 %}
-                    0
-                    {% endif %}
-                  </td>
-                  <td>
-                    {% if char.mfg_slots_avail > 0 %}
-                    <span class="text-success"><b>{{ char.mfg_slots_avail }}</b></span>
-                    {% else %}
-                      {% if char.mfg_slots_max > 0 %}
-                        {{ char.mfg_slots_avail }}
-                      {% endif %}
-                    {% endif %}
-                  </td>
-                  <td>
-                    {% if char.mfg_slots_max > 0 %}
-                     {{ char.mfg_slots_max }}
-                    {% endif %}
-                  </td>
-                  <td>
-                    {% if char.research_slots_deliverable > 0 %}
-                    <span class="text-success"><b>{{ char.research_slots_deliverable }}</b></span>
-                    {% elif char.research_slots_max > 0 %}
-                    0
-                    {% endif %}
-                  </td>
-                  <td>
-                    {% if char.research_slots_avail > 0 %}
-                      <span class="text-success"><b>{{ char.research_slots_avail }}</b></span>
-                      {% else %}
-                      {{ char.research_slots_avail }}
-                    {% endif %}
-                  </td>
-                  <td>
-                    {% if char.research_slots_avail > 0 %}
-                    {{ char.research_slots_max }}
-                    {% endif %}
-                  </td>
-                </tr>
-                {% endfor %}
-                </tbody>
-                <tfoot>
-                  <tr class="c">
-                    <th class="r">Total</th>
-                    <th>
-                      {% if industry_info.mfg_deliver > 0 %}
-                        <span class="text-success">{{ industry_info.mfg_deliver }}</span>
-                      {% endif %}
-                    </th>
-                    <th>
-                      {% if industry_info.mfg_avail > 0 %}
-                        <span class="text-success">{{ industry_info.mfg_avail }}</span>
-                      {% else %}
-                        {{ industry_info.mfg_avail }}
-                      {% endif %}
-                    </th>
-                    <th>{{ industry_info.mfg_max }}</th>
-                    <th>
-                      {% if industry_info.research_deliver > 0 %}
-                        <span class="text-success">{{ industry_info.research_deliver }}</span>
-                      {% endif %}
-                    </th>
-                    <th>
-                      {% if industry_info.research_avail > 0 %}
-                        <span class="text-success">{{ industry_info.research_avail }}</span>
-                      {% else %}
-                        {{ industry_info.research_avail }}
-                      {% endif %}
-                    </th>
-                    <th>{{ industry_info.research_max }}</th>
-                  </tr>
-                </tfoot>
-              </table>
+
+              <div class="tab-content">
+                <div class="tab-pane active" id="tab_job_stats">
+                  <div class="col-sm-4">
+                    <table class="table table-striped table-bordered table-condensed">
+                      <tr>
+                        <th class="r">Char</th>
+                        <th colspan="3" class="c">
+                          Manufacturing
+                        </th>
+                        <th colspan="3" class="c">
+                          Research
+                        </th>
+                      </tr>
+                      <tr class="c">
+                        <th></th>
+                        <th><small><abbr title="Deliverable">D</abbr></small></th>
+                        <th><small><abbr title="Available">A</abbr></small></th>
+                        <th><small><abbr title="Max">M</abbr></small></th>
+
+                        <th><small><abbr title="Deliverable">D</abbr></small></th>
+                        <th><small><abbr title="Available">A</abbr></small></th>
+                        <th><small><abbr title="Max">M</abbr></small></th>
+                      </tr>
+
+                      <tbody>
+                      {% for char in industry_info.usage %}
+                      <tr class="c">
+                        <td class="r">{{ char.name }}</td>
+                        <td>
+                          {% if char.mfg_slots_deliverable > 0 %}
+                          <span class="text-success"><b>{{ char.mfg_slots_deliverable }}</b></span>
+                          {% elif char.mfg_slots_max > 0 %}
+                          0
+                          {% endif %}
+                        </td>
+                        <td>
+                          {% if char.mfg_slots_avail > 0 %}
+                          <span class="text-success"><b>{{ char.mfg_slots_avail }}</b></span>
+                          {% else %}
+                            {% if char.mfg_slots_max > 0 %}
+                              {{ char.mfg_slots_avail }}
+                            {% endif %}
+                          {% endif %}
+                        </td>
+                        <td>
+                          {% if char.mfg_slots_max > 0 %}
+                           {{ char.mfg_slots_max }}
+                          {% endif %}
+                        </td>
+                        <td>
+                          {% if char.research_slots_deliverable > 0 %}
+                          <span class="text-success"><b>{{ char.research_slots_deliverable }}</b></span>
+                          {% elif char.research_slots_max > 0 %}
+                          0
+                          {% endif %}
+                        </td>
+                        <td>
+                          {% if char.research_slots_avail > 0 %}
+                            <span class="text-success"><b>{{ char.research_slots_avail }}</b></span>
+                            {% else %}
+                            {{ char.research_slots_avail }}
+                          {% endif %}
+                        </td>
+                        <td>
+                          {% if char.research_slots_avail > 0 %}
+                          {{ char.research_slots_max }}
+                          {% endif %}
+                        </td>
+                      </tr>
+                      {% endfor %}
+                      </tbody>
+                      <tfoot>
+                        <tr class="c">
+                          <th class="r">Total</th>
+                          <th>
+                            {% if industry_info.mfg_deliver > 0 %}
+                              <span class="text-success">{{ industry_info.mfg_deliver }}</span>
+                            {% endif %}
+                          </th>
+                          <th>
+                            {% if industry_info.mfg_avail > 0 %}
+                              <span class="text-success">{{ industry_info.mfg_avail }}</span>
+                            {% else %}
+                              {{ industry_info.mfg_avail }}
+                            {% endif %}
+                          </th>
+                          <th>{{ industry_info.mfg_max }}</th>
+                          <th>
+                            {% if industry_info.research_deliver > 0 %}
+                              <span class="text-success">{{ industry_info.research_deliver }}</span>
+                            {% endif %}
+                          </th>
+                          <th>
+                            {% if industry_info.research_avail > 0 %}
+                              <span class="text-success">{{ industry_info.research_avail }}</span>
+                            {% else %}
+                              {{ industry_info.research_avail }}
+                            {% endif %}
+                          </th>
+                          <th>{{ industry_info.research_max }}</th>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                </div>
+                <div class="tab-pane" id="tab_skills">
+                  <div class="col-sm-6">
+                    <table class="table table-striped table-bordered table-condensed">
+                      <tr>
+                        <th class="r">Char</th>
+                        <th colspan="5" class="c">
+                          Skills
+                        </th>
+                        <th colspan="5" class="c">
+                          Implants
+                        </th>
+                        <th colspan="5" class="c">
+                          Bonuses
+                        </th>
+                      </tr>
+                      <tr class="c">
+                        <th></th>
+
+                        <th><small><abbr title="Industry">I</abbr></small></th>
+                        <th><small><abbr title="Advanced Industry">AI</abbr></small></th>
+                        <th><small><abbr title="Metallurgy (ME Speed)">MY</abbr></small></th>
+                        <th><small><abbr title="Research (TE Speed)">RE</abbr></small></th>
+                        <th><small><abbr title="Science (Copy Speed)">SC</abbr></small></th>
+
+                        <th><small><abbr title="Manufacturing Implant">MXI</abbr></small></th>
+                        <th><small><abbr title="ME Implant">MEI</abbr></small></th>
+                        <th><small><abbr title="TE Implant">TEI</abbr></small></th>
+                        <th><small><abbr title="Copy Implant">SCI</abbr></small></th>
+                        <th><small><abbr title="Reprocessing Implant">RPI</abbr></small></th>
+
+                        <th><small><abbr title="Mfg Bonus">MXB</abbr></small></th>
+                        <th><small><abbr title="ME Bonus">MEB</abbr></small></th>
+                        <th><small><abbr title="TE Bonus">TEB</abbr></small></th>
+                        <th><small><abbr title="Copy Bonus">SCB</abbr></small></th>
+                      </tr>
+
+                      <tbody>
+                      {% for char in industry_info.usage %}
+                      <tr class="c">
+                        <td class="r">{{ char.name }}</td>
+
+                        {% autoescape off %}
+                        <td>{{ char.industry_level|lvl }}</td>
+                        <td>{{ char.adv_industry_level|lvl }}</td>
+                        <td>{{ char.me_time_level|lvl }}</td>
+                        <td>{{ char.te_time_level|lvl }}</td>
+                        <td>{{ char.copy_time_level|lvl }}</td>
+
+                        <td>{{ (char.mfg_time_implant * 100)|int|implant_lvl }}</td>
+                        <td>{{ (char.me_time_implant * 100)|int|implant_lvl }}</td>
+                        <td>{{ (char.te_time_implant * 100)|int|implant_lvl }}</td>
+                        <td>{{ (char.copy_time_implant * 100)|int|implant_lvl }}</td>
+                        <td>{{ (char.reprocessing_implant * 100)|int|implant_lvl }}</td>
+                        {% endautoescape %}
+
+                        <td><small>{{ (char.mfg_time_bonus * 100)|int }}%</small></td>
+                        <td><small>{{ (char.me_time_bonus * 100)|int }}%</small></td>
+                        <td><small>{{ (char.te_time_bonus * 100)|int }}%</small></td>
+                        <td><small>{{ (char.copy_time_bonus * 100)|int }}%</small></td>
+                      </tr>
+                      {% endfor %}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 

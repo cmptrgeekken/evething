@@ -453,10 +453,10 @@ select name,
 	industry_level,adv_industry_level,me_time_level,te_time_level,copy_time_level,
 	mfg_time_implant,me_time_implant,te_time_implant,copy_time_implant,reprocessing_implant,
 	max_research_jumps, max_mfg_jumps,
-	(1+industry_level*.04)*(1+adv_industry_level*.03)*(1+mfg_time_implant) AS mfg_time_bonus,
-	(1+adv_industry_level*.03)*(1+me_time_level*.05)*(1+me_time_implant) AS me_time_bonus,
-	(1+adv_industry_level*.03)*(1+te_time_level*.05)*(1+te_time_implant) AS te_time_bonus,
-	(1+adv_industry_level*.03)*(1+copy_time_level*.05)*(1+copy_time_implant) AS copy_time_bonus 
+	(1+industry_level*.04)*(1+adv_industry_level*.03)*(1+mfg_time_implant)-1 AS mfg_time_bonus,
+	(1+adv_industry_level*.03)*(1+me_time_level*.05)*(1+me_time_implant)-1 AS me_time_bonus,
+	(1+adv_industry_level*.03)*(1+te_time_level*.05)*(1+te_time_implant)-1 AS te_time_bonus,
+	(1+adv_industry_level*.03)*(1+copy_time_level*.05)*(1+copy_time_implant)-1 AS copy_time_bonus 
 FROM
 (SELECT c.name,
 	   COALESCE(1+lo.level+alo.level,0) AS research_slots_max,
