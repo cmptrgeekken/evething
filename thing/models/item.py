@@ -62,6 +62,9 @@ class Item(models.Model):
     def __unicode__(self):
         return self.name
 
+    def icon(self, w=32):
+        return "https://imageserver.eveonline.com/InventoryType/%d_%d.png" % (self.id, w)
+
     def get_history_avg(self, days=5, region_id=10000002, issued=None, pct=1.0):
         from thing.models.pricehistory import PriceHistory
 

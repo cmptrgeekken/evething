@@ -24,31 +24,19 @@
                 <table class="table table-striped table-bordered table-condensed" id="incomplete-table">
                   <thead>
                     <tr class="c">
-                      <th>Job ID</th>
-                      <th>Source</th>
-                      <th>Installer</th>
-                      <th>Location</th>
                       <th>Type</th>
-                      <th>Blueprint</th>
-                      <th>Runs</th>
-                      <th>Start Time</th>
-                      <th>End Time</th>
-                      <th>Ready</th>
+                      <th>Char</th>
+                      <th>Item</th>
+                      <th>Location</th>
+                      <th>Start</th>
+                      <th>End</th>
+                      <th>ETA</th>
                     </tr>
                   </thead>
                   <tbody>
                     {% for job in incomplete -%}
                     <tr>
-                      <td class="industry-jobid">{{ job.job_id }}</td>
-                      <td>
-                        {% if job.corporation -%}
-                        {{ icons.corporation() }}
-                        [<span class="tip" rel="tooltip" title="{{ job.corporation.name }}">{{ job.corporation.ticker }}</span>]
-                        {%- else -%}
-                        {{ icons.player() }}
-                        {{ job.character.name }}
-                        {%- endif %}
-                      </td>
+                      <td>{{ job.get_activity_display() }}</td>
                       <td>
                         {% if job.z_installer -%}
                         {{ icons.player(job.z_installer_mine) }}
@@ -57,6 +45,7 @@
                         Unknown installerID: {{ job.installer_id }}
                         {%- endif %}
                       </td>
+                      <td><img src="{{ job.product.icon(32) }}" width="32" height="32" /> {{ job.runs|commas }} {{ job.product }}</td>
                       <td>
                         {% if job.z_station -%}
                         <span class="tip" rel="tooltip" title="{{ job.z_station.name }}">{{ job.z_station.short_name or job.z_station.name }}</span>
@@ -64,13 +53,15 @@
                         {{ job.system.name }}
                         {%- endif %}
                       </td>
-                      <td>{{ job.get_activity_display() }}</td>
-                      <td>{{ job.blueprint }}</td>
-                      <td class="industry-runs">{{ job.runs|commas }}</td>
                       <td class="journal-date">{{ job.start_date }}</td>
                       <td class="journal-date">{{ job.end_date }}</td>
-                      <td class="industry-ready">
+                      <td>
+                        {% if not job.z_ready %}
+                        {{ job.z_datediff|duration }}
+                        {% else %}
                         {{ icons.success_fail(job.z_ready) }}
+                        Ready
+                        {% endif %}
                       </td>
                     </tr>
                     {%- else %}

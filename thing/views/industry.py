@@ -81,6 +81,8 @@ def industry(request):
         ij.z_installer = char_map.get(ij.installer_id)
         ij.z_station = station_map.get(ij.output_location_id)
 
+        ij.z_datediff = (ij.end_date - utcnow).total_seconds()
+
         if ij.status == 1:
             incomplete.append(ij)
         else:
