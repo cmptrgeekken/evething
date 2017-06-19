@@ -35,6 +35,34 @@ def industry(request):
     """Industry jobs list"""
     tt = TimerThing('industry')
 
+    cursor = get_cursor()
+    cursor.execute(queries.industry_job_slots)
+    desc = cursor.description
+    current_job_stats = [
+            dict(zip([col[0] for col in desc], row))
+            for row in cursor.fetchall()
+    ]
+
+    cursor.close()
+
+    stats = {
+        'mfg_avail': 0,
+        'mfg_deliver': 0,
+        'mfg_max': 0,
+        'research_avail': 0,
+        'research_deliver': 0,
+        'research_max': 0,
+        'usage': current_job_stats,
+    }
+
+    for row in current_job_stats:
+        stats['mfg_avail'] += row['mfg_slots_avail']
+        stats['mfg_max'] += row['mfg_slots_max']
+        stats['mfg_deliver'] += row['mfg_slots_deliverable']
+        stats['research_avail'] += row['research_slots_avail']
+        stats['research_deliver'] += row['research_slots_deliverable']
+        stats['research_max'] += row['research_slots_max']
+
     # Fetch valid characters/corporations for this user
     characters = Character.objects.filter(
         apikeys__user=request.user,
@@ -99,6 +127,7 @@ def industry(request):
         {
             'incomplete': incomplete,
             'complete': complete,
+            'industry_info': stats,
         },
         request,
         character_ids,

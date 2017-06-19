@@ -238,6 +238,19 @@ WHERE c.type = 'Item Exchange'
           OR (c.assignee_id=c.corporation_id AND ci.included=0))
 """
 
+fuelblock_monthly_purchase_summary = """
+SELECT strftime('%m-%Y', c.date_completed) AS month, SUM(ci.quantity) AS qty
+FROM thing_contract c 
+    INNER JOIN thing_contractitem ci ON c.contract_id=ci.contract_id
+    INNER JOIN thing_item i ON ci.item_id=i.id 
+WHERE c.type = 'Item Exchange' 
+    AND i.name LIKE '%Fuel Block'
+    AND ((c.corporation_id=c.issuer_corp_id AND ci.included=1)
+          OR (c.assignee_id=c.corporation_id AND ci.included=0))
+    AND c.date_completed IS NOT NULL
+  GROUP BY strftime('%m-%Y', c.date_completed)
+"""
+
 courier_contracts = """
 SELECT DISTINCT c.contract_id
 FROM thing_contract c
@@ -246,12 +259,12 @@ AND c.type = 'Courier'
 """
 
 buyback_contracts = """
-SELECT DISTINCT c.contract_id	
-FROM thing_contract c
-WHERE c.assignee_id=c.corporation_id
-    AND c.type = 'Item Exchange'
-    AND c.issuer_corp_id != c.corporation_id
-AND EXISTS (SELECT 1 FROM thing_contractitem ci INNER JOIN thing_pricewatch pw ON ci.item_id=pw.item_id WHERE ci.contract_id=c.contract_id AND ci.included=1 AND pw.active=1)
+    SELECT DISTINCT c.contract_id	
+    FROM thing_contract c
+    WHERE c.assignee_id=c.corporation_id
+        AND c.type = 'Item Exchange'
+        AND c.issuer_corp_id != c.corporation_id
+    AND EXISTS (SELECT 1 FROM thing_contractitem ci INNER JOIN thing_pricewatch pw ON ci.item_id=pw.item_id WHERE ci.contract_id=c.contract_id AND ci.included=1 AND pw.active=1)
 """
 
 buyback_item_summary = """
@@ -407,4 +420,84 @@ AND EXISTS
 	 FROM thing_contractitem ci 
 		INNER JOIN thing_pricewatch pw ON ci.item_id=pw.item_id 
 	 WHERE ci.contract_id=c.contract_id AND ci.included=1 AND pw.active=1)
+"""
+
+
+summary_shipping_costs = """
+SELECT MIN(date_issued),SUM(reward),SUM(collateral),SUM(volume),ch.name 
+FROM thing_contract c 
+    INNER JOIN thing_station s ON s.id=c.end_station_id
+    INNER JOIN thing_character ch ON c.assignee_id=ch.id 
+WHERE c.issuer_corp_id=c.corporation_id 
+    AND type='Courier' 
+    AND s.name like 'B-9C24 -%' 
+GROUP BY ch.name
+"""
+
+summary_buyback_purchases = """
+SELECT contract_id 
+FROM thing_contract 
+WHERE contract_id IN (SELECT DISTINCT c.contract_id
+   FROM thing_contract c
+   WHERE c.assignee_id=c.corporation_id
+   AND c.type = 'Item Exchange'
+   AND c.issuer_corp_id != c.corporation_id
+   AND EXISTS (SELECT 1 FROM thing_contractitem ci INNER JOIN thing_pricewatch pw ON ci.item_id=pw.item_id WHERE ci.contract_id=c.contract_id AND ci.included=1 AND pw.active=1)
+) and price = 0
+"""
+
+industry_job_slots = """
+select name, 
+	research_slots_active,research_slots_max-research_slots_active AS research_slots_avail,research_slots_max,research_slots_deliverable,
+	mfg_slots_active,mfg_slots_max-mfg_slots_active AS mfg_slots_avail, mfg_slots_max,mfg_slots_deliverable,
+	industry_level,adv_industry_level,me_time_level,te_time_level,copy_time_level,
+	mfg_time_implant,me_time_implant,te_time_implant,copy_time_implant,reprocessing_implant,
+	max_research_jumps, max_mfg_jumps,
+	(1+industry_level*.04)*(1+adv_industry_level*.03)*(1+mfg_time_implant) AS mfg_time_bonus,
+	(1+adv_industry_level*.03)*(1+me_time_level*.05)*(1+me_time_implant) AS me_time_bonus,
+	(1+adv_industry_level*.03)*(1+te_time_level*.05)*(1+te_time_implant) AS te_time_bonus,
+	(1+adv_industry_level*.03)*(1+copy_time_level*.05)*(1+copy_time_implant) AS copy_time_bonus 
+FROM
+(SELECT c.name,
+	   COALESCE(1+lo.level+alo.level,0) AS research_slots_max,
+	   (SELECT COUNT(*) FROM thing_industryjob ij WHERE ij.installer_id=c.id AND ij.activity IN(3,4,5,8) AND ij.status=1) AS research_slots_active,
+	   (SELECT COUNT(*) FROM thing_industryjob ij WHERE ij.installer_id=c.id AND ij.activity IN(3,4,5,8) AND ij.status=1 AND ij.end_date <= DATETIME('NOW')) AS research_slots_deliverable,
+	   COALESCE(1+mp.level+amp.level,0) AS mfg_slots_max,
+	   (SELECT COUNT(*) FROM thing_industryjob ij WHERE ij.installer_id=c.id AND ij.activity=1 AND ij.status=1) AS mfg_slots_active,
+	   (SELECT COUNT(*) FROM thing_industryjob ij WHERE ij.installer_id=c.id AND ij.activity=1 AND ij.status=1 AND ij.end_date <= DATETIME('NOW')) AS mfg_slots_deliverable,
+	   ind.level AS industry_level, -- *.04
+	   ai.level AS adv_industry_level, -- *.03
+	   my.level AS me_time_level, -- *.05
+	   rs.level AS te_time_level, -- *.05
+	   sc.level AS copy_time_level, -- *.05
+	   --((1 + ind.level * .04)*(1 + ai.level*.03)) AS mfg_time_bonus,
+	   -- ((1 + ai.level*.03)*(1 + my.level*.05)) AS me_time_bonus,
+	   --((1 + ai.level*.03)*(1 + rs.level*.05)) AS te_time_bonus,
+	   --((1 + ai.level*.03)*(1 + sc.level*.05)) AS copy_time_bonus,
+	   sn.level * 5 AS max_research_jumps,
+	   scm.level * 5 AS max_mfg_jumps,
+	   COALESCE((SELECT CAST(SUBSTR(name, -2) AS INT)*.01 FROM thing_item WHERE id=impi.implant_id),0) AS mfg_time_implant,
+	   COALESCE((SELECT CAST(SUBSTR(name, -2) AS INT)*.01 FROM thing_item WHERE id=impm.implant_id),0) AS me_time_implant,
+	   COALESCE((SELECT CAST(SUBSTR(name, -2) AS INT)*.01 FROM thing_item WHERE id=impr.implant_id),0) AS reprocessing_implant,
+	   COALESCE((SELECT CAST(SUBSTR(name, -2) AS INT)*.01 FROM thing_item WHERE id=imprs.implant_id),0) AS te_time_implant,
+	   COALESCE((SELECT CAST(SUBSTR(name, -2) AS INT)*.01 FROM thing_item WHERE id=impsc.implant_id),0) AS copy_time_implant
+	FROM thing_character c
+		LEFT JOIN thing_characterskill lo ON lo.character_id=c.id AND lo.skill_id=3406 -- Laboratory Operations
+		LEFT JOIN thing_characterskill alo ON alo.character_id=c.id AND alo.skill_id=24624 -- Advanced Laboratory Operations
+		LEFT JOIN thing_characterskill mp ON mp.character_id=c.id AND mp.skill_id=3387 -- Mass Production
+		LEFT JOIN thing_characterskill amp ON amp.character_id=c.id AND amp.skill_id=24625 -- Advanced Mass Production
+		LEFT JOIN thing_characterskill my ON my.character_id=c.id AND my.skill_id=3409 -- Metallurgy
+		LEFT JOIN thing_characterskill sc ON sc.character_id=c.id AND sc.skill_id=3402 -- Science
+		LEFT JOIN thing_characterskill rs ON rs.character_id=c.id AND rs.skill_id=3403 -- Research
+		LEFT JOIN thing_characterskill ai ON ai.character_id=c.id AND ai.skill_id=3388 -- Advanced Industry
+		LEFT JOIN thing_characterskill ind ON ind.character_id=c.id AND ind.skill_id=3380 -- Industry
+		LEFT JOIN thing_characterskill sn ON sn.character_id=c.id AND sn.skill_id=24270 -- Scientific Networking
+		LEFT JOIN thing_characterskill scm ON scm.character_id=c.id AND scm.skill_id=24268 -- Scientific Networking
+		LEFT JOIN thing_characterdetails_implants impi ON impi.characterdetails_id=c.id AND impi.implant_id in (27170, 27167, 27171) -- Industry
+		LEFT JOIN thing_characterdetails_implants impm ON impm.characterdetails_id=c.id AND impm.implant_id in (27182, 27176, 27181) -- Metallurgy
+		LEFT JOIN thing_characterdetails_implants impr ON impr.characterdetails_id=c.id AND impr.implant_id in (27175, 27169, 27174) -- Reprocessing
+		LEFT JOIN thing_characterdetails_implants imprs ON imprs.characterdetails_id=c.id AND imprs.implant_id in (27180, 27177, 27179) -- Research
+		LEFT JOIN thing_characterdetails_implants impsc ON impsc.characterdetails_id=c.id AND impsc.implant_id in (27185, 27178, 27184) -- Science
+	WHERE lo.level > 0 OR mp.level > 0
+    ORDER BY name) details
 """

@@ -11,7 +11,111 @@
       <div class="row">
         <div class="col-sm-12">
           <h2>Industry Jobs</h2>
-          
+
+          <div class="row">
+            <div class="col-sm-4">
+              <table class="table table-striped table-bordered table-condensed">
+                <tr>
+                  <th class="r">Char</th>
+                  <th colspan="3" class="c">
+                    Manufacturing
+                  </th>
+                  <th colspan="3" class="c">
+                    Research
+                  </th>
+                </tr>
+                <tr class="c">
+                  <th></th>
+                  <th><small><abbr title="Deliverable">D</abbr></small></th>
+                  <th><small><abbr title="Available">A</abbr></small></th>
+                  <th><small><abbr title="Max">M</abbr></small></th>
+                  <th><small><abbr title="Deliverable">D</abbr></small></th>
+                  <th><small><abbr title="Available">A</abbr></small></th>
+                  <th><small><abbr title="Max">M</abbr></small></th>
+                </tr>
+
+                <tbody>
+                {% for char in industry_info.usage %}
+                <tr class="c">
+                  <td class="r">{{ char.name }}</td>
+                  <td>
+                    {% if char.mfg_slots_deliverable > 0 %}
+                    <span class="text-success"><b>{{ char.mfg_slots_deliverable }}</b></span>
+                    {% elif char.mfg_slots_max > 0 %}
+                    0
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if char.mfg_slots_avail > 0 %}
+                    <span class="text-success"><b>{{ char.mfg_slots_avail }}</b></span>
+                    {% else %}
+                      {% if char.mfg_slots_max > 0 %}
+                        {{ char.mfg_slots_avail }}
+                      {% endif %}
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if char.mfg_slots_max > 0 %}
+                     {{ char.mfg_slots_max }}
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if char.research_slots_deliverable > 0 %}
+                    <span class="text-success"><b>{{ char.research_slots_deliverable }}</b></span>
+                    {% elif char.research_slots_max > 0 %}
+                    0
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if char.research_slots_avail > 0 %}
+                      <span class="text-success"><b>{{ char.research_slots_avail }}</b></span>
+                      {% else %}
+                      {{ char.research_slots_avail }}
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if char.research_slots_avail > 0 %}
+                    {{ char.research_slots_max }}
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+                <tfoot>
+                  <tr class="c">
+                    <th class="r">Total</th>
+                    <th>
+                      {% if industry_info.mfg_deliver > 0 %}
+                        <span class="text-success">{{ industry_info.mfg_deliver }}</span>
+                      {% endif %}
+                    </th>
+                    <th>
+                      {% if industry_info.mfg_avail > 0 %}
+                        <span class="text-success">{{ industry_info.mfg_avail }}</span>
+                      {% else %}
+                        {{ industry_info.mfg_avail }}
+                      {% endif %}
+                    </th>
+                    <th>{{ industry_info.mfg_max }}</th>
+                    <th>
+                      {% if industry_info.research_deliver > 0 %}
+                        <span class="text-success">{{ industry_info.research_deliver }}</span>
+                      {% endif %}
+                    </th>
+                    <th>
+                      {% if industry_info.research_avail > 0 %}
+                        <span class="text-success">{{ industry_info.research_avail }}</span>
+                      {% else %}
+                        {{ industry_info.research_avail }}
+                      {% endif %}
+                    </th>
+                    <th>{{ industry_info.research_max }}</th>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+
           <ul class="nav nav-tabs">
             <li class="active"><a href="#tab_incomplete" data-toggle="tab">Incomplete</a></li>
             <li><a href="#tab_complete" data-toggle="tab">Complete</a></li>
@@ -35,7 +139,7 @@
                   </thead>
                   <tbody>
                     {% for job in incomplete -%}
-                    <tr>
+                    <tr class="{% if job.z_ready %}job-complete{% endif %}">
                       <td>{{ job.get_activity_display() }}</td>
                       <td>
                         {% if job.z_installer -%}
