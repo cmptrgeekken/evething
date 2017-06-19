@@ -185,12 +185,13 @@ class IndustryJobsCurrent(APITask):
             IndustryJob.objects.bulk_create(new)
 
         # Clean up old jobs in weird states
-        unknowns = ij_filter.exclude(
-            job_id__in=seen_jobs,
-        ).update(
-            status=IndustryJob.UNKNOWN_STATUS
-        )
-        if unknowns > 0:
-            self.log_warn('%d jobs set to UNKNOWN state.' % unknowns)
+        #unknowns = ij_filter.exclude(
+        #    job_id__in=seen_jobs,
+        #    status=IndustryJob.UNKNOWN_STATUS
+        #).update(
+        #    status=IndustryJob.UNKNOWN_STATUS
+        #)
+        #if unknowns > 0:
+        #    self.log_warn('%d jobs set to UNKNOWN state.' % unknowns)
 
         return True

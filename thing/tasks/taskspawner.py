@@ -44,7 +44,7 @@ CHAR_URLS = {
     APIKey.CHAR_CHARACTER_INFO_MASK: [('thing.character_info', '/eve/CharacterInfo.xml.aspx', 'et_medium')],
     APIKey.CHAR_CHARACTER_SHEET_MASK: [('thing.character_sheet', '/char/CharacterSheet.xml.aspx', 'et_medium')],
     APIKey.CHAR_CONTRACTS_MASK: [('thing.contracts', '/char/Contracts.xml.aspx', 'et_medium')],
-    #  APIKey.CHAR_INDUSTRY_JOBS_MASK: [('thing.industry_jobs', '/char/IndustryJobsHistory.xml.aspx', 'et_medium')],
+    APIKey.CHAR_INDUSTRY_JOBS_MASK: [('thing.industry_jobs', '/char/IndustryJobsHistory.xml.aspx', 'et_medium')],
     APIKey.CHAR_INDUSTRY_JOBS_CURRENT_MASK: [('thing.industry_jobs_current', '/char/IndustryJobs.xml.aspx', 'et_medium')],
     APIKey.CHAR_MAILING_LISTS_MASK: [('thing.mailing_lists', '/char/MailingLists.xml.aspx', 'et_medium')],
     APIKey.CHAR_MAIL_MESSAGES_MASK: [('thing.mail_messages', '/char/MailMessages.xml.aspx', 'et_medium')],
@@ -60,7 +60,7 @@ CORP_URLS = {
     APIKey.CORP_ASSET_LIST_MASK: ('thing.asset_list', '/corp/AssetList.xml.aspx', 'et_medium'),
     APIKey.CORP_CONTRACTS_MASK: ('thing.contracts', '/corp/Contracts.xml.aspx', 'et_medium'),
     APIKey.CORP_CORPORATION_SHEET_MASK: ('thing.corporation_sheet', '/corp/CorporationSheet.xml.aspx', 'et_medium'),
-    #  APIKey.CORP_INDUSTRY_JOBS_MASK: ('thing.industry_jobs', '/corp/IndustryJobsHistory.xml.aspx', 'et_medium'),
+    APIKey.CORP_INDUSTRY_JOBS_MASK: ('thing.industry_jobs', '/corp/IndustryJobsHistory.xml.aspx', 'et_medium'),
     APIKey.CORP_INDUSTRY_JOBS_CURRENT_MASK: ('thing.industry_jobs_current', '/corp/IndustryJobs.xml.aspx', 'et_medium'),
     APIKey.CORP_MARKET_ORDERS_MASK: ('thing.market_orders', '/corp/MarketOrders.xml.aspx', 'et_medium'),
     APIKey.CORP_WALLET_JOURNAL_MASK: ('thing.wallet_journal', '/corp/WalletJournal.xml.aspx', 'et_medium'),
@@ -76,9 +76,9 @@ GLOBAL_TASKS = (
     ('thing.ref_types', '/eve/RefTypes.xml.aspx', 'et_medium'),
     ('thing.server_status', '/server/ServerStatus.xml.aspx', 'et_high'),
     ('thing.citadels', 'https://stop.hammerti.me.uk/api/structure/all', 'et_medium'),
-    ('thing.price_updater',
-     'https://esi.tech.ccp.is/latest/markets/%d/orders?datasource=tranquility&order_type=all&page=%d',
-     'et_medium'),
+    #('thing.price_updater',
+    # 'https://esi.tech.ccp.is/latest/markets/%d/orders?datasource=tranquility&order_type=all&page=%d',
+    # 'et_medium'),
     ('thing.history_updater', 'https://esi.tech.ccp.is/latest/markets/%d/history/?datasource=tranquility&type_id=%d', 'et_medium')
 )
 
