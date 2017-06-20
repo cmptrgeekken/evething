@@ -117,7 +117,7 @@ def item_contracts(request):
         )
 
         for contract_item in contract_items:
-            contract.z_calculated_reward += contract_item.quantity * contract_item.item.get_history_avg(issued=contract.date_issued)
+            contract.z_calculated_reward += contract_item.quantity * contract_item.item.get_history_avg(issued=contract.date_issued, pct=.95)
             contract.z_items += '<div>%s %s</div>' % (commas(contract_item.quantity), contract_item.item.name)
 
             if contract_item.item.name.endswith("Fuel Block") and not contract_item.included:
