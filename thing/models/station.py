@@ -26,6 +26,7 @@
 from django.db import models
 
 from thing.models.system import System
+from thing.models.userprofile import UserProfile
 
 numeral_map = zip(
     (1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1),
@@ -50,6 +51,10 @@ class Station(models.Model):
     short_name = models.CharField(max_length=64, default='')
     is_citadel = models.BooleanField(default=False)
     is_unknown = models.BooleanField(default=False)
+
+    load_market_orders = models.BooleanField(default=False)
+    market_profile = models.ForeignKey(UserProfile, null=True)
+
     system = models.ForeignKey(System, blank=True, null=True)
 
     class Meta:
