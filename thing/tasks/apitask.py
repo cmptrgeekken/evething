@@ -32,6 +32,7 @@ import datetime
 import hashlib
 import requests
 import time
+from requests_oauth2 import OAuth2
 
 try:
     import xml.etree.cElementTree as ET
@@ -47,6 +48,7 @@ from django.core.cache import cache
 from django.db import connections
 from django.db.models import Max
 from urlparse import urljoin
+import json
 
 from thing.models import APIKey, APIKeyFailure, Event, TaskState
 from thing.stuff import total_seconds
@@ -80,7 +82,8 @@ class APITask(Task):
     # Requests session so we get HTTP Keep-Alive
     _session = requests.Session()
     _session.headers.update({
-        'User-Agent': 'EVEthing-tasks (keep-alive)',
+        'User-Agent': 'PGSUS-tasks',
+        'Accept-Encoding': 'gzip, deflate',
     })
     # Limit each session to a single connection
     _session.mount('http://', requests.adapters.HTTPAdapter(pool_connections=1, pool_maxsize=1))
@@ -368,6 +371,55 @@ class APITask(Task):
 
         return data
 
+    def fetch_esi_url(self, url, access_token):
+        """
+        Fetch an ESI URL
+        """
+
+        cache_key = self._get_cache_key(url, {})
+        cached_data = cache.get(cache_key)
+
+        if cached_data is None:
+            sleep_for = self._get_backoff()
+            if sleep_for > 0:
+                time.sleep(sleep_for)
+
+            start = time.time()
+            try:
+                r = self._session.get(url + '&token=' + access_token)
+                data = r.text
+                current = self.parse_esi_date(r.headers['date'])
+                until = self.parse_esi_date(r.headers['expires'])
+
+                self._cache_delta = until - current
+            except Exception, e:
+                self._increment_backoff(e)
+                return False
+
+            self._api_log.append((url, time.time() - start))
+
+            if not r.status_code == requests.codes.ok:
+                if r.status_code == '400' or r.status_code == 400:
+                    self._cache_delta = datetime.timedelta(hours=4)
+                    self.log_warn('400 error, caching for 2 hours')
+                return False
+        else:
+            data = cached_data
+
+        if data:
+            try:
+                self.json = json.loads(data)
+            except Exception:
+                return False
+
+            if cached_data is None:
+                cache_expires = total_seconds(self._cache_delta) + 10
+
+                if cache_expires >= 0:
+                    cache.set(cache_key, data, cache_expires)
+
+        return data
+
     # -----------------------------------------------------------------------
 
     def parse_xml(self, data):
@@ -421,6 +473,20 @@ class APITask(Task):
                 text=text,
             )
             self.log_error('[fetch_api] Disabling adding of APIKeys for user %d due to %d API failures within 7 days.', self.apikey.user.id, count)
+
+    def get_access_token(self, refresh_token):
+        oauth_handler = OAuth2(
+            settings.OAUTH_CLIENT_ID,
+            settings.OAUTH_CLIENT_SECRET,
+            settings.OAUTH_SERVER_URL,
+            'https://pgsus.space/thing/account/oauth_callback/'
+        )
+
+        response = oauth_handler.get_token("", grant_type='refresh_token', refresh_token=refresh_token)
+        if response is not None and 'access_token' in response:
+            return response['access_token'], datetime.datetime.now() + datetime.timedelta(seconds=response['expires_in'])
+
+        return None
 
     # -----------------------------------------------------------------------
 
@@ -493,6 +559,10 @@ class APITask(Task):
             return datetime.datetime.strptime(apidate, '%Y-%m-%d %H:%M:%S')
         else:
             return datetime.datetime.strptime(apidate, '%Y-%m-%dT%H:%M:%SZ')
+
+    def parse_esi_date(self, esidate):
+        import email.utils as eut
+        return datetime.datetime(*eut.parsedate(esidate)[:6])
 
     # -----------------------------------------------------------------------
     # Logging shortcut functions :v

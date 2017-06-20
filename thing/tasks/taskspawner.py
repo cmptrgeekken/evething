@@ -29,7 +29,7 @@ from django.conf import settings
 from celery import task
 from celery.execute import send_task
 
-from thing.models import APIKey, TaskState
+from thing.models import APIKey, TaskState, Station
 
 # ---------------------------------------------------------------------------
 
@@ -100,6 +100,19 @@ def task_spawner():
     for taskname, url, queue in GLOBAL_TASKS:
         taskstate = g_tasks.get(url)
         _init_taskstate(taskdata, now, taskstate, -1, None, taskname, url, queue, 0)
+
+    stations = Station.objects.filter(load_market_orders=True).select_related('market_profile')
+
+    for station in stations:
+        if station.is_citadel:
+            url = 'https://esi.tech.ccp.is/latest/markets/structures/%d?datasource=tranquility&page=' \
+                  % station.id
+        else:
+            url = 'https://esi.tech.ccp.is/latest/markets/%d/orders?datasource=tranquility&order_type=all&page=' \
+                  % station.system.constellation.region.id
+
+        taskstate = g_tasks.get(url)
+        _init_taskstate(taskdata, now, taskstate, -1, None, 'thing.price_updater', url, 'et_medium', station.id)
 
     # Build a magical QuerySet for APIKey objects
     apikeys = APIKey.objects.select_related('corporation')

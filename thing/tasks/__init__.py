@@ -39,5 +39,5 @@ from serverstatus import ServerStatus
 # Periodic tasks
 from fixnames import FixNames
 from historyupdater import HistoryUpdater
-#from priceupdater import PriceUpdater
+from priceupdater import PriceUpdater
 from fixcontracts import FixContracts

@@ -26,36 +26,44 @@
 from .apitask import APITask
 
 from decimal import Decimal
-from datetime import datetime,timedelta
+from datetime import datetime, timedelta
 
 import json
-from thing.models import ItemOrder
-
-PRICE_PER_REQUEST = 100
-PRICE_STATION_ID = 60003760  # Jita 4-4
-PRICE_REGION_ID = 10000002  # The Forge
+from thing.models import Station, StationOrder
 
 
 class PriceUpdater(APITask):
     name = 'thing.price_updater'
 
-    def run(self, api_url, taskstate_id, apikey_id, zero):
+    def run(self, api_url, taskstate_id, apikey_id, station_id):
         if self.init(taskstate_id) is False:
             return
 
         page_number = 1
 
-        existing_orders = ItemOrder.objects.filter(
-            region_id=PRICE_REGION_ID,
+        station = Station.objects.filter(id=station_id).first()
+
+        if station is None or station.market_profile is None or station.market_profile.sso_refresh_token is None:
+            self.log_warn('No refresh token found for station %d!' % station.id)
+            return
+
+        access_token = None
+        token_expires = None
+
+        existing_orders = StationOrder.objects.filter(
+            station_id=station_id
         ).values_list('id')
 
         existing_order_ids = set([o[0] for o in existing_orders])
 
         all_order_ids = []
         while True:
+            if access_token is None or token_expires < datetime.now():
+                access_token, token_expires = self.get_access_token(station.market_profile.sso_refresh_token)
+
             # Retrieve market data and parse the JSON
-            url = api_url % (PRICE_REGION_ID, page_number)
-            data = self.fetch_url(url, {})
+            url = api_url + page_number
+            data = self.fetch_esi_url(url, access_token)
             if data is False:
                 return
 
@@ -72,11 +80,10 @@ class PriceUpdater(APITask):
                 price = Decimal(order['price'])
                 issued = self.parse_api_date(order['issued'], True)
 
-                item_order = ItemOrder(
+                item_order = StationOrder(
                     id=int(order['order_id']),
                     item_id=int(order['type_id']),
-                    region_id=PRICE_REGION_ID,
-                    location_id=int(order['location_id']),
+                    station_id=int(order['location_id']),
                     price=price,
                     total_price=price*remaining,
                     buy_order=order['is_buy_order'],
@@ -85,29 +92,30 @@ class PriceUpdater(APITask):
                     minimum_volume=int(order['min_volume']),
                     issued=issued,
                     expires=issued + timedelta(int(order['duration'])),
-                    range=order['range'],
-                    last_updated=datetime.utcnow()
+                    range=order['range']
                 )
 
                 if item_order.id in existing_order_ids:
                     updated_orders.append(item_order)
                 else:
                     new_orders.append(item_order)
+                    existing_order_ids.add(item_order.id)
 
                 all_order_ids.append(item_order.id)
 
             # Insert new orders
-            ItemOrder.objects.bulk_insert(new_orders)
+            StationOrder.objects.bulk_create(new_orders)
 
             # Update existing orders
-            ItemOrder.objects.bulk_update(updated_orders, ['price', 'total_price', 'last_updated', 'volume_remaining'])
+            StationOrder.objects.bulk_update(updated_orders, ['price', 'total_price', 'last_updated', 'volume_remaining'])
 
             page_number += 1
+            break # Read first page for now
 
         # Delete non-existent orders:
-        ItemOrder.objects.exclude(
+        StationOrder.objects.exclude(
             id__in=all_order_ids,
-            region_id=PRICE_REGION_ID,
+            station_id=station_id,
         ).delete()
 
         return True
