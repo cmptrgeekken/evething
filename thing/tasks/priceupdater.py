@@ -56,6 +56,8 @@ class PriceUpdater(APITask):
 
         existing_order_ids = set([o[0] for o in existing_orders])
 
+        start_time = datetime.now()
+
         all_order_ids = []
         while True:
             if access_token is None or token_expires < datetime.now():
@@ -77,6 +79,7 @@ class PriceUpdater(APITask):
 
             new_orders = []
             updated_orders = []
+            current_order_ids = []
             for order in orders:
                 # Create the new order object
                 remaining = int(order['volume_remain'])
@@ -94,11 +97,13 @@ class PriceUpdater(APITask):
                     minimum_volume=int(order['min_volume']),
                     issued=issued,
                     expires=issued + timedelta(int(order['duration'])),
-                    range=order['range']
+                    range=order['range'],
+                    last_updated=start_time,
                 )
 
                 if station_order.order_id in existing_order_ids:
                     updated_orders.append(station_order)
+                    current_order_ids.append(station_order.order_id)
                 else:
                     new_orders.append(station_order)
                     existing_order_ids.add(station_order.order_id)
@@ -108,16 +113,14 @@ class PriceUpdater(APITask):
             # Insert new orders
             StationOrder.objects.bulk_create(new_orders)
 
-            # Update existing orders
-            # StationOrder.objects.bulk_update(updated_orders, ['price', 'last_updated', 'volume_remaining'])
-            for order in updated_orders:
-                order.save()
+            # Gotta bulk-update for price and volume remaining still
+            StationOrder.objects.filter(order_id__in=current_order_ids).update(last_updated=start_time)
 
             page_number += 1
 
         # Delete non-existent orders:
         StationOrder.objects.filter(station_id=station_id).exclude(
-            order_id__in=all_order_ids,
+            last_updated__gte=start_time
         ).delete()
 
         return True
