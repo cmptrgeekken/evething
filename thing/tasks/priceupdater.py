@@ -62,7 +62,7 @@ class PriceUpdater(APITask):
                 access_token, token_expires = self.get_access_token(station.market_profile.sso_refresh_token)
 
             # Retrieve market data and parse the JSON
-            url = api_url + page_number
+            url = api_url + str(page_number)
             data = self.fetch_esi_url(url, access_token)
             if data is False:
                 continue
@@ -114,7 +114,6 @@ class PriceUpdater(APITask):
                 order.save()
 
             page_number += 1
-            break # Read first page for now
 
         # Delete non-existent orders:
         StationOrder.objects.exclude(
