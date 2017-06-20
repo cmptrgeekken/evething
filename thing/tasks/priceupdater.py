@@ -52,7 +52,7 @@ class PriceUpdater(APITask):
 
         existing_orders = StationOrder.objects.filter(
             station_id=station_id
-        ).values_list('id')
+        ).values_list('order_id')
 
         existing_order_ids = set([o[0] for o in existing_orders])
 
@@ -65,9 +65,12 @@ class PriceUpdater(APITask):
             url = api_url + page_number
             data = self.fetch_esi_url(url, access_token)
             if data is False:
-                return
+                continue
 
-            orders = json.loads(data)
+            try:
+                orders = json.loads(data)
+            except:
+                break
 
             if len(orders) == 0:
                 break
@@ -80,12 +83,11 @@ class PriceUpdater(APITask):
                 price = Decimal(order['price'])
                 issued = self.parse_api_date(order['issued'], True)
 
-                item_order = StationOrder(
-                    id=int(order['order_id']),
+                station_order = StationOrder(
+                    order_id=int(order['order_id']),
                     item_id=int(order['type_id']),
                     station_id=int(order['location_id']),
                     price=price,
-                    total_price=price*remaining,
                     buy_order=order['is_buy_order'],
                     volume_entered=int(order['volume_total']),
                     volume_remaining=remaining,
@@ -95,26 +97,28 @@ class PriceUpdater(APITask):
                     range=order['range']
                 )
 
-                if item_order.id in existing_order_ids:
-                    updated_orders.append(item_order)
+                if station_order.order_id in existing_order_ids:
+                    updated_orders.append(station_order)
                 else:
-                    new_orders.append(item_order)
-                    existing_order_ids.add(item_order.id)
+                    new_orders.append(station_order)
+                    existing_order_ids.add(station_order.order_id)
 
-                all_order_ids.append(item_order.id)
+                all_order_ids.append(station_order.order_id)
 
             # Insert new orders
             StationOrder.objects.bulk_create(new_orders)
 
             # Update existing orders
-            StationOrder.objects.bulk_update(updated_orders, ['price', 'total_price', 'last_updated', 'volume_remaining'])
+            # StationOrder.objects.bulk_update(updated_orders, ['price', 'last_updated', 'volume_remaining'])
+            for order in updated_orders:
+                order.save()
 
             page_number += 1
             break # Read first page for now
 
         # Delete non-existent orders:
         StationOrder.objects.exclude(
-            id__in=all_order_ids,
+            order_id__in=all_order_ids,
             station_id=station_id,
         ).delete()
 
