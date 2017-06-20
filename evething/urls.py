@@ -35,6 +35,7 @@ urlpatterns += patterns(
     (r'^thing/account/$', 'account'),
     (r'^thing/account/change_password/$', 'account_change_password'),
     (r'^thing/account/oauth_callback/$', 'account_oauth_callback'),
+    (r'^thing/account/sso_remove/$', 'account_sso_remove'),
     (r'^thing/account/settings/$', 'account_settings'),
     (r'^thing/account/apikey/add/$', 'account_apikey_add'),
     (r'^thing/account/apikey/delete/$', 'account_apikey_delete'),

@@ -53,7 +53,7 @@ def account_oauth_callback(request):
 
     oauth2_handler = oauth_handler()
 
-    response = oauth2_handler.get_token(oauth_code)
+    response = oauth2_handler.get_token(oauth_code, grant_type='authorization_code')
 
     if response is not None:
         profile = request.user.profile
