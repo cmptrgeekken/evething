@@ -51,14 +51,9 @@ class PriceUpdater(APITask):
         access_token = None
         token_expires = None
 
-        if station.is_citadel:
-            existing_orders = StationOrder.objects.filter(
-                station_id=station_id
-            ).values_list('order_id')
-        else:
-            existing_orders = StationOrder.objects.filter(
-                station__system__constellation__region_id=region_id
-            ).values_list('order_id')
+        existing_orders = StationOrder.objects.filter(
+            station_id=station_id
+        ).values_list('order_id')
 
         existing_order_ids = set([o[0] for o in existing_orders])
 
@@ -106,6 +101,10 @@ class PriceUpdater(APITask):
                     last_updated=start_time,
                 )
 
+                # Ignore stations we're not tracking
+                if station_order.station_id != station_id:
+                    continue
+
                 if station_order.order_id not in existing_order_ids:
                     updated_orders.append(station_order)
                     current_order_ids.append(station_order.order_id)
@@ -122,17 +121,8 @@ class PriceUpdater(APITask):
             page_number += 1
 
         # Delete non-existent orders:
-        if station.is_citadel:
-            StationOrder.objects.filter(station_id=station_id).exclude(
-                last_updated__gte=start_time
-            ).delete()
-        else:
-            StationOrder.objects.filter(
-                station__system__constellation__region_id=region_id
-            ).exclude(
-                last_updated__gte=start_time
-            ).delete()
-
-
+        StationOrder.objects.filter(station_id=station_id).exclude(
+            last_updated__gte=start_time
+        ).delete()
 
         return True
