@@ -116,9 +116,8 @@ class PriceUpdater(APITask):
             page_number += 1
 
         # Delete non-existent orders:
-        StationOrder.objects.exclude(
+        StationOrder.objects.filter(station_id=station_id).exclude(
             order_id__in=all_order_ids,
-            station_id=station_id,
         ).delete()
 
         return True
