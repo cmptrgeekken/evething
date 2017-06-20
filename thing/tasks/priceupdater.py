@@ -42,6 +42,7 @@ class PriceUpdater(APITask):
         page_number = 1
 
         station = Station.objects.filter(id=station_id).first()
+        region_id = station.system.constellation.region.id
 
         if station is None or station.market_profile is None or station.market_profile.sso_refresh_token is None:
             self.log_warn('No refresh token found for station %d!' % station.id)
@@ -50,15 +51,19 @@ class PriceUpdater(APITask):
         access_token = None
         token_expires = None
 
-        existing_orders = StationOrder.objects.filter(
-            station_id=station_id
-        ).values_list('order_id')
+        if station.is_citadel:
+            existing_orders = StationOrder.objects.filter(
+                station_id=station_id
+            ).values_list('order_id')
+        else:
+            existing_orders = StationOrder.objects.filter(
+                station__system__constellation__region_id=region_id
+            ).values_list('order_id')
 
         existing_order_ids = set([o[0] for o in existing_orders])
 
         start_time = datetime.now()
 
-        all_order_ids = []
         while True:
             if access_token is None or token_expires < datetime.now():
                 access_token, token_expires = self.get_access_token(station.market_profile.sso_refresh_token)
@@ -101,14 +106,12 @@ class PriceUpdater(APITask):
                     last_updated=start_time,
                 )
 
-                if station_order.order_id in existing_order_ids:
+                if station_order.order_id not in existing_order_ids:
                     updated_orders.append(station_order)
                     current_order_ids.append(station_order.order_id)
                 else:
-                    new_orders.append(station_order)
                     existing_order_ids.add(station_order.order_id)
-
-                all_order_ids.append(station_order.order_id)
+                    new_orders.append(station_order)
 
             # Insert new orders
             StationOrder.objects.bulk_create(new_orders)
@@ -119,8 +122,17 @@ class PriceUpdater(APITask):
             page_number += 1
 
         # Delete non-existent orders:
-        StationOrder.objects.filter(station_id=station_id).exclude(
-            last_updated__gte=start_time
-        ).delete()
+        if station.is_citadel:
+            StationOrder.objects.filter(station_id=station_id).exclude(
+                last_updated__gte=start_time
+            ).delete()
+        else:
+            StationOrder.objects.filter(
+                station__system__constellation__region_id=region_id
+            ).exclude(
+                last_updated__gte=start_time
+            ).delete()
+
+
 
         return True
