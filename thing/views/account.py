@@ -44,6 +44,26 @@ from thing.forms import UploadSkillPlanForm
 from thing.models import *  # NOPEP8
 from thing.stuff import *  # NOPEP8
 
+from requests_oauth2 import OAuth2
+
+
+@login_required
+def account_oauth_callback(request):
+    oauth_code = request.GET['code']
+
+    oauth2_handler = oauth_handler()
+
+    response = oauth2_handler.get_token(oauth_code)
+
+    if response is not None:
+        profile = request.user.profile
+        profile.sso_refresh_token = response['refresh_token']
+        profile.save()
+
+        return redirect('%s?auth_success=true#apikeys' % (reverse(account)))
+    else:
+        return redirect('%s?auth_success=false#apikeys' % (reverse(account)))
+
 
 @login_required
 def account(request):
@@ -60,12 +80,20 @@ def account(request):
     characters = Character.objects.filter(apikeys__user=request.user).distinct()
     home_hide_characters = set(int(c) for c in profile.home_hide_characters.split(',') if c)
 
+    oauth2_handler = oauth_handler()
+
+    oauth_authorize_url = oauth2_handler.authorize_url(
+        settings.OAUTH_CLIENT_SCOPES,
+        response_type='code',
+        state='authorize')
+
     return render_page(
         'thing/account.html',
         {
             'message': message,
             'message_type': message_type,
             'profile': profile,
+            'oauth_authorize_url': oauth_authorize_url,
             'home_chars_per_row': (2, 3, 4, 6),
             'home_sort_orders': UserProfile.HOME_SORT_ORDERS,
             'characters': characters,
@@ -512,3 +540,12 @@ def account_register(request):
     return render(request, "registration/register.html", {
         'form': form,
     })
+
+
+def oauth_handler():
+    return OAuth2(
+        settings.OAUTH_CLIENT_ID,
+        settings.OAUTH_CLIENT_SECRET,
+        settings.OAUTH_SERVER_URL,
+        'https://pgsus.space/thing/account/oauth_callback/'
+    )

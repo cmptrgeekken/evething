@@ -446,6 +446,24 @@ WHERE contract_id IN (SELECT DISTINCT c.contract_id
 ) and price = 0
 """
 
+contract_check_script = """
+select count(*) from (select MIN(id),contract_id,count(*) from thing_contract group by contract_id having count(*) > 1) c
+"""
+
+contract_fix_script = """
+delete from thing_contract where id IN (select MIN(id) from thing_contract group by contract_id having count(*) > 1);
+"""
+
+contractitem_check_script = """
+select count(*) 
+from (select contract_id,item_id,quantity from thing_contractitem group by contract_id,item_id,quantity having count(*) > 1) c;
+"""
+
+contractitem_fix_script = """
+delete from thing_contractitem 
+where id in (select MIN(id) from thing_contractitem group by contract_id,item_id,quantity having count(*) > 1);
+"""
+
 industry_job_slots = """
 select name, group_name,
 	research_slots_active,research_slots_max-research_slots_active AS research_slots_avail,research_slots_max,research_slots_deliverable,

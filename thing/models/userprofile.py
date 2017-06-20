@@ -73,6 +73,8 @@ class UserProfile(models.Model):
     home_show_separators = models.BooleanField(default=True)
     home_show_security = models.BooleanField(default=True)
 
+    sso_refresh_token = models.CharField(max_length=100,null=True)
+
     class Meta:
         app_label = 'thing'
 

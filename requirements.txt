@@ -6,3 +6,4 @@ requests>=1.0
 MarkupSafe>=0.15
 pyyaml
 evepaste
+requests-oauth2
