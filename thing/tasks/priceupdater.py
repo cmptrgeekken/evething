@@ -42,7 +42,6 @@ class PriceUpdater(APITask):
         page_number = 1
 
         station = Station.objects.filter(id=station_id).first()
-        region_id = station.system.constellation.region.id
 
         if station is None or station.market_profile is None or station.market_profile.sso_refresh_token is None:
             self.log_warn('No refresh token found for station %d!' % station.id)
@@ -102,7 +101,7 @@ class PriceUpdater(APITask):
                 )
 
                 # Ignore stations we're not tracking
-                if station_order.station_id != station_id:
+                if int(order['location_id']) != station_id:
                     continue
 
                 if station_order.order_id not in existing_order_ids:
