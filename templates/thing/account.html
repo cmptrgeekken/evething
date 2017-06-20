@@ -306,6 +306,7 @@
                     </a>
                     {% else %}
                     <form action="{{ url('thing.views.account_sso_remove') }}" method="POST" class="form-inline">
+                      {{ csrf() }}
                       <button type="submit" class="btn btn-error">Remove SSO</button>
                     </form>
                     {% endif %}

@@ -37,7 +37,10 @@ class Citadels(APITask):
             return
 
         data = self.fetch_url(url, {})
-        citadels = json.loads(data)
+        try:
+            citadels = json.loads(data)
+        except TypeError:
+            return
 
         station_map = Station.objects.in_bulk(citadels.keys())
 
