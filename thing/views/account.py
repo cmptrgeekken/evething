@@ -66,6 +66,11 @@ def account_oauth_callback(request):
 
 
 @login_required
+def account_sso_remove(request):
+    return redirect('%s?auth_success=true#apikeys' % (reverse(account)))
+
+
+@login_required
 def account(request):
     """Account management view"""
     if 'message' in request.session:
