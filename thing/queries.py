@@ -522,7 +522,7 @@ FROM
 """
 
 stationorder_ids_to_update = """
-SELECT order_id FROM thing_stationorder so
+SELECT so.order_id FROM thing_stationorder so
 INNER JOIN thing_stationorderupdater sou ON so.order_id=sou.order_id
-WHERE so.volume_remaining > sou.volume_remaining OR so.price > sou.price
+WHERE so.volume_remaining > sou.volume_remaining OR so.price != sou.price
 """
