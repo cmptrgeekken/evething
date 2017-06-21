@@ -31,25 +31,11 @@ from thing.models.item import Item
 from thing.models.station import Station
 
 
-class StationOrder(models.Model):
+class StationOrderUpdater(models.Model):
     """Station orders"""
     order_id = models.BigIntegerField(primary_key=True)
-    item = models.ForeignKey(Item)
-    station = models.ForeignKey(Station)
-    volume_entered = models.IntegerField()
     volume_remaining = models.IntegerField()
-    minimum_volume = models.IntegerField()
     price = models.DecimalField(max_digits=20, decimal_places=2)
-
-    buy_order = models.BooleanField(default=False)
-
-    issued = models.DateTimeField(db_index=True)
-    expires = models.DateTimeField(db_index=True)
-    range = models.CharField(max_length=20, null=True)
-
-    last_updated = models.DateTimeField(db_index=True, null=True)
-    times_updated = models.IntegerField(null=True)
 
     class Meta:
         app_label = 'thing'
-        ordering = ('buy_order', 'item__name')

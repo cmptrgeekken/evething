@@ -393,7 +393,7 @@ class APITask(Task):
 
                 self._cache_delta = until - current
             except Exception, e:
-                self._increment_backoff(e)
+                # self._increment_backoff(e)
                 return False
 
             self._api_log.append((url, time.time() - start))

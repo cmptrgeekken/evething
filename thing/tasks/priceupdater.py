@@ -29,7 +29,8 @@ from decimal import Decimal
 from datetime import datetime, timedelta
 
 import json
-from thing.models import Station, StationOrder
+from thing.models import Station, StationOrder, StationOrderUpdater
+from thing import queries
 
 
 class PriceUpdater(APITask):
@@ -77,7 +78,8 @@ class PriceUpdater(APITask):
                 break
 
             new_orders = []
-            updated_orders = []
+            updated_orders = {}
+            updated_order_map = {}
             current_order_ids = []
             for order in orders:
                 # Create the new order object
@@ -97,15 +99,23 @@ class PriceUpdater(APITask):
                     issued=issued,
                     expires=issued + timedelta(int(order['duration'])),
                     range=order['range'],
+                    times_updated=1,
                     last_updated=start_time,
                 )
 
+                order_updater = StationOrderUpdater(
+                    order_id=station_order.order_id,
+                    price=station_order.price,
+                    volume_remaining=station_order.volume_remaining,
+                )
+
                 # Ignore stations we're not tracking
-                if int(order['location_id']) != station_id:
+                if int(order['location_id']) != int(station_id):
                     continue
 
-                if station_order.order_id not in existing_order_ids:
-                    updated_orders.append(station_order)
+                if station_order.order_id in existing_order_ids:
+                    updated_orders[station_order.order_id] = order_updater
+                    updated_order_map[station_order.order_id] = station_order
                     current_order_ids.append(station_order.order_id)
                 else:
                     existing_order_ids.add(station_order.order_id)
@@ -114,7 +124,24 @@ class PriceUpdater(APITask):
             # Insert new orders
             StationOrder.objects.bulk_create(new_orders)
 
-            # Gotta bulk-update for price and volume remaining still
+            # Attempt at more-efficient bulk updates
+            if len(updated_orders) > 0:
+                StationOrderUpdater.objects.filter(order_id__in=current_order_ids).delete()
+                StationOrderUpdater.objects.bulk_create(updated_orders.values())
+
+                cursor = self.get_cursor()
+                cursor.execute(queries.stationorder_ids_to_update)
+                order_ids = set([col[0] for col in cursor.fetchall()])
+
+                for id in order_ids:
+                    if id in updated_order_map:
+                        order_update = updated_orders[id]
+                        order = updated_order_map[id]
+                        order.times_updated += 1
+                        order.price = order_update.price
+                        order.volume_remaining = order_update.volume_remaining
+                        order.save()
+
             StationOrder.objects.filter(order_id__in=current_order_ids).update(last_updated=start_time)
 
             page_number += 1

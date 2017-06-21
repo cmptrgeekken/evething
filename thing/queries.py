@@ -520,3 +520,9 @@ FROM
 	WHERE lo.level > 0 OR mp.level > 0
     ORDER BY group_name, name) details;
 """
+
+stationorder_ids_to_update = """
+SELECT order_id FROM thing_stationorder so
+INNER JOIN thing_stationorderupdater sou ON so.order_id=sou.order_id
+WHERE so.volume_remaining > sou.volume_remaining OR so.price > sou.price
+"""

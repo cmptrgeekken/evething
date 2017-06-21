@@ -58,6 +58,7 @@ from thing.models.spentry import SPEntry
 from thing.models.spremap import SPRemap
 from thing.models.spskill import SPSkill
 from thing.models.stationorder import StationOrder
+from thing.models.stationorderupdater import StationOrderUpdater
 from thing.models.taskstate import TaskState
 from thing.models.transaction import Transaction
 from thing.models.userprofile import UserProfile
