@@ -365,7 +365,7 @@ def pricer(request):
                     }
                 pricer_items[name]['qty'] += entry['quantity']
 
-            items = Item.objects.filter(name__iregex=r'(^' + '|'.join([re.escape(n) for n in pricer_items.keys()]) + '$)')
+            items = Item.objects.filter(name__iregex=r'(^' + '$|^'.join([re.escape(n) for n in pricer_items.keys()]) + '$)')
             for item in items:
                 pricer_item = pricer_items[item.name.lower()]
                 item_orders, ttl_price_best, ttl_price_multibuy, last_updated, qty_remaining = item.get_current_orders(pricer_item['qty'])
