@@ -75,8 +75,10 @@
                                     <a href="#" data-toggle="modal" data-target="#modal-{{ item.id }}">
                                         {{ item.z_ttl_price_multibuy|commas }}
                                     </a>
+
+                                    {% if item.z_station_count > 1 %}<br/>(Stations: {{ item.z_station_count|commas }}){% endif %}
                                 </td>
-                                <td class="align-right hidden-xs{% if z_multibuy_test %} buy-best{% endif %}">{{ item.z_ttl_price_best|commas }}</td>
+                                <td class="align-right hidden-xs{% if item.z_multibuy_test %} buy-best{% endif %}">{{ item.z_ttl_price_best|commas }}</td>
                             </tr>
                         {% endfor %}
                         <tr>

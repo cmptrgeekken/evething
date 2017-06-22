@@ -368,7 +368,7 @@ def pricer(request):
             items = Item.objects.filter(name__iregex=r'(^' + '$|^'.join([re.escape(n) for n in pricer_items.keys()]) + '$)')
             for item in items:
                 pricer_item = pricer_items[item.name.lower()]
-                item_orders, ttl_price_best, ttl_price_multibuy, last_updated, qty_remaining = item.get_current_orders(pricer_item['qty'])
+                item_orders, ttl_price_best, ttl_price_multibuy, last_updated, qty_remaining, station_count = item.get_current_orders(pricer_item['qty'])
 
                 item.z_qty_remaining = qty_remaining
                 item.z_qty = pricer_item['qty'] - qty_remaining
@@ -378,6 +378,7 @@ def pricer(request):
                 item.z_last_updated = last_updated
                 item.z_ttl_volume = item.volume * item.z_qty
                 item.z_multibuy_test = float(ttl_price_best) < float(ttl_price_multibuy) * 0.99
+                item.z_station_count = station_count
 
                 total_volume += item.z_ttl_volume
                 total_best += item.z_ttl_price_best

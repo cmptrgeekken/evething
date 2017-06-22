@@ -86,6 +86,7 @@ class Item(models.Model):
 
         last_updated = None
 
+        stations = {}
         for order in orders:
             order_qty = min(qty_remaining, order.volume_remaining)
 
@@ -98,11 +99,15 @@ class Item(models.Model):
 
             last_updated = order.last_updated if last_updated is None else max(last_updated, order.last_updated)
 
+            if order.station_id not in stations:
+                stations[order.station_id] = 0
+            stations[order.station_id] += 1
+
             ttl_price_multibuy = quantity * order.price
             if qty_remaining <= 0:
                 break
 
-        return orders_list, ttl_price_best, ttl_price_multibuy, last_updated, qty_remaining
+        return orders_list, ttl_price_best, ttl_price_multibuy, last_updated, qty_remaining, len(stations)
 
     def get_history_avg(self, days=5, region_id=10000002, issued=None, pct=1.0):
         from thing.models.pricehistory import PriceHistory
