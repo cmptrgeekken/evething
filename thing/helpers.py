@@ -169,6 +169,10 @@ def month_name(num):
 def date(d, f):
     return d.strftime(f)
 
+@register.filter
+def timeago(d):
+    return d.strftime('%Y-%m-%dT%H:%M:%S+0000')
+
 # Shorten numbers to a human readable version
 THOUSAND = 10 ** 3
 TEN_THOUSAND = 10 ** 4

@@ -65,6 +65,45 @@ class Item(models.Model):
     def icon(self, w=32):
         return "https://imageserver.eveonline.com/InventoryType/%d_%d.png" % (self.id, w)
 
+    def get_current_orders(self, quantity, buy=False, ignored_stations=None):
+        from thing.models.stationorder import StationOrder
+
+        orders = StationOrder.objects.filter(item_id=self.id)
+
+        if ignored_stations is not None:
+            orders = orders.exclude(station_id__in=ignored_stations)
+
+        orders = orders.filter(buy_order=buy)
+
+        orders = orders.order_by('price')
+
+        qty_remaining = quantity
+
+        orders_list = []
+
+        ttl_price_best = 0
+        ttl_price_multibuy = 0
+
+        last_updated = None
+
+        for order in orders:
+            order_qty = min(qty_remaining, order.volume_remaining)
+
+            qty_remaining = max(0, qty_remaining-order_qty)
+            ttl_price_best += order_qty * order.price
+
+            order.z_order_qty = order_qty
+
+            orders_list.append(order)
+
+            last_updated = order.last_updated if last_updated is None else max(last_updated, order.last_updated)
+
+            ttl_price_multibuy = quantity * order.price
+            if qty_remaining <= 0:
+                break
+
+        return orders_list, ttl_price_best, ttl_price_multibuy, last_updated, qty_remaining
+
     def get_history_avg(self, days=5, region_id=10000002, issued=None, pct=1.0):
         from thing.models.pricehistory import PriceHistory
 

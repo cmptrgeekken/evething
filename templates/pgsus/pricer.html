@@ -1,0 +1,151 @@
+{% extends "web_template.html" %}
+{% import 'macros/common.html' as common %}
+
+{% block title %}Pricer{% endblock %}
+
+{% block content %}
+
+<section class="bg-19 bg-center bg-cover">
+    <div>
+        <div class="container section-sm">
+            <h1 class="top-title">Pricing Calculator</h1>
+        </div>
+    </div>
+</section>
+
+
+
+<section class="container section-md">
+    <div class="row">
+        <div class="col-md-4">
+            <h2><a data-toggle="collapse" href="#formEntry" aria-expanded="False"><i class="fa fa-chevron-right"></i>Desired Items</a></h2>
+            <form id="formEntry" class="collapse form-horizontal{% if items|length == 0 %} in{% endif %}" method="post" action="{{ url('pgsus.views.pricer') }}">
+                {{ csrf() }}
+                {% if invalid_lines %}
+                    <div class="alert alert-danger" role="alert">
+                        <h4 class="alert-heading">The following lines could not be parsed:</h4>
+                        <ul>
+                            {% for line in invalid_lines %}
+                                <li>{{ line }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+                <textarea name="text_input" rows="15" style="width: 100%;" placeholder="Paste desired items here (e.g., 1000 Tritanium)">{{ text_input }}</textarea>
+                <div class="form-group">
+                    <label class="col-sm-7 col-form-label" for="compress_ores">Compress Mineral Imports:</label>
+                    <div class="col-sm-1">
+                        <input id="compress_ores" type="checkbox"{% if compress_ores %} checked="checked"{% endif %} name="compress_ores" value="true"/>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    Submit
+                </button>
+            </form>
+        </div>
+        {% if items|length > 0 %}
+        <div class="row">
+            <div class="col-md-12">
+                <h2>
+                    Items to Purchase
+                    <i>
+                        <small>
+                            (Last Updated: <time class="timeago" datetime="{{price_last_updated|timeago}}">
+                                {{ price_last_updated }}
+                            </time>)
+                        </small>
+                    </i>
+                </h2>
+                <div class="form-group">
+                    <table class="table table-bordered">
+                        <tr>
+                            <th>Item</th>
+                            <th class="align-right">Qty</th>
+                            <th class="align-right hidden-xs">Volume</th>
+                            <th class="align-right">Total<span class="hidden-xs"> (Buy All)</span></th>
+                            <th class="align-right hidden-xs"><abbr title="Values marked green save at least 1% if purchasing individual sell orders.">Total (Optimal)</abbr></th>
+                        </tr>
+
+                        {% for item in items %}
+                            <tr>
+                                <th>{{ item.name }}{% if item.z_qty_remaining > 0 %}<br/><small>** Couldn't Fulfill All!! **</small>{% endif %}</th>
+                                <td class="align-right">{{ item.z_qty|commas }}{% if item.z_qty_remaining > 0 %}<br/><small>({{ item.z_qty_remaining|commas }} left)</small>{% endif %}</td>
+                                <td class="align-right hidden-xs">{{ (item.z_ttl_volume)|commas }} m<sup>3</sup></td>
+                                <td class="align-right">
+                                    <a href="#" data-toggle="modal" data-target="#modal-{{ item.id }}">
+                                        {{ item.z_ttl_price_multibuy|commas }}
+                                    </a>
+                                </td>
+                                <td class="align-right hidden-xs{% if z_multibuy_test %} buy-best{% endif %}">{{ item.z_ttl_price_best|commas }}</td>
+                            </tr>
+                        {% endfor %}
+                        <tr>
+                            <td class=""></td>
+                            <th class="align-right">Subtotal</th>
+                            <th class="align-right hidden-xs">{{ total_volume|commas }} m<sup>3</sup></th>
+                            <th class="align-right">{{ total_worst|commas }}</th>
+                            <th class="align-right hidden-xs">{{ total_best|commas }}</th>
+                        </tr>
+                        <tr>
+                            <td></td>
+                            <td class="hidden-xs"></td>
+                            <th class="align-right">Shipping</th>
+                            <th class="align-right">{{ total_shipping }}</th>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td></td>
+                            <td class="hidden-xs"></td>
+                            <th class="align-right">Total</th>
+                            <th class="align-right">{{ total_cost }}</th>
+                            <td></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}
+
+{% block modals %}
+    {% for item in items %}
+    <div class="modal fade" id="modal-{{ item.id }}" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title">Market for {{ item.name }} (Need {{ item.z_qty|commas }} Items)</h4>
+                </div>
+                <div class="modal-body modal-body-scroll">
+                    <table class="table table-striped">
+                        <tr>
+                            <th>Quantity</th>
+                            <th>Price</th>
+                            <th>Location</th>
+                        </tr>
+                        {% for order in item.z_orders %}
+                        <tr class="{% if False %}market-order-buy{% endif %}">
+                            <td class="align-right">
+                                <div>{{ order.volume_remaining|commas }}</div>
+                                {% if order.z_order_qty > 0 %}
+                                <div><abbr title="Quantity to Purchase">{{ order.z_order_qty|commas }}</abbr></div>
+                                {% endif %}
+                            </td>
+                            <td class="align-right">
+                                <div>{{ order.price|commas }} ISK</div>
+                                {% if order.z_order_qty > 0 %}
+                                    <div><abbr title="Purchase Cost">{{ (order.price*order.z_order_qty)|commas }} ISK</abbr></div>
+                                {% endif %}
+                            </td>
+                            <td>{{ order.station.name }}</td>
+                        </tr>
+                        {% endfor %}
+                    </table>
+                </div>
+            </div><!-- /.modal-content -->
+        </div><!-- /.modal-dialog -->
+    </div><!-- /.modal -->
+    {% endfor %}
+{% endblock %}

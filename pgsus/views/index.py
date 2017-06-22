@@ -335,6 +335,74 @@ def freighter(request):
     return out
 
 
+def pricer(request):
+    parse_results = None
+    text_input = ''
+
+    if request.method == 'POST':
+        text_input = request.POST.get('text_input')
+
+        try:
+            parse_results = parse(text_input)
+        except evepaste.Unparsable:
+            parse_results = None
+
+    total_volume = 0
+
+    item_list = []
+    pricer_items = {}
+    price_last_updated = None
+    total_best = 0
+    total_worst = 0
+    if parse_results is not None:
+        for kind, results in parse_results['results']:
+            for entry in results:
+                name = entry['name'].lower()
+                if name not in pricer_items:
+                    pricer_items[name] = {
+                        'qty': 0,
+                        'item': None,
+                    }
+                pricer_items[name]['qty'] += entry['quantity']
+
+            items = Item.objects.filter(name__iregex=r'(^' + '|'.join([re.escape(n) for n in pricer_items.keys()]) + '$)')
+            for item in items:
+                pricer_item = pricer_items[item.name.lower()]
+                item_orders, ttl_price_best, ttl_price_multibuy, last_updated, qty_remaining = item.get_current_orders(pricer_item['qty'])
+
+                item.z_qty_remaining = qty_remaining
+                item.z_qty = pricer_item['qty'] - qty_remaining
+                item.z_ttl_price_best = ttl_price_best
+                item.z_ttl_price_multibuy = ttl_price_multibuy
+                item.z_orders = item_orders
+                item.z_last_updated = last_updated
+                item.z_ttl_volume = item.volume * item.z_qty
+                item.z_multibuy_test = float(ttl_price_best) < float(ttl_price_multibuy) * 0.99
+
+                total_volume += item.z_ttl_volume
+                total_best += item.z_ttl_price_best
+                total_worst += item.z_ttl_price_multibuy
+
+                price_last_updated = last_updated if price_last_updated is None else max(price_last_updated, last_updated)
+
+                item_list.append(item)
+
+    out = render_page(
+        'pgsus/pricer.html',
+        dict(
+            items=item_list,
+            text_input=text_input,
+            parse_results=parse_results,
+            total_best=total_best,
+            total_worst=total_worst,
+            total_volume=total_volume,
+            price_last_updated=price_last_updated
+        ),
+        request,
+    )
+
+    return out
+
 def couriers(request):
     out = render_page(
         'pgsus/couriers.html',
