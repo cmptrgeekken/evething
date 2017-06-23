@@ -63,7 +63,7 @@
                             <th class="align-right">Qty</th>
                             <th class="align-right hidden-xs">Volume</th>
                             <th class="align-right">Total<span class="hidden-xs"> (Buy All)</span></th>
-                            <th class="align-right hidden-xs"><abbr title="Values marked green save at least 1% if purchasing individual sell orders.">Total (Optimal)</abbr></th>
+                            <th class="align-right hidden-xs"><abbr title="Values marked green save at least 2% if purchasing individual sell orders.">Total (Optimal)</abbr></th>
                         </tr>
 
                         {% for item in items %}
@@ -92,14 +92,14 @@
                             <td></td>
                             <td class="hidden-xs"></td>
                             <th class="align-right">Shipping</th>
-                            <th class="align-right">{{ total_shipping }}</th>
+                            <th class="align-right">{{ total_shipping|commas }}</th>
                             <td></td>
                         </tr>
                         <tr>
                             <td></td>
                             <td class="hidden-xs"></td>
                             <th class="align-right">Total</th>
-                            <th class="align-right">{{ total_cost }}</th>
+                            <th class="align-right">{{ total_price|commas }}</th>
                             <td></td>
                         </tr>
                     </table>
@@ -125,6 +125,8 @@
                         <tr>
                             <th>Quantity</th>
                             <th>Price</th>
+                            <th>Shipping</th>
+                            <th>Total</th>
                             <th>Location</th>
                         </tr>
                         {% for order in item.z_orders %}
@@ -139,9 +141,27 @@
                                 <div>{{ order.price|commas }} ISK</div>
                                 {% if order.z_order_qty > 0 %}
                                     <div><abbr title="Purchase Cost">{{ (order.price*order.z_order_qty)|commas }} ISK</abbr></div>
+
                                 {% endif %}
                             </td>
-                            <td>{{ order.station.name }}</td>
+                            <td>
+                                {% if order.z_shipping > 0 %}
+                                    {{ order.z_shipping|commas }} ISK
+                                    {% if order.z_order_qty > 0 %}
+                                    <div><abbr title="Total Shipping">{{ (order.z_order_qty*order.z_shipping)|commas }}</abbr></div>
+                                    {% endif %}
+                                {% else %}
+                                <i>N/A</i>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div>{{ (order.price|float+order.z_shipping)|commas }} ISK</div>
+                                {% if order.z_order_qty > 0 %}
+                                    <div><abbr title="Purchase Cost">{{ ((order.price|float+order.z_shipping)*order.z_order_qty)|commas }} ISK</abbr></div>
+
+                                {% endif %}
+                            </td>
+                            <td>{{ order.station.short_name or order.station.name }}</td>
                         </tr>
                         {% endfor %}
                     </table>

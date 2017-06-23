@@ -73,9 +73,17 @@ class Item(models.Model):
         if ignored_stations is not None:
             orders = orders.exclude(station_id__in=ignored_stations)
 
+        orders = orders.select_related('item')
+
+        # TODO: Move Shipping Calculation to separate table
+        orders = orders.extra(select={
+            'price_with_shipping': 'CASE WHEN station_id = 60003760 THEN price*1.015 + volume*390 ELSE price END',
+            'shipping': 'CASE WHEN station_id = 60003760 THEN price*0.015 + volume*390 ELSE 0 END'
+        })
+
         orders = orders.filter(buy_order=buy)
 
-        orders = orders.order_by('price')
+        orders = orders.order_by('price_with_shipping')
 
         qty_remaining = quantity
 
@@ -83,6 +91,8 @@ class Item(models.Model):
 
         ttl_price_best = 0
         ttl_price_multibuy = 0
+        ttl_shipping = 0
+        ttl_price_plus_shipping = 0
 
         last_updated = None
 
@@ -94,6 +104,8 @@ class Item(models.Model):
             ttl_price_best += order_qty * order.price
 
             order.z_order_qty = order_qty
+            order.z_price_with_shipping = round(order.price_with_shipping*100)/100
+            order.z_shipping = round(order.shipping*100)/100
 
             orders_list.append(order)
 
@@ -103,9 +115,25 @@ class Item(models.Model):
                 stations[order.station_id] = 0
             stations[order.station_id] += 1
 
+            ttl_shipping += order.z_shipping*order_qty
+            ttl_price_plus_shipping += order.z_price_with_shipping*order_qty
+
             ttl_price_multibuy = quantity * order.price
             if qty_remaining <= 0:
                 break
+
+        self.z_qty_remaining = qty_remaining
+        self.z_qty = quantity - qty_remaining
+        self.z_ttl_price_best = ttl_price_best
+        self.z_ttl_price_multibuy = ttl_price_multibuy
+        self.z_orders = orders_list
+        self.z_last_updated = last_updated
+        self.z_ttl_volume = self.volume * self.z_qty
+        self.z_ttl_shipping = ttl_shipping
+        self.z_ttl_price_plus_shipping = ttl_price_plus_shipping
+        self.z_multibuy_test = float(ttl_price_best) < float(ttl_price_multibuy) * 0.98
+        self.z_station_count = len(stations)
+        self.z_last_updated = last_updated
 
         return orders_list, ttl_price_best, ttl_price_multibuy, last_updated, qty_remaining, len(stations)
 

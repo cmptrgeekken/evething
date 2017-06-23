@@ -354,6 +354,8 @@ def pricer(request):
     price_last_updated = None
     total_best = 0
     total_worst = 0
+    total_shipping = 0
+    total_price = 0
     if parse_results is not None:
         for kind, results in parse_results['results']:
             for entry in results:
@@ -368,23 +370,16 @@ def pricer(request):
             items = Item.objects.filter(name__iregex=r'(^' + '$|^'.join([re.escape(n) for n in pricer_items.keys()]) + '$)')
             for item in items:
                 pricer_item = pricer_items[item.name.lower()]
-                item_orders, ttl_price_best, ttl_price_multibuy, last_updated, qty_remaining, station_count = item.get_current_orders(pricer_item['qty'])
-
-                item.z_qty_remaining = qty_remaining
-                item.z_qty = pricer_item['qty'] - qty_remaining
-                item.z_ttl_price_best = ttl_price_best
-                item.z_ttl_price_multibuy = ttl_price_multibuy
-                item.z_orders = item_orders
-                item.z_last_updated = last_updated
-                item.z_ttl_volume = item.volume * item.z_qty
-                item.z_multibuy_test = float(ttl_price_best) < float(ttl_price_multibuy) * 0.99
-                item.z_station_count = station_count
+                item.get_current_orders(pricer_item['qty'])
 
                 total_volume += item.z_ttl_volume
+                total_shipping += item.z_ttl_shipping
+                total_price += item.z_ttl_price_plus_shipping
+
                 total_best += item.z_ttl_price_best
                 total_worst += item.z_ttl_price_multibuy
 
-                price_last_updated = last_updated if price_last_updated is None else max(price_last_updated, last_updated)
+                price_last_updated = item.z_last_updated if price_last_updated is None else max(price_last_updated, item.z_last_updated)
 
                 item_list.append(item)
 
@@ -397,6 +392,8 @@ def pricer(request):
             total_best=total_best,
             total_worst=total_worst,
             total_volume=total_volume,
+            total_shipping=total_shipping,
+            total_price=total_price,
             price_last_updated=price_last_updated
         ),
         request,
