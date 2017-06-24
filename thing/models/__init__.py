@@ -46,6 +46,7 @@ from thing.models.corpwallet import CorpWallet
 from thing.models.event import Event
 from thing.models.factionstanding import FactionStanding
 from thing.models.industryjob import IndustryJob
+from thing.models.itemstationseed import ItemStationSeed
 from thing.models.journalentry import JournalEntry
 from thing.models.mailinglist import MailingList
 from thing.models.mailmessage import MailMessage

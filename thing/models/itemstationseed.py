@@ -26,14 +26,14 @@
 
 from django.db import models
 from thing.models.item import Item
+from thing.models.station import Station
 
 
-class PriceWatch(models.Model):
+class ItemStationSeed(models.Model):
     id = models.IntegerField(primary_key=True)
     item = models.ForeignKey(Item)
-    price_group = models.CharField(max_length=64, null=True)
-    price_type = models.CharField(max_length=8, default='5day')
-    price_pct = models.DecimalField(max_digits=18, decimal_places=2, default=1)
+    station = models.ForeignKey(Station)
+    min_qty = models.IntegerField(default=0, null=False)
     active = models.BooleanField(default=False)
 
     class Meta:

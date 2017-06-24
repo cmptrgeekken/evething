@@ -45,6 +45,8 @@ class FreighterPriceModel(models.Model):
     max_collateral = models.DecimalField(max_digits=15, decimal_places=2, default=0)
     max_m3 = models.DecimalField(max_digits=15, decimal_places=2, default=0)
 
+    is_thirdparty = models.BooleanField(default=False)
+
     sort_order = models.IntegerField(default=0)
 
     class Meta:
