@@ -230,7 +230,7 @@ def fuel(request):
 
 
 def freighter(request):
-    all_price_models = FreighterPriceModel.objects.distinct()
+    all_price_models = FreighterPriceModel.objects.filter(is_thirdparty=0).distinct()
 
     all_systems = defaultdict(list)
     for result in FreighterSystem.objects.values('system__constellation__region__name', 'system__name').distinct().order_by('system__constellation__region__name', 'system__name'):
