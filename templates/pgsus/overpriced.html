@@ -1,0 +1,178 @@
+{% extends "web_template.html" %}
+{% import 'macros/common.html' as common %}
+  
+{% block title %}Overpriced Items{% endblock %}
+
+{% block extra_js %}
+    <script type="text/javascript">
+      /*$(document).ready(function () {
+        // call the tablesorter plugin
+        $("#overpriced-table").tablesorter({
+          widgets: ['uitheme', 'filter'],
+          theme: 'bootstrap',
+          widthFixed: true,
+          sortList: [[0, 1]],
+          headerTemplate : '{content} {icon}'
+        });
+      });*/
+    </script>
+{% endblock %}
+
+{% block content %}
+<section class="bg-19 bg-center bg-cover">
+    <div>
+        <div class="container section-sm">
+            <h1 class="top-title">Overpriced Items</h1>
+        </div>
+    </div>
+</section>
+
+
+
+<section class="container section-md">
+      <div class="row">
+        <div class="col-lg-12">
+
+          <h2><a data-toggle="collapse" href="#formEntry" aria-expanded="False"><i class="fa fa-chevron-right"></i>Configuration</a></h2>
+          <form id="formEntry" class="collapse form-horizontal{% if items|length == 0 %} in{% endif %}" method="post" action="{{ url('pgsus.views.overpriced') }}">
+              <input type="hidden" name="page" value="{{ page }}"/>
+            {{ csrf() }}
+            <div class="form-group">
+                <label class="col-sm-4 col-form-label" for="item_list">Items:</label>
+                <div class="col-sm-8">
+                    <textarea name="item_list" id="item_list" rows="10" style="width: 65%;" placeholder="Paste fittings to view here (e.g., 50MN Y-T8 Compact Microwarpdrive)">{{ item_list }}</textarea>
+                </div>
+            </div>
+            <div class="form-group">
+                  <label class="col-sm-4 col-form-label" for="station_names">Stations:</label>
+                  <div class="col-sm-8">
+                      <select name="station_names" id="station_names" multiple="multiple" class="js-select2 input-lg">
+                          {% for station, selected in stations.items() %}
+                          <option value="{{station}}"{%if selected %} selected{% endif %}>{{ station }}</option>
+                          {% endfor %}
+                      </select>
+                  </div>
+              </div>
+
+              <div class="form-group">
+                  <label class="col-sm-4 col-form-label" for="market_groups">Market Groups:</label>
+                  <div class="col-sm-8">
+                      <select name="market_groups" id="market_groups" multiple="multiple" class="js-select2 input-lg">
+                          {% for group in market_groups %}
+                          <option value="{{group}}"{%if market_groups[group] %} selected{% endif %}>{{group}}</option>
+                          {% endfor %}
+                      </select>
+                  </div>
+              </div>
+
+              <div class="form-group">
+                  <label class="col-sm-4 col-form-label" for="pct_over">Percent Over:</label>
+                  <div class="col-sm-8">
+                      <select name="pct_over" id="pct_over" class="js-select2 input-lg">
+                          <option value="120"{%if pct_over==120 %} selected{% endif %}>120%</option>
+                          <option value="150"{%if pct_over==150 %} selected{% endif %}>150%</option>
+                          <option value="200"{%if pct_over==200 %} selected{% endif %}>200%</option>
+                          <option value="300"{%if pct_over==300 %} selected{% endif %}>300%</option>
+                          <option value="500"{%if pct_over==500 %} selected{% endif %}>500%</option>
+                      </select>
+                  </div>
+              </div>
+
+                <div class="form-group">
+                  <label class="col-sm-4 col-form-label" for="page_size">Items per Page:</label>
+                  <div class="col-sm-8">
+                      <select name="page_size" id="page_size" class="js-select2 input-lg">
+                          {% for size in [50,100,200,500] %}
+                          <option value="{{ size }}"{% if page_size == size %} selected{% endif %}>{{ size }}</option>
+                          {% endfor %}
+                      </select>
+                  </div>
+              </div>
+
+              <button type="submit" class="btn btn-primary">
+                  Submit
+              </button>
+
+
+          <div class="row">
+              <div class="col-lg-12">
+                <h4>Showing {{ (page-1)*page_size+1 }} - {{ end_item }} of {{ total_items }} results</h4>
+                <nav aria-label="Page navigation">
+                  <ul class="pagination">
+                    {% if page > 1 %}
+                    <li>
+                        <button type="submit" class="btn" aria-label="Previous" name="prev_page">
+                            <span aria-hidden="true">&laquo;</span>
+                        </button>
+                    </li>
+                    {% endif %}
+                    {% if end_item < total_items %}
+                    <li>
+                        <button type="submit" class="btn" aria-label="Next" name="next_page">
+                            <span aria-hidden="true">&raquo;</span>
+                        </button>
+                    </li>
+                    {% endif %}
+                  </ul>
+                </nav>
+                <table id="overpriced-table" class="table table-striped table-bordered table-condensed">
+                    <thead>
+                      <tr class="c">
+                        <th>Item</th>
+                        <th>Station</th>
+                        <th style="text-align: right">Price</th>
+                        <th style="text-align: right">Jita Price + Shipping</th>
+                        <th style="text-align: right">Jita</th>
+                        <th style="text-align: right">Shipping</th>
+                        <th style="text-align: right">Volume</th>
+                        <th style="text-align: right">Percent</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for item in overpriced_items -%}
+                      <tr>
+                        <td>{{ item.item_name }}</td>
+                        <td>{{ item.station_name }}</td>
+                        <td style="text-align: right">{{ item.avg_price|round_price|commas}}</td>
+                        <td style="text-align: right">{{ item.jita_price_plus_shipping|round_price|commas }}</td>
+                        <td style="text-align: right">{{ item.jita_price|round_price|commas }}</td>
+                        <td style="text-align: right">{{ item.jita_shipping|round_price|commas }}</td>
+                        <td style="text-align: right">{{ item.volume|commas }}</td>
+                        {% autoescape off %}
+                        <td style="text-align: right">{{ item.overpriced_pct|commas }}%</td>
+                        {% endautoescape %}
+                      </tr>
+                      {%- else -%}
+                      <tr>
+                        <td colspan="8">No items.</td>
+                      </tr>
+                      {%- endfor %}
+                    </tbody>
+                  </table>
+              </div>
+          </div>
+
+            <nav aria-label="Page navigation">
+              <ul class="pagination">
+                {% if page > 1 %}
+                <li>
+                    <button type="submit" class="btn" aria-label="Previous" name="prev_page">
+                        <span aria-hidden="true">&laquo;</span>
+                    </button>
+                </li>
+                {% endif %}
+                {% if end_item < total_items %}
+                <li>
+                    <button type="submit" class="btn" aria-label="Next" name="next_page">
+                        <span aria-hidden="true">&raquo;</span>
+                    </button>
+                </li>
+                {% endif %}
+              </ul>
+            </nav>
+
+          </form>
+        </div>
+      </div>
+</section>
+{% endblock %}

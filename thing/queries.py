@@ -577,3 +577,46 @@ WHERE s.name like 'Jita%' AND so.price > .01 AND buy_order=1
 GROUP BY so.item_id) bo
 WHERE so.id = bo.id
 """
+
+stationorder_overpriced_base_query = """
+SELECT ic.name AS category, 
+   ig.name AS grp, 
+   mg1.name AS mg1,
+   mg2.name AS mg2,
+   mg3.name AS mg3,
+   mg4.name AS mg4,
+   mg5.name AS mg5,
+   mg6.name AS mg6,
+   i.id AS item_id, 
+   i.name AS item_name,
+   s.id as station_id, 
+   s.name AS station_name, 
+   SUM(so.volume_remaining) AS volume,
+   SUM(so.volume_remaining*so.price)/SUM(so.volume_remaining) AS avg_price, 
+   i.sell_fivepct_price AS jita_price, 
+   i.sell_fivepct_price*pm.cross_region_collateral+i.volume*pm.cross_region_m3 AS jita_shipping 
+FROM thing_stationorder so 
+INNER JOIN thing_station s ON s.id=so.station_id
+INNER JOIN thing_item i ON so.item_id=i.id
+INNER JOIN thing_itemgroup ig ON i.item_group_id=ig.id
+INNER JOIN thing_itemcategory ic ON ig.category_id=ic.id
+INNER JOIN thing_marketgroup mg1 ON i.market_group_id=mg1.id
+LEFT JOIN thing_marketgroup mg2 ON mg1.parent_id=mg2.id
+LEFT JOIN thing_marketgroup mg3 ON mg2.parent_id=mg3.id
+LEFT JOIN thing_marketgroup mg4 ON mg3.parent_id=mg4.id
+LEFT JOIN thing_marketgroup mg5 ON mg4.parent_id=mg5.id
+LEFT JOIN thing_marketgroup mg6 ON mg5.parent_id=mg6.id
+INNER JOIN thing_freightersystem fs ON fs.system_id=s.system_id
+INNER JOIN thing_freighterpricemodel pm ON fs.price_model_id=pm.id
+INNER JOIN thing_freightersystem fs2 ON fs2.price_model_id=pm.id AND fs2.system_id=30000142
+WHERE so.station_id != 60003760 AND so.buy_order=0 
+GROUP BY so.item_id, so.station_id
+"""
+
+stationorder_overpriced = """
+SELECT *, jita_price+jita_shipping AS jita_price_plus_shipping, CAST((avg_price / (jita_price + jita_shipping)) * 10000 AS Integer)/100 AS overpriced_pct
+FROM (""" + stationorder_overpriced_base_query + """
+    ) o 
+   WHERE o.avg_price > (o.jita_price+o.jita_shipping)*1.2 AND o.jita_price > 0
+   ORDER BY item_name
+"""

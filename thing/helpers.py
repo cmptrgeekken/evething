@@ -69,6 +69,9 @@ def commas(value):
             break
     return ''.join(parts)
 
+@register.filter
+def round_price(value):
+    return round(value, 2)
 
 def _commafy(s):
     r = []
@@ -197,6 +200,19 @@ def lvl(value, best=5, better=4, append=""):
 @register.filter
 def implant_lvl(value):
     return lvl(value, 5, 3, "%")
+
+
+@register.filter
+def pct_over(value):
+    value_fmt = "<b>%s</b>"
+    if value < 200:
+        cls = 'txt-success'
+    elif value < 400:
+        cls = 'txt-info'
+    else:
+        cls = 'txt-danger'
+
+    return '<span class="%s">%s%%</span>' % (cls, value_fmt % value)
 
 
 @register.filter

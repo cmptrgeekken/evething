@@ -413,6 +413,126 @@ def couriers(request):
     return out
 
 
+def overpriced(request):
+    overpriced_items = []
+
+    stations = dict()
+    market_groups = dict()
+
+    select_station_names = []
+    select_market_groups = []
+    pct_over = 120
+    page = 1
+    page_size = 50
+
+    item_list = ''
+    item_names = set()
+
+    if request.method == 'POST':
+        select_station_names = request.POST.getlist('station_names')
+        select_market_groups = request.POST.getlist('market_groups')
+        pct_over = int(request.POST.get('pct_over'))
+        page = int(request.POST.get('page'))
+        page_size = int(request.POST.get('page_size'))
+
+        if 'prev_page' in request.POST:
+            page -= 1
+        elif 'next_page' in request.POST:
+            page += 1
+
+        item_list = request.POST.get('item_list')
+
+        try:
+            parse_results = parse(item_list)
+        except evepaste.Unparsable:
+            parse_results = None
+
+        if parse_results is not None:
+            for kind, results in parse_results['results']:
+                for entry in results:
+                    if isinstance(entry, str):
+                        # item_list = results['name']
+                        continue
+                    else:
+                        name = entry['name'].lower()
+                        item_names.add(name)
+
+    idx = 0
+
+    all_items = dictfetchall(queries.stationorder_overpriced)
+
+    for item in all_items:
+        if item['station_name'] not in stations:
+            stations[item['station_name']] = False
+        
+        item_groups = [item['mg1'], item['mg2'], item['mg3'], item['mg4'], item['mg5'], item['mg6']]
+
+        market_group_found = False
+        for group in item_groups:
+            if group is None:
+                continue
+
+            if group not in market_groups:
+                market_groups[group] = False
+
+            if len(select_market_groups) > 0:
+                for select_group in select_market_groups:
+                    if group == select_group:
+                        market_group_found = True
+                        break
+            else:
+                market_group_found = True
+
+        if not market_group_found:
+            continue
+
+        station_found = False
+        if len(select_station_names) > 0:
+            for station_name in select_station_names:
+                if item['station_name'] == station_name:
+                    station_found = True
+                    break
+        else:
+            station_found = True
+                    
+        if not station_found:
+            continue
+
+        if int(item['overpriced_pct']) < int(pct_over):
+            continue
+
+        if len(item_names) > 0 and item['item_name'].lower() not in item_names:
+            continue
+
+        idx += 1
+
+        if (page-1)*page_size+1 <= idx < page*page_size:
+            overpriced_items.append(item)
+
+    for name in select_station_names:
+        stations[name] = True
+
+    for name in select_market_groups:
+        market_groups[name] = True
+
+    out = render_page(
+        'pgsus/overpriced.html',
+        dict(
+            overpriced_items=overpriced_items,
+            stations=stations,
+            item_list=item_list,
+            market_groups=market_groups,
+            pct_over=pct_over,
+            page=page,
+            page_size=page_size,
+            total_items=idx,
+            end_item=min(page_size*page, idx),
+        ),
+        request
+    )
+
+    return out
+
 def get_cursor(db='default'):
     return connections[db].cursor()
 
