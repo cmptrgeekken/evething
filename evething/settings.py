@@ -257,6 +257,7 @@ CELERYBEAT_SCHEDULE = {
         'schedule': timedelta(days=1),
         'options': {
             'expires': 239*60,
+            'queue': 'et_medium',
         },
         'args': (),
     },

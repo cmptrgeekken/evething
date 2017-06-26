@@ -31,7 +31,6 @@ from thing.models import StationOrder, Item
 from thing import queries
 
 
-
 class AvgCalculator(APITask):
     name = 'thing.avg_calculator'
 
