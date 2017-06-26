@@ -538,7 +538,16 @@ select i.name AS item_name,s.name AS station_name,iss.min_qty,SUM(so.volume_rema
 """
 
 stationorder_analysis = """
-SELECT count(*)
+SELECT so.id, 
+    so.name, 
+    so.order_ct AS sell_order_ct, 
+    so.market_volume as sell_market_volume,
+    so.min_price AS sell_min_price,
+    so.avg_price AS sell_avg_price,
+    bo.order_ct as buy_order_ct,
+    bo.market_volume as buy_market_volume,
+    bo.max_price as buy_max_price,
+    bo.avg_price AS buy_avg_price
 FROM
 (SELECT
     i.id,
