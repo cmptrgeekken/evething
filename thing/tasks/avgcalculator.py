@@ -59,6 +59,8 @@ class AvgCalculator(APITask):
             sell_fivepct_volume = int(sell_volume * 0.05)
             buy_fivepct_volume = int(buy_volume * 0.05)
 
+            item = Item.objects.filter(id=item_id).first()
+
             fivepct_total = 0
             fivepct_running_volume = sell_fivepct_volume
             for sell in sell_orders:
@@ -69,6 +71,12 @@ class AvgCalculator(APITask):
                 else:
                     break
 
+            item.sell_total_volume = sell_volume
+            item.sell_avg_price = sell_avg
+            if sell_fivepct_volume > 0:
+                item.sell_fivepct_price = fivepct_total / sell_fivepct_volume
+                item.sell_fivepct_volume = sell_fivepct_volume
+
             fivepct_total = 0
             fivepct_running_volume = buy_fivepct_volume
             for buy in buy_orders:
@@ -78,14 +86,6 @@ class AvgCalculator(APITask):
                     fivepct_running_volume -= diff
                 else:
                     break
-
-            item = Item.objects.filter(id=item_id).first()
-
-            item.sell_total_volume = sell_volume
-            item.sell_avg_price = sell_avg
-            if sell_fivepct_volume > 0:
-                item.sell_fivepct_price = fivepct_total / sell_fivepct_volume
-                item.sell_fivepct_volume = sell_fivepct_volume
 
             item.buy_total_volume = buy_volume
             item.buy_avg_price = buy_avg
