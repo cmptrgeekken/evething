@@ -44,17 +44,18 @@ class Item(models.Model):
     volume = models.DecimalField(max_digits=16, decimal_places=4, default=0)
 
     base_price = models.DecimalField(max_digits=15, decimal_places=2, default=0)
-    sell_price = models.DecimalField(max_digits=15, decimal_places=2, default=0)
-    sell_volume = models.DecimalField(max_digits=15, decimal_places=0, default=0)
-    sell_std_dev = models.DecimalField(max_digits=15, decimal_places=2, default=0)
-    sell_median = models.DecimalField(max_digits=15, decimal_places=2, default=0)
-    sell_percentile = models.DecimalField(max_digits=15, decimal_places=2, default=0)
-    
-    buy_price = models.DecimalField(max_digits=15, decimal_places=2, default=0)
-    buy_volume = models.DecimalField(max_digits=15, decimal_places=0, default=0)
-    buy_std_dev = models.DecimalField(max_digits=15, decimal_places=2, default=0)
-    buy_median = models.DecimalField(max_digits=15, decimal_places=2, default=0)
-    buy_percentile = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+
+    sell_fivepct_price = models.DecimalField(max_digits=20, decimal_places=2, default=0)
+    sell_fivepct_volume = models.IntegerField(default=0)
+
+    sell_avg_price = models.DecimalField(max_digits=20, decimal_places=2, default=0)
+    sell_total_volume = models.IntegerField(default=0)
+
+    buy_fivepct_price = models.DecimalField(max_digits=20, decimal_places=2, default=0)
+    buy_fivepct_volume = models.IntegerField(default=0)
+
+    buy_avg_price = models.DecimalField(max_digits=20, decimal_places=2, default=0)
+    buy_total_volume = models.IntegerField(default=0)
 
     class Meta:
         app_label = 'thing'

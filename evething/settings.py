@@ -252,6 +252,15 @@ CELERYBEAT_SCHEDULE = {
     },
 '''
 
+    'avg_calculator': {
+        'task': 'thing.avg_calculator',
+        'schedule': timedelta(days=1),
+        'options': {
+            'expires': 239*60,
+        },
+        'args': (),
+    },
+
     # update unknown character/corporation names every hour
     'fix-names': {
         'task': 'thing.fix_names',
