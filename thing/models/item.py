@@ -66,9 +66,15 @@ class Item(models.Model):
         return "https://imageserver.eveonline.com/InventoryType/%d_%d.png" % (self.id, w)
 
     def get_current_orders(self, quantity, buy=False, ignored_stations=None):
+        from thing.models.itemstationseed import ItemStationSeed
         from thing.models.stationorder import StationOrder
 
         orders = StationOrder.objects.filter(item_id=self.id)
+
+        seed_items = ItemStationSeed.objects.all()
+
+        for seed_item in seed_items:
+            orders = orders.exclude(item_id=seed_item.item_id, station_id=seed_item.station_id)
 
         if ignored_stations is not None:
             orders = orders.exclude(station_id__in=ignored_stations)
