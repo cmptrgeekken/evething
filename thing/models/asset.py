@@ -71,7 +71,7 @@ class Asset(models.Model):
         blueprint = self.is_blueprint()
 
         if blueprint == 0:
-            return self.item.sell_price
+            return self.item.sell_fivepct_price
         # BPOs use the base (NPC) price
         elif blueprint == -1:
             return self.item.base_price
