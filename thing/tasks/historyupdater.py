@@ -37,7 +37,7 @@ class HistoryUpdater(APITask):
     name = 'thing.history_updater'
 
     def run(self, api_url):
-        self.log_warn('Starting History Updater...')
+        self.init()
 
         # Get a list of all item_ids
         cursor = self.get_cursor()
@@ -48,7 +48,6 @@ class HistoryUpdater(APITask):
         cursor.close()
 
         # Collect data
-        new = []
         for i in range(0, len(items)):
             item_id = items[i]['item_id']
             region_id = items[i]['region_id']
@@ -68,6 +67,7 @@ class HistoryUpdater(APITask):
             for ph in PriceHistory.objects.filter(region=region_id, item=item_id, date__in=data.keys()):
                 del data[str(ph.date)]
 
+            new = []
             for date, history in data.items():
                 new.append(PriceHistory(
                     region_id=region_id,
@@ -80,7 +80,7 @@ class HistoryUpdater(APITask):
                     orders=history['order_count'],
                 ))
 
-        if new:
-            PriceHistory.objects.bulk_create(new)
+            if new:
+                PriceHistory.objects.bulk_create(new)
 
         return True
