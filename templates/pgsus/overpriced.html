@@ -130,27 +130,27 @@
                     <thead>
                       <tr class="c">
                         <th>Item</th>
+                        <th style="text-align: right"><abbr title="30-day Volume">30</abbr></th>
                         <th>Station</th>
                         <th style="text-align: right">Price</th>
-                        <th style="text-align: right">Jita Price + Shipping</th>
-                        <th style="text-align: right">Jita</th>
-                        <th style="text-align: right">Shipping</th>
-                        <th style="text-align: right">30-day Vol</th>
-                        <th style="text-align: right">5-day Vol</th>
-                        <th style="text-align: right">Percent</th>
+                        <th style="text-align: right"><abbr title="20% Profit Sell Price">20%</abbr></th>
+                        <th style="text-align: right"><abbr title="Jita Price + Shipping">J+S</abbr></th>
+                        <th style="text-align: right"><abbr title="Jita Price">J</abbr></th>
+                        <th style="text-align: right"><abbr title="5-day Volume">5</abbr></th>
+                        <th style="text-align: right"><abbr title="Overpriced Percent">Percent</abbr></th>
                       </tr>
                     </thead>
                     <tbody>
                       {% for item in overpriced_items -%}
                       <tr>
                         <td>{{ item.item_name }}</td>
+                        <td style="text-align: right">{{ (item.thirtyday_vol or 0)|commas }}</td>
                         <td>{{ item.station_name }}</td>
                         <td style="text-align: right">{{ item.avg_price|round_price|commas}}</td>
+                        <td style="text-align: right">{{ item.twentypct_profit|round_price|commas }}</td>
                         <td style="text-align: right">{{ item.jita_price_plus_shipping|round_price|commas }}</td>
                         <td style="text-align: right">{{ item.jita_price|round_price|commas }}</td>
-                        <td style="text-align: right">{{ item.jita_shipping|round_price|commas }}</td>
-                        <td style="text-align: right">{{ (item.thirtyday_vol or 0)|commas }}</td>
-                          <td style="text-align: right">{{ (item.fiveday_vol or 0)|commas }}</td>
+                        <td style="text-align: right">{{ (item.fiveday_vol or 0)|commas }}</td>
                         {% autoescape off %}
                         <td style="text-align: right">{{ item.overpriced_pct|commas }}%</td>
                         {% endautoescape %}

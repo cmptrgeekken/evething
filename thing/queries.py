@@ -625,9 +625,12 @@ GROUP BY so.item_id, so.station_id
 """
 
 stationorder_overpriced = """
-SELECT *, jita_price+jita_shipping AS jita_price_plus_shipping, CAST((avg_price / (jita_price + jita_shipping)) * 10000 AS Integer)/100 AS overpriced_pct
+SELECT *, 
+    jita_price+jita_shipping AS jita_price_plus_shipping, 
+    (jita_price+jita_shipping)*1.025*1.02*1.2 AS twentypct_profit,
+    CAST((avg_price / (jita_price + jita_shipping)) * 10000 AS Integer)/100 AS overpriced_pct
 FROM (""" + stationorder_overpriced_base_query + """
     ) o 
    WHERE o.avg_price > (o.jita_price+o.jita_shipping)*1.2 AND o.jita_price > 0
-   ORDER BY item_name
+   ORDER BY overpriced_pct DESC
 """
