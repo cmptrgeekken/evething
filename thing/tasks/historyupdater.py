@@ -36,7 +36,7 @@ HISTORY_PER_REQUEST = 50
 class HistoryUpdater(APITask):
     name = 'thing.history_updater'
 
-    def run(self, api_url, taskstate_id, apikey_id, zero):
+    def run(self, api_url):
         if self.init(taskstate_id) is False:
             return
 
