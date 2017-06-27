@@ -3,21 +3,6 @@
   
 {% block title %}Overpriced Items{% endblock %}
 
-{% block extra_js %}
-    <script type="text/javascript">
-      /*$(document).ready(function () {
-        // call the tablesorter plugin
-        $("#overpriced-table").tablesorter({
-          widgets: ['uitheme', 'filter'],
-          theme: 'bootstrap',
-          widthFixed: true,
-          sortList: [[0, 1]],
-          headerTemplate : '{content} {icon}'
-        });
-      });*/
-    </script>
-{% endblock %}
-
 {% block content %}
 <section class="bg-19 bg-center bg-cover">
     <div>
@@ -88,6 +73,16 @@
                       </select>
                   </div>
               </div>
+              <div class="form-group">
+                  <label class="col-sm-4 col-form-label" for="thirtyday_order">30-day Order Count:</label>
+                  <div class="col-sm-8">
+                      <select name="thirtyday_order" id="thirtyday_order" class="js-select2 input-lg">
+                          {% for i in [1, 5, 50, 100, 500, 1000, 5000] %}
+                          <option value="{{ i }}"{% if thirtyday_order == i %} selected{% endif %}>{{ i }}</option>
+                          {% endfor %}
+                      </select>
+                  </div>
+              </div>
 
                 <div class="form-group">
                   <label class="col-sm-4 col-form-label" for="page_size">Items per Page:</label>
@@ -131,6 +126,7 @@
                       <tr class="c">
                         <th>Item</th>
                         <th style="text-align: right"><abbr title="30-day Volume">30</abbr></th>
+                        <th style="text-align: right"><abbr title="30-day Order Ct">Orders</abbr></th>
                         <th>Station</th>
                         <th style="text-align: right">Local Price</th>
                         <th style="text-align: right"><abbr title="20% Profit Sell Price">20%</abbr></th>
@@ -145,6 +141,7 @@
                       <tr>
                         <td>{{ item.item_name }}</td>
                         <td style="text-align: right">{{ (item.thirtyday_vol or 0)|commas }}</td>
+                        <td style="text-align: right">{{ (item.thirtyday_order or 0)|commas }}</td>
                         <td>{{ item.station_name }}</td>
                         <td style="text-align: right">{{ item.avg_price|round_price|commas}}</td>
                         <td style="text-align: right">{{ item.twentypct_profit|round_price|commas }}</td>

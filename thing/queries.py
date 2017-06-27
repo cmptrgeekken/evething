@@ -602,8 +602,10 @@ SELECT ic.name AS category,
    SUM(so.volume_remaining*so.price)/SUM(so.volume_remaining) AS avg_price, 
    i.sell_fivepct_price AS jita_price, 
    i.sell_fivepct_price*pm.cross_region_collateral+i.volume*pm.cross_region_m3 AS jita_shipping,
-   (SELECT SUM(movement) FROM thing_pricehistory WHERE item_id=i.id AND region_id=c.region_id AND date > DATE('now', '-30 Day') ORDER BY date DESC) AS thirtyday_vol,
-   (SELECT SUM(movement) FROM thing_pricehistory WHERE item_id=i.id AND region_id=c.region_id AND date > DATE('now', '-5 Day') ORDER BY date DESC) AS fiveday_vol
+   (SELECT SUM(movement) FROM thing_pricehistory WHERE item_id=i.id AND region_id=c.region_id AND date > DATE('now', '-30 Day')) AS thirtyday_vol,
+   (SELECT SUM(orders) FROM thing_pricehistory WHERE item_id=i.id AND region_id=c.region_id AND date > DATE('now', '-30 Day')) AS thirtyday_order,
+   (SELECT SUM(movement) FROM thing_pricehistory WHERE item_id=i.id AND region_id=c.region_id AND date > DATE('now', '-5 Day')) AS fiveday_vol,
+   (SELECT SUM(orders) FROM thing_pricehistory WHERE item_id=i.id AND region_id=c.region_id AND date > DATE('now', '-5 Day')) AS fiveday_order
 FROM thing_stationorder so 
 INNER JOIN thing_station s ON s.id=so.station_id
 INNER JOIN thing_system sy ON s.system_id=sy.id
