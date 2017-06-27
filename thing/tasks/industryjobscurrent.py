@@ -184,14 +184,12 @@ class IndustryJobsCurrent(APITask):
         if new:
             IndustryJob.objects.bulk_create(new)
 
-        # Clean up old jobs in weird states
-        #unknowns = ij_filter.exclude(
-        #    job_id__in=seen_jobs,
-        #    status=IndustryJob.UNKNOWN_STATUS
-        #).update(
-        #    status=IndustryJob.UNKNOWN_STATUS
-        #)
-        #if unknowns > 0:
-        #    self.log_warn('%d jobs set to UNKNOWN state.' % unknowns)
+        # Mark jobs no longer in this list as delivered. If this is incorrect, then the history script should update
+        # the status appropriately
+        ij_filter.exclude(
+            job_id__in=seen_jobs,
+        ).update(
+            status=IndustryJob.DELIVERED_STATUS,
+        )
 
         return True
