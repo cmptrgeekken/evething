@@ -136,9 +136,16 @@ SELECT t.item_id AS item_id FROM thing_transaction t
 """
 
 pricing_item_ids = """
-SELECT  DISTINCT pw.item_id
+SELECT  DISTINCT pw.item_id, 10000002 AS region_id
 FROM    thing_pricewatch pw
 WHERE   pw.active = 1
+UNION
+SELECT DISTINCT so.item_id, c.region_id
+FROM thing_stationorder so
+    INNER JOIN thing_station s ON so.station_id=s.id
+    INNER JOIN thing_system sy ON s.system_id=sy.id
+    INNER JOIN thing_constellation c ON sy.constellation_id=c.id
+    WHERE s.name NOT LIKE 'Jita%'
 """
 
 journal_aggregate_char = """

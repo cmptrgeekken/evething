@@ -205,6 +205,7 @@ CELERY_QUEUES = (
 
 # Periodic tasks
 from datetime import timedelta
+from celery.schedules import crontab
 
 CELERYBEAT_SCHEDULE = {
     # spawn tasks every 30 seconds
@@ -254,12 +255,22 @@ CELERYBEAT_SCHEDULE = {
 
     'avg_calculator': {
         'task': 'thing.avg_calculator',
-        'schedule': timedelta(days=1),
+        'schedule': crontab(hour=0, minute=0),
         'options': {
             'expires': 239*60,
             'queue': 'et_medium',
         },
         'args': (),
+    },
+
+    'history_updater': {
+        'task': 'thing.history_updater',
+        'schedule': crontab(hour=0, minute=0),
+        'options': {
+            'expires': 239*60,
+            'queue': 'et_medium',
+        },
+        'args': {},
     },
 
     # update unknown character/corporation names every hour

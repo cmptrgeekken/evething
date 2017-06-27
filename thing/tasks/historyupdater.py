@@ -32,8 +32,6 @@ import json
 
 HISTORY_PER_REQUEST = 50
 
-REGION_ID = 10000002
-
 
 class HistoryUpdater(APITask):
     name = 'thing.history_updater'
@@ -42,20 +40,24 @@ class HistoryUpdater(APITask):
         if self.init(taskstate_id) is False:
             return
 
+        self.log_warn('Starting History Updater...')
+
         # Get a list of all item_ids
         cursor = self.get_cursor()
         cursor.execute(queries.pricing_item_ids)
 
-        item_ids = [row[0] for row in cursor]
+        items = [dict(item_id=row[0], region_id=row[1]) for row in cursor]
 
         cursor.close()
 
         # Collect data
         new = []
-        for i in range(0, len(item_ids)):
-            item_id = item_ids[i]
+        for i in range(0, len(items)):
+            item_id = items[i]['item_id']
+            region_id = items[i]['region_id']
+            
             # Fetch the XML
-            url = api_url % (REGION_ID, item_id)
+            url = api_url % (region_id, item_id)
             data = self.fetch_url(url, {})
             if data is False:
                 return
@@ -66,19 +68,19 @@ class HistoryUpdater(APITask):
             for history in item_history:
                 data[history['date']] = history
 
-            for ph in PriceHistory.objects.filter(region=REGION_ID,item=item_id,date__in=data.keys()):
+            for ph in PriceHistory.objects.filter(region=region_id, item=item_id, date__in=data.keys()):
                 del data[str(ph.date)]
 
             for date, history in data.items():
                 new.append(PriceHistory(
-                    region_id = REGION_ID,
-                    item_id = item_id,
-                    date = history['date'],
-                    minimum = history['lowest'],
-                    maximum = history['highest'],
-                    average = history['average'],
-                    movement = history['volume'],
-                    orders = history['order_count']
+                    region_id=region_id,
+                    item_id=item_id,
+                    date=history['date'],
+                    minimum=history['lowest'],
+                    maximum=history['highest'],
+                    average=history['average'],
+                    movement=history['volume'],
+                    orders=history['order_count'],
                 ))
 
         if new:
