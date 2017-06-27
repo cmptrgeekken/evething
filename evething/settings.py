@@ -1,4 +1,5 @@
 # Django settings for evething project.
+from __future__ import absolute_import
 
 import os
 _PATH = os.path.realpath(os.path.join(os.path.dirname(__file__), '..'))
@@ -178,7 +179,7 @@ STAGGER_APITASK_STARTUP = True
 PRICE_URL = 'http://goonmetrics.com/api/price_data/?station_id=60003760&type_id=%s'
 
 # load local settings
-from local_settings import *  # NOPEP8
+from .local_settings import *  # NOPEP8
 MANAGERS = ADMINS
 TEMPLATE_DEBUG = DEBUG
 
@@ -206,6 +207,7 @@ CELERY_QUEUES = (
 # Periodic tasks
 from datetime import timedelta
 from celery.schedules import crontab
+
 
 CELERYBEAT_SCHEDULE = {
     # spawn tasks every 30 seconds
@@ -265,7 +267,7 @@ CELERYBEAT_SCHEDULE = {
 
     'history_updater': {
         'task': 'thing.history_updater',
-        'schedule': crontab(hour=0, minute=0),
+        'schedule': crontab(hour=1, minute=52),
         'options': {
             'expires': 239*60,
             'queue': 'et_medium',
