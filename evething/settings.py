@@ -267,12 +267,12 @@ CELERYBEAT_SCHEDULE = {
 
     'history_updater': {
         'task': 'thing.history_updater',
-        'schedule': crontab(hour=1, minute=52),
+        'schedule': crontab(hour=2, minute=1),
         'options': {
             'expires': 239*60,
             'queue': 'et_medium',
         },
-        'args': {'https://esi.tech.ccp.is/latest/markets/%d/history/?datasource=tranquility&type_id=%d'},
+        'args': ['https://esi.tech.ccp.is/latest/markets/%d/history/?datasource=tranquility&type_id=%d'],
     },
 
     # update unknown character/corporation names every hour

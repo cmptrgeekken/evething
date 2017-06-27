@@ -37,9 +37,6 @@ class HistoryUpdater(APITask):
     name = 'thing.history_updater'
 
     def run(self, api_url):
-        if self.init(taskstate_id) is False:
-            return
-
         self.log_warn('Starting History Updater...')
 
         # Get a list of all item_ids
