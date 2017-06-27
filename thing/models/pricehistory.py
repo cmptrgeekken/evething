@@ -34,7 +34,7 @@ class PriceHistory(models.Model):
     region = models.ForeignKey(Region)
     item = models.ForeignKey(Item)
 
-    date = models.DateField()
+    date = models.DateField(db_index=True)
     minimum = models.DecimalField(max_digits=18, decimal_places=2)
     maximum = models.DecimalField(max_digits=18, decimal_places=2)
     average = models.DecimalField(max_digits=18, decimal_places=2)

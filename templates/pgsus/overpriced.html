@@ -78,6 +78,17 @@
                   </div>
               </div>
 
+              <div class="form-group">
+                  <label class="col-sm-4 col-form-label" for="thirtyday_vol">30-day Volume:</label>
+                  <div class="col-sm-8">
+                      <select name="thirtyday_vol" id="thirtyday_vol" class="js-select2 input-lg">
+                          {% for i in [1, 10, 100, 1000, 10000, 100000, 1000000] %}
+                          <option value="{{ i }}"{% if thirtyday_vol == i %} selected{% endif %}>{{ i }}</option>
+                          {% endfor %}
+                      </select>
+                  </div>
+              </div>
+
                 <div class="form-group">
                   <label class="col-sm-4 col-form-label" for="page_size">Items per Page:</label>
                   <div class="col-sm-8">
@@ -124,7 +135,8 @@
                         <th style="text-align: right">Jita Price + Shipping</th>
                         <th style="text-align: right">Jita</th>
                         <th style="text-align: right">Shipping</th>
-                        <th style="text-align: right">Volume</th>
+                        <th style="text-align: right">30-day Vol</th>
+                        <th style="text-align: right">5-day Vol</th>
                         <th style="text-align: right">Percent</th>
                       </tr>
                     </thead>
@@ -137,7 +149,8 @@
                         <td style="text-align: right">{{ item.jita_price_plus_shipping|round_price|commas }}</td>
                         <td style="text-align: right">{{ item.jita_price|round_price|commas }}</td>
                         <td style="text-align: right">{{ item.jita_shipping|round_price|commas }}</td>
-                        <td style="text-align: right">{{ item.volume|commas }}</td>
+                        <td style="text-align: right">{{ (item.thirtyday_vol or 0)|commas }}</td>
+                          <td style="text-align: right">{{ (item.fiveday_vol or 0)|commas }}</td>
                         {% autoescape off %}
                         <td style="text-align: right">{{ item.overpriced_pct|commas }}%</td>
                         {% endautoescape %}

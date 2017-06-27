@@ -39,9 +39,9 @@ class StationOrder(models.Model):
     volume_entered = models.IntegerField()
     volume_remaining = models.IntegerField()
     minimum_volume = models.IntegerField()
-    price = models.DecimalField(max_digits=20, decimal_places=2)
+    price = models.DecimalField(max_digits=20, decimal_places=2, db_index=True)
 
-    buy_order = models.BooleanField(default=False)
+    buy_order = models.BooleanField(default=False, db_index=True)
 
     issued = models.DateTimeField(db_index=True)
     expires = models.DateTimeField(db_index=True)
