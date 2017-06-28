@@ -603,10 +603,10 @@ SELECT ic.name AS category,
    SUM(so.volume_remaining*so.price)/SUM(so.volume_remaining) AS avg_price, 
    i.sell_fivepct_price AS jita_price, 
    i.sell_fivepct_price*pm.cross_region_collateral+i.volume*pm.cross_region_m3 AS jita_shipping,
-   (SELECT SUM(movement) FROM thing_pricehistory WHERE item_id=i.id AND region_id=c.region_id AND date > DATE_SUB(NOW(), INTERVAL 30 DAY)) AS thirtyday_vol,
-   (SELECT SUM(orders) FROM thing_pricehistory WHERE item_id=i.id AND region_id=c.region_id AND date > DATE_SUB(NOW(), INTERVAL 30 DAY)) AS thirtyday_order,
-   (SELECT SUM(movement) FROM thing_pricehistory WHERE item_id=i.id AND region_id=c.region_id AND date > DATE_SUB(NOW(), INTERVAL 5 DAY)) AS fiveday_vol,
-   (SELECT SUM(orders) FROM thing_pricehistory WHERE item_id=i.id AND region_id=c.region_id AND date > DATE_SUB(NOW(), INTERVAL 5 DAY)) AS fiveday_order
+   ph30.thirtyday_vol AS thirtyday_vol,
+   ph30.thirtyday_orders AS thirtyday_order,
+   ph5.fiveday_vol AS fiveday_vol,
+   ph5.fiveday_orders AS five_order
 FROM thing_stationorder so 
 INNER JOIN thing_station s ON s.id=so.station_id
 INNER JOIN thing_system sy ON s.system_id=sy.id
@@ -615,6 +615,8 @@ INNER JOIN thing_item i ON so.item_id=i.id
 INNER JOIN thing_itemgroup ig ON i.item_group_id=ig.id
 INNER JOIN thing_itemcategory ic ON ig.category_id=ic.id
 INNER JOIN thing_marketgroup mg1 ON i.market_group_id=mg1.id
+INNER JOIN thing_view_pricehistory_thirtyday ph30 ON ph30.item_id=i.id
+INNER JOIN thing_view_pricehistory_fiveday ph5 ON ph5.item_id=i.id
 LEFT JOIN thing_marketgroup mg2 ON mg1.parent_id=mg2.id
 LEFT JOIN thing_marketgroup mg3 ON mg2.parent_id=mg3.id
 LEFT JOIN thing_marketgroup mg4 ON mg3.parent_id=mg4.id
@@ -623,7 +625,9 @@ LEFT JOIN thing_marketgroup mg6 ON mg5.parent_id=mg6.id
 INNER JOIN thing_freightersystem fs ON fs.system_id=s.system_id
 INNER JOIN thing_freighterpricemodel pm ON fs.price_model_id=pm.id
 INNER JOIN thing_freightersystem fs2 ON fs2.price_model_id=pm.id AND fs2.system_id=30000142
-WHERE so.station_id != 60003760 AND so.buy_order=0 
+WHERE 
+	so.station_id != 60003760 
+    AND so.buy_order=0 
 GROUP BY so.item_id, so.station_id
 """
 

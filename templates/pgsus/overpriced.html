@@ -149,7 +149,7 @@
                         <td style="text-align: right">{{ item.jita_price|round_price|commas }}</td>
                         <td style="text-align: right">{{ (item.fiveday_vol or 0)|commas }}</td>
                         {% autoescape off %}
-                        <td style="text-align: right">{{ item.overpriced_pct|commas }}%</td>
+                        <td style="text-align: right">{{ item.overpriced_pct|round_nodecimal|commas }}%</td>
                         {% endautoescape %}
                       </tr>
                       {%- else -%}

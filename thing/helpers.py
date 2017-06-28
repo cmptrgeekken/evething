@@ -73,6 +73,10 @@ def commas(value):
 def round_price(value):
     return round(value, 2)
 
+@register.filter
+def round_nodecimal(value):
+    return round(value, 0)
+
 def _commafy(s):
     r = []
     for i, c in enumerate(reversed(s)):
