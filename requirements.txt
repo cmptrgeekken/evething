@@ -7,3 +7,4 @@ MarkupSafe>=0.15
 pyyaml
 evepaste
 requests-oauth2
+mysql-python

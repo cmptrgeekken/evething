@@ -379,7 +379,10 @@ def pricer(request):
                 total_best += item.z_ttl_price_best
                 total_worst += item.z_ttl_price_multibuy
 
-                price_last_updated = item.z_last_updated if price_last_updated is None else max(price_last_updated, item.z_last_updated)
+                if price_last_updated is None:
+                    price_last_updated = item.z_last_updated
+                elif item.z_last_updated is not None:
+                    price_last_updated = max(price_last_updated, item.z_last_updated)
 
                 item_list.append(item)
 

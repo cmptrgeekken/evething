@@ -186,10 +186,10 @@ class IndustryJobsCurrent(APITask):
 
         # Mark jobs no longer in this list as delivered. If this is incorrect, then the history script should update
         # the status appropriately
-        ij_filter.exclude(
-            job_id__in=seen_jobs,
-        ).update(
-            status=IndustryJob.DELIVERED_STATUS,
-        )
+        # ij_filter.exclude(
+        #     job_id__in=seen_jobs,
+        # ).update(
+        #     status=IndustryJob.DELIVERED_STATUS,
+        # )
 
         return True

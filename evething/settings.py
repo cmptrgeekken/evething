@@ -189,7 +189,7 @@ from kombu import Exchange, Queue
 # We're not using rate limits so might as well disable them to save some CPU
 CELERY_DISABLE_RATE_LIMITS = True
 # Set a soft task time limit of 5 minutes
-CELERYD_TASK_SOFT_TIME_LIMIT = 300
+CELERYD_TASK_SOFT_TIME_LIMIT = 60*30
 # Set the prefetch multiplier to 1 so super slow tasks aren't breaking everything
 CELERYD_PREFETCH_MULTIPLIER = 1
 # We don't care about the results of tasks

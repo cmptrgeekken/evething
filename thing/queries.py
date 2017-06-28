@@ -246,7 +246,7 @@ WHERE c.type = 'Item Exchange'
 """
 
 fuelblock_monthly_purchase_summary = """
-SELECT strftime('%m-%Y', c.date_completed) AS month, SUM(ci.quantity) AS qty
+SELECT DATE_FORMAT(c.date_completed, '%m-%Y') AS month, SUM(ci.quantity) AS qty
 FROM thing_contract c 
     INNER JOIN thing_contractitem ci ON c.contract_id=ci.contract_id
     INNER JOIN thing_item i ON ci.item_id=i.id 
@@ -255,7 +255,7 @@ WHERE c.type = 'Item Exchange'
     AND ((c.corporation_id=c.issuer_corp_id AND ci.included=1)
           OR (c.assignee_id=c.corporation_id AND ci.included=0))
     AND c.date_completed IS NOT NULL
-  GROUP BY strftime('%m-%Y', c.date_completed)
+  GROUP BY DATE_FORMAT(c.date_completed, '%m-%Y')
 """
 
 courier_contracts = """
@@ -288,7 +288,7 @@ GROUP BY i1.name
 fuelblock_purchase_stats = """
 SELECT i.name,
        SUM(ci.quantity) AS quantity,
-       strftime('%m-%d-%Y', MIN(c.date_issued)) AS start_date
+       DATE_FORMAT(MIN(c.date_issued), '%m-%d-%Y') AS start_date
 FROM thing_contract c 
     INNER JOIN thing_contractitem ci ON c.contract_id=ci.contract_id
     INNER JOIN thing_item i ON ci.item_id=i.id 
@@ -305,8 +305,8 @@ SELECT i.name,
        SUM(ci.quantity) AS quantity,
        SUM(c.reward)+SUM(C.price) AS ttl_reward,
        COUNT(c.contract_id) AS ttl_contracts,
-       strftime('%m-%d-%Y', MIN(c.date_issued)) AS start_date,
-       AVG(JULIANDAY(c.date_completed)-JULIANDAY(c.date_issued))*24*60*60 AS avg_completion_secs
+       DATE_FORMAT(MIN(c.date_issued), '%m-%d-%Y') AS start_date,
+       AVG(TO_DAYS(c.date_completed)-TO_DAYS(c.date_issued))*24*60*60 AS avg_completion_secs
 FROM thing_contract c 
     INNER JOIN thing_contractitem ci ON c.contract_id=ci.contract_id
     INNER JOIN thing_item i ON ci.item_id=i.id 
@@ -363,14 +363,14 @@ GROUP BY i.name
 
 courier_completed_stats = """
 SELECT
-    strftime('%m-%d-%Y', MIN(c.date_issued)) AS start_date,
+    DATE_FORMAT(MIN(c.date_issued), '%m-%d-%Y') AS start_date,
     SUM(c.volume) AS ttl_volume,
 	SUM(c.collateral) AS ttl_collateral,
 	SUM(c.reward) AS ttl_reward,
 	COUNT(*) AS ttl_contracts,
 	COUNT(DISTINCT c.issuer_char_id) AS distinct_users,
-	AVG(JULIANDAY(c.date_accepted)-JULIANDAY(c.date_issued))*24*60*60 AS avg_acceptance_secs,
-	AVG(JULIANDAY(c.date_completed)-JULIANDAY(c.date_accepted))*24*60*60 AS avg_completion_secs
+	AVG(TO_DAYS(c.date_accepted)-TO_DAYS(c.date_issued))*24*60*60 AS avg_acceptance_secs,
+	AVG(TO_DAYS(c.date_completed)-TO_DAYS(c.date_accepted))*24*60*60 AS avg_completion_secs
 FROM thing_contract c
 WHERE c.assignee_id=c.corporation_id
 AND c.status = 'Completed'
@@ -384,8 +384,8 @@ SELECT
 	SUM(c.reward) AS ttl_reward,
 	COUNT(*) AS ttl_contracts,
 	COUNT(DISTINCT c.issuer_char_id) AS distinct_users,
-	AVG(JULIANDAY()-JULIANDAY(c.date_issued))*24*60*60 AS avg_age_secs,
-	AVG(JULIANDAY(c.date_completed)-JULIANDAY(c.date_issued))*24*60*60 AS avg_completion_secs
+	AVG(TO_DAYS(CURRENT_TIMESTAMP)-TO_DAYS(c.date_issued))*24*60*60 AS avg_age_secs,
+	AVG(TO_DAYS(c.date_completed)-TO_DAYS(c.date_issued))*24*60*60 AS avg_completion_secs
 FROM thing_contract c
 WHERE c.assignee_id=c.corporation_id
 AND c.status IN ('Outstanding', 'InProgress')
@@ -394,11 +394,11 @@ AND c.type = 'Courier'
 
 buyback_completed_stats = """
 SELECT 
-    strftime('%m-%d-%Y', MIN(c.date_issued)) AS start_date,
+    DATE_FORMAT(MIN(c.date_issued), '%m-%d-%Y') AS start_date,
 	SUM(c.price) AS ttl_price,
 	COUNT(*) AS ttl_contracts,
 	COUNT(DISTINCT c.issuer_char_id) AS distinct_users,
-	AVG(JULIANDAY(c.date_completed)-JULIANDAY(c.date_issued))*24*60*60 AS avg_completion_secs	
+	AVG(TO_DAYS(c.date_completed)-TO_DAYS(c.date_issued))*24*60*60 AS avg_completion_secs	
 FROM thing_contract c
 WHERE c.assignee_id=c.corporation_id
 AND c.status = 'Completed'
@@ -416,7 +416,7 @@ SELECT
 	SUM(c.price) AS ttl_price,
 	COUNT(*) AS ttl_contracts,
 	COUNT(DISTINCT c.issuer_char_id) AS distinct_users,
-	AVG(JULIANDAY()-JULIANDAY(c.date_issued))*24*60*60 AS avg_age_secs	
+	AVG(TO_DAYS(CURRENT_TIMESTAMP)-TO_DAYS(c.date_issued))*24*60*60 AS avg_age_secs	
 FROM thing_contract c
 WHERE c.assignee_id=c.corporation_id
 AND c.status = 'Outstanding'
@@ -487,10 +487,10 @@ FROM
 		(select ak.group_name from thing_apikey_characters akc inner join thing_apikey ak ON  akc.apikey_id=ak.id WHERE akc.character_id=c.id) AS group_name,
 	   COALESCE(1+lo.level+alo.level,0) AS research_slots_max,
 	   (SELECT COUNT(*) FROM thing_industryjob ij WHERE ij.installer_id=c.id AND ij.activity IN(3,4,5,8) AND ij.status=1) AS research_slots_active,
-	   (SELECT COUNT(*) FROM thing_industryjob ij WHERE ij.installer_id=c.id AND ij.activity IN(3,4,5,8) AND ij.status=1 AND ij.end_date <= DATETIME('NOW')) AS research_slots_deliverable,
+	   (SELECT COUNT(*) FROM thing_industryjob ij WHERE ij.installer_id=c.id AND ij.activity IN(3,4,5,8) AND ij.status=1 AND ij.end_date <= NOW()) AS research_slots_deliverable,
 	   COALESCE(1+mp.level+amp.level,0) AS mfg_slots_max,
 	   (SELECT COUNT(*) FROM thing_industryjob ij WHERE ij.installer_id=c.id AND ij.activity=1 AND ij.status=1) AS mfg_slots_active,
-	   (SELECT COUNT(*) FROM thing_industryjob ij WHERE ij.installer_id=c.id AND ij.activity=1 AND ij.status=1 AND ij.end_date <= DATETIME('NOW')) AS mfg_slots_deliverable,
+	   (SELECT COUNT(*) FROM thing_industryjob ij WHERE ij.installer_id=c.id AND ij.activity=1 AND ij.status=1 AND ij.end_date <= NOW()) AS mfg_slots_deliverable,
 	   COALESCE(ind.level,0) AS industry_level, -- *.04
 	   COALESCE(ai.level,0) AS adv_industry_level, -- *.03
 	   COALESCE(my.level,0) AS me_time_level, -- *.05
@@ -502,11 +502,11 @@ FROM
 	   --((1 + ai.level*.03)*(1 + sc.level*.05)) AS copy_time_bonus,
 	   COALESCE(sn.level,0) * 5 AS max_research_jumps,
 	   COALESCE(scm.level,0) * 5 AS max_mfg_jumps,
-	   COALESCE((SELECT CAST(SUBSTR(name, -2) AS INT)*.01 FROM thing_item WHERE id=impi.implant_id),0) AS mfg_time_implant,
-	   COALESCE((SELECT CAST(SUBSTR(name, -2) AS INT)*.01 FROM thing_item WHERE id=impm.implant_id),0) AS me_time_implant,
-	   COALESCE((SELECT CAST(SUBSTR(name, -2) AS INT)*.01 FROM thing_item WHERE id=impr.implant_id),0) AS reprocessing_implant,
-	   COALESCE((SELECT CAST(SUBSTR(name, -2) AS INT)*.01 FROM thing_item WHERE id=imprs.implant_id),0) AS te_time_implant,
-	   COALESCE((SELECT CAST(SUBSTR(name, -2) AS INT)*.01 FROM thing_item WHERE id=impsc.implant_id),0) AS copy_time_implant
+	   COALESCE((SELECT CAST(SUBSTR(name, -2) AS UNSIGNED)*.01 FROM thing_item WHERE id=impi.implant_id),0) AS mfg_time_implant,
+	   COALESCE((SELECT CAST(SUBSTR(name, -2) AS UNSIGNED)*.01 FROM thing_item WHERE id=impm.implant_id),0) AS me_time_implant,
+	   COALESCE((SELECT CAST(SUBSTR(name, -2) AS UNSIGNED)*.01 FROM thing_item WHERE id=impr.implant_id),0) AS reprocessing_implant,
+	   COALESCE((SELECT CAST(SUBSTR(name, -2) AS UNSIGNED)*.01 FROM thing_item WHERE id=imprs.implant_id),0) AS te_time_implant,
+	   COALESCE((SELECT CAST(SUBSTR(name, -2) AS UNSIGNED)*.01 FROM thing_item WHERE id=impsc.implant_id),0) AS copy_time_implant
 	FROM thing_character c
 		LEFT JOIN thing_characterskill lo ON lo.character_id=c.id AND lo.skill_id=3406 -- Laboratory Operations
 		LEFT JOIN thing_characterskill alo ON alo.character_id=c.id AND alo.skill_id=24624 -- Advanced Laboratory Operations
@@ -602,10 +602,10 @@ SELECT ic.name AS category,
    SUM(so.volume_remaining*so.price)/SUM(so.volume_remaining) AS avg_price, 
    i.sell_fivepct_price AS jita_price, 
    i.sell_fivepct_price*pm.cross_region_collateral+i.volume*pm.cross_region_m3 AS jita_shipping,
-   (SELECT SUM(movement) FROM thing_pricehistory WHERE item_id=i.id AND region_id=c.region_id AND date > DATE('now', '-30 Day')) AS thirtyday_vol,
-   (SELECT SUM(orders) FROM thing_pricehistory WHERE item_id=i.id AND region_id=c.region_id AND date > DATE('now', '-30 Day')) AS thirtyday_order,
-   (SELECT SUM(movement) FROM thing_pricehistory WHERE item_id=i.id AND region_id=c.region_id AND date > DATE('now', '-5 Day')) AS fiveday_vol,
-   (SELECT SUM(orders) FROM thing_pricehistory WHERE item_id=i.id AND region_id=c.region_id AND date > DATE('now', '-5 Day')) AS fiveday_order
+   (SELECT SUM(movement) FROM thing_pricehistory WHERE item_id=i.id AND region_id=c.region_id AND date > DATE_SUB(NOW(), INTERVAL 30 DAY)) AS thirtyday_vol,
+   (SELECT SUM(orders) FROM thing_pricehistory WHERE item_id=i.id AND region_id=c.region_id AND date > DATE_SUB(NOW(), INTERVAL 30 DAY)) AS thirtyday_order,
+   (SELECT SUM(movement) FROM thing_pricehistory WHERE item_id=i.id AND region_id=c.region_id AND date > DATE_SUB(NOW(), INTERVAL 5 DAY)) AS fiveday_vol,
+   (SELECT SUM(orders) FROM thing_pricehistory WHERE item_id=i.id AND region_id=c.region_id AND date > DATE_SUB(NOW(), INTERVAL 5 DAY)) AS fiveday_order
 FROM thing_stationorder so 
 INNER JOIN thing_station s ON s.id=so.station_id
 INNER JOIN thing_system sy ON s.system_id=sy.id
@@ -630,7 +630,7 @@ stationorder_overpriced = """
 SELECT *, 
     jita_price+jita_shipping AS jita_price_plus_shipping, 
     (jita_price+jita_shipping)*1.025*1.02*1.2 AS twentypct_profit,
-    CAST((avg_price / (jita_price + jita_shipping)) * 10000 AS Integer)/100 AS overpriced_pct
+    CAST((avg_price / (jita_price + jita_shipping)) * 10000 AS UNSIGNED)/100 AS overpriced_pct
 FROM (""" + stationorder_overpriced_base_query + """
     ) o 
    WHERE o.avg_price > (o.jita_price+o.jita_shipping)*1.2 AND o.jita_price > 0
