@@ -617,6 +617,7 @@ INNER JOIN thing_itemcategory ic ON ig.category_id=ic.id
 INNER JOIN thing_marketgroup mg1 ON i.market_group_id=mg1.id
 INNER JOIN thing_view_pricehistory_thirtyday ph30 ON ph30.item_id=i.id AND ph30.region_id=c.region_id
 INNER JOIN thing_view_pricehistory_fiveday ph5 ON ph5.item_id=i.id AND ph5.region_id=c.region_id
+INNER JOIN thing_view_stationorder_stdev stdev ON i.id=stdev.item_id and s.id=stdev.station_id
 LEFT JOIN thing_marketgroup mg2 ON mg1.parent_id=mg2.id
 LEFT JOIN thing_marketgroup mg3 ON mg2.parent_id=mg3.id
 LEFT JOIN thing_marketgroup mg4 ON mg3.parent_id=mg4.id
@@ -627,7 +628,8 @@ INNER JOIN thing_freighterpricemodel pm ON fs.price_model_id=pm.id
 INNER JOIN thing_freightersystem fs2 ON fs2.price_model_id=pm.id AND fs2.system_id=30000142
 WHERE 
 	so.station_id != 60003760 
-    AND so.buy_order=0 
+    AND stdev.avg_price-stdev.stdev <= so.price AND so.price <= stdev.avg_price+stdev.stdev
+    AND so.buy_order=0
 GROUP BY so.item_id, so.station_id
 """
 
