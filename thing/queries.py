@@ -484,7 +484,7 @@ select name, group_name,
 	(1+adv_industry_level*.03)*(1+copy_time_level*.05)*(1+copy_time_implant)-1 AS copy_time_bonus 
 FROM
 (SELECT c.name,
-		(select ak.group_name from thing_apikey_characters akc inner join thing_apikey ak ON  akc.apikey_id=ak.id WHERE akc.character_id=c.id) AS group_name,
+		(select ak.group_name from thing_apikey_characters akc inner join thing_apikey ak ON  akc.apikey_id=ak.id WHERE akc.character_id=c.id limit 1) AS group_name,
 	   COALESCE(1+lo.level+alo.level,0) AS research_slots_max,
 	   (SELECT COUNT(*) FROM thing_industryjob ij WHERE ij.installer_id=c.id AND ij.activity IN(3,4,5,8) AND ij.status=1) AS research_slots_active,
 	   (SELECT COUNT(*) FROM thing_industryjob ij WHERE ij.installer_id=c.id AND ij.activity IN(3,4,5,8) AND ij.status=1 AND ij.end_date <= NOW()) AS research_slots_deliverable,
