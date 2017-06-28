@@ -303,7 +303,7 @@ GROUP BY i.name
 fuelblock_purchase_ttl = """
 SELECT i.name,
        SUM(ci.quantity) AS quantity,
-       SUM(c.reward)+SUM(C.price) AS ttl_reward,
+       SUM(c.reward)+SUM(c.price) AS ttl_reward,
        COUNT(c.contract_id) AS ttl_contracts,
        DATE_FORMAT(MIN(c.date_issued), '%m-%d-%Y') AS start_date,
        AVG(TO_DAYS(c.date_completed)-TO_DAYS(c.date_issued))*24*60*60 AS avg_completion_secs
