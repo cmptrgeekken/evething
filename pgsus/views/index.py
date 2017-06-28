@@ -466,7 +466,7 @@ def overpriced(request):
 
     idx = 0
 
-    all_items = dictfetchall(queries.stationorder_overpriced, 5*60)
+    all_items = dictfetchall(queries.stationorder_overpriced, 'overpriced', 5*60)
 
     for item in all_items:
         if item['station_name'] not in stations:
@@ -552,12 +552,12 @@ def get_cursor(db='default'):
     return connections[db].cursor()
 
 
-def dictfetchall(query, cache_time=None):
+def dictfetchall(query, cache_key=None, cache_time=None):
     "Returns all rows from a cursor as a dict"
     from django.core.cache import caches
     query_cache = caches['default']
     if cache_time is not None:
-        results = query_cache.get(query)
+        results = query_cache.get(cache_key)
         if results is not None:
             return results
 
@@ -572,6 +572,6 @@ def dictfetchall(query, cache_time=None):
     cursor.close()
 
     if cache_time is not None:
-        query_cache.set(query, results, cache_time)
+        query_cache.set(cache_key, results, cache_time)
 
     return results
