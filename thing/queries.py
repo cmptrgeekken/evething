@@ -535,13 +535,17 @@ INNER JOIN thing_stationorderupdater sou ON so.order_id=sou.order_id
 WHERE so.volume_remaining > sou.volume_remaining OR so.price != sou.price
 """
 
-stationorder_seeding_lowqty = """
-select i.name AS item_name,s.name AS station_name,iss.min_qty,SUM(so.volume_remaining) AS volume_remaining,SUM(so.price*so.volume_remaining)/SUM(so.volume_remaining) AS avg_price
+stationorder_seeding_qty = """
+select i.name AS item_name,
+	   s.name AS station_name,
+       iss.seeder_name,
+       iss.min_qty,SUM(so.volume_remaining) AS volume_remaining,
+       SUM(so.price*so.volume_remaining)/SUM(so.volume_remaining) AS avg_price
     FROM thing_itemstationseed iss 
     INNER JOIN thing_item i ON iss.item_id=i.id
     INNER JOIN thing_station s ON iss.station_id=s.id
-    INNER JOIN thing_stationorder so ON iss.station_id=so.station_id and iss.item_id=so.item_id 
-    GROUP BY iss.item_id,so.station_id having iss.min_qty > SUM(so.volume_remaining) 
+    LEFT JOIN thing_stationorder so ON iss.station_id=so.station_id and iss.item_id=so.item_id 
+    GROUP BY iss.item_id,so.station_id
     ORDER BY i.name, s.name
 """
 

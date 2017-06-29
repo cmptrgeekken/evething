@@ -28,6 +28,7 @@ urlpatterns += patterns(
     url(r'^fuel$', 'fuel', name='fuel'),
     url(r'^pricer$', 'pricer', name='pricer'),
     url(r'^overpriced$', 'overpriced', name='overpriced'),
+    url(r'^seeding', 'seeding', name='seeding'),
 
 )
 

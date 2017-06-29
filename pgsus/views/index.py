@@ -548,6 +548,20 @@ def overpriced(request):
 
     return out
 
+
+def seeding(request):
+    seed_data = dictfetchall(queries.stationorder_seeding_qty)
+
+    out = render_page(
+        'pgsus/seeding.html',
+        dict(
+            seed_data=seed_data,
+        ),
+        request
+    )
+
+    return out
+
 def get_cursor(db='default'):
     return connections[db].cursor()
 
