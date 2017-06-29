@@ -552,10 +552,46 @@ def overpriced(request):
 def seeding(request):
     seed_data = dictfetchall(queries.stationorder_seeding_qty)
 
+    low_qty_only = False
+    if request.GET.get('low_qty_only') == '1':
+        low_qty_only = True
+
+    station = request.GET.get('station')
+    seeder = request.GET.get('seeder')
+
+    seed_items =[]
+    stations = set()
+    seeders = set()
+    for data in seed_data:
+        stations.add(data['station_name'])
+        seeders.add(data['seeder_name'])
+
+        if data['volume_remaining'] is None or data['volume_remaining'] < data['min_qty']:
+            data['state'] = 'danger'
+        elif data['volume_remaining'] < data['min_qty'] * 1.2:
+            data['state'] = 'warning'
+
+        if low_qty_only and 'state' not in data:
+            continue
+
+        if len(station or '') > 0 and data['station_name'] != station:
+            continue
+
+        if len(seeder or '') > 0 and data['seeder_name'] != seeder:
+            continue
+
+        seed_items.append(data)
+
     out = render_page(
         'pgsus/seeding.html',
         dict(
-            seed_data=seed_data,
+            seed_data=seed_items,
+            low_qty_only=low_qty_only,
+            station=station,
+            stations=sorted(stations),
+            seeder=seeder,
+            seeders=seeders,
+
         ),
         request
     )
