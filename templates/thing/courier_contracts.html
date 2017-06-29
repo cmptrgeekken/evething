@@ -103,10 +103,10 @@
                   {%- endif %}
                 </td>
                 <td>
-                  {{ contract.start_station.system.name }}
+                  {{ contract.start_station.get_system_name() }}
                 </td>
                 <td>
-                  {{ contract.end_station.system.name }}
+                  {{ contract.end_station.get_system_name() }}
                 </td>
                 <td class="con-date">
                   {% if contract.date_completed -%}

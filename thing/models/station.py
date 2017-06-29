@@ -63,6 +63,9 @@ class Station(models.Model):
     def __unicode__(self):
         return self.name
 
+    def get_system_name(self):
+        return self.system.name if self.system is not None else "[Unknown]"
+
     # Build the short name when this object is saved
     def save(self, *args, **kwargs):
         self._make_shorter_name()
