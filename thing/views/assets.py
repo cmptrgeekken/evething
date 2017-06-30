@@ -393,7 +393,7 @@ def assets_filter(request):
                 # capital ships!
                 if asset.item.item_group.name in ('Capital Industrial Ship', 'Carrier', 'Dreadnought', 'Supercarrier', 'Titan'):
                     asset.z_capital = True
-                asset.z_price = asset.item.sell_price
+                asset.z_price = asset.get_sell_price()
             # BPOs use the base (NPC) price
             elif asset.z_blueprint == -1:
                 asset.z_price = asset.item.base_price
