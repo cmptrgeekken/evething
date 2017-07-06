@@ -591,7 +591,10 @@ WHERE so.id = bo.id
 """
 
 stationorder_overpriced_base_query = """
-SELECT ic.name AS category, 
+SELECT    
+   i.id AS item_id, 
+   s.id as station_id, 
+   ic.name AS category, 
    ig.name AS grp, 
    mg1.name AS mg1,
    mg2.name AS mg2,
@@ -599,10 +602,8 @@ SELECT ic.name AS category,
    mg4.name AS mg4,
    mg5.name AS mg5,
    mg6.name AS mg6,
-   i.id AS item_id, 
    i.name AS item_name,
-   s.id as station_id, 
-   s.name AS station_name, 
+   s.name AS station_name,  
    SUM(so.volume_remaining) AS volume,
    SUM(so.volume_remaining*so.price)/SUM(so.volume_remaining) AS avg_price, 
    i.sell_fivepct_price AS jita_price, 
@@ -640,10 +641,58 @@ GROUP BY so.item_id, so.station_id
 stationorder_overpriced = """
 SELECT *, 
     jita_price+jita_shipping AS jita_price_plus_shipping, 
+    (jita_price+jita_shipping)*1.025*1.02 AS imported_price,
     (jita_price+jita_shipping)*1.025*1.02*1.2 AS twentypct_profit,
     CAST((avg_price / (jita_price + jita_shipping)) * 10000 AS UNSIGNED)/100 AS overpriced_pct
 FROM (""" + stationorder_overpriced_base_query + """
     ) o 
-   WHERE o.avg_price > (o.jita_price+o.jita_shipping)*1.2 AND o.jita_price > 0
-   ORDER BY overpriced_pct DESC
+   WHERE o.jita_price > 0
+"""
+
+stationorder_localprice_update = """
+START TRANSACTION;
+    TRUNCATE TABLE `thing_cache_localprice`;
+
+    INSERT INTO `thing_cache_localprice`
+%s;
+COMMIT;
+""" % stationorder_overpriced
+
+stationorder_localprice_create = """
+CREATE TABLE `thing_cache_localprice` (
+  `item_id` int(11) NOT NULL,
+  `station_id` bigint(20) NOT NULL,
+  `category` varchar(64) NOT NULL,
+  `grp` varchar(128) NOT NULL,
+  `mg1` varchar(100) NOT NULL,
+  `mg2` varchar(100),
+  `mg3` varchar(100),
+  `mg4` varchar(100),
+  `mg5` varchar(100),
+  `mg6` varchar(100),
+  `item_name` varchar(128) NOT NULL,
+  `station_name` varchar(128) NOT NULL,
+  `volume` decimal(20,0) DEFAULT NULL,
+  `avg_price` decimal(20,2) DEFAULT NULL,
+  `jita_price` decimal(20,2) NOT NULL,
+  `jita_shipping` decimal(20,2) NOT NULL DEFAULT '0.0000',
+  `thirtyday_vol` decimal(20,0) DEFAULT NULL,
+  `thirtyday_order` decimal(20,0) DEFAULT NULL,
+  `fiveday_vol` decimal(20,0) DEFAULT NULL,
+  `five_order` decimal(20,0) DEFAULT NULL,
+  `jita_price_plus_shipping` decimal(20,2) NOT NULL DEFAULT '0.0000',
+  `imported_price` decimal(20,2) NOT NULL DEFAULT '0.000000000',
+  `twentypct_profit` decimal(20,2) NOT NULL DEFAULT '0.0000000000',
+  `overpriced_pct` decimal(20,2) DEFAULT NULL,
+  PRIMARY KEY (`item_id`,`station_id`),
+  KEY `avg_price_idx` (`avg_price`),
+  KEY `jita_import_price_idx` (`imported_price`),
+  KEY `overage_pct_idx` (`overpriced_pct`),
+  KEY `volume_idx` (`volume`),
+  KEY `fiveday_order_idx` (`five_order`),
+  KEY `fiveday_volume_idx` (`fiveday_vol`),
+  KEY `thirtyday_order_idx` (`thirtyday_order`),
+  KEY `thirtyday_volume_idx` (`thirtyday_vol`),
+  KEY `group_idx` (`grp` ASC, `mg1` ASC, `mg2` ASC, `mg3` ASC, `mg4` ASC, `mg5` ASC, `mg6` ASC)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 """

@@ -255,6 +255,16 @@ CELERYBEAT_SCHEDULE = {
     },
 '''
 
+    'localprice_cache': {
+        'task': 'thing.periodic_query_runner',
+        'schedule': crontab(minute='*/5'),
+        'options': {
+            'expires': 239*60,
+            'queue': 'et_medium',
+        },
+        'args': {}
+    },
+
     'avg_calculator': {
         'task': 'thing.avg_calculator',
         'schedule': crontab(hour=0, minute=0),

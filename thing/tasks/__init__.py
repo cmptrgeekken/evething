@@ -42,3 +42,4 @@ from historyupdater import HistoryUpdater
 from priceupdater import PriceUpdater
 from fixcontracts import FixContracts
 from avgcalculator import AvgCalculator
+from periodicqueryrunner import PeriodicQueryRunner
