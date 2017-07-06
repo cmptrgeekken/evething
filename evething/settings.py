@@ -207,6 +207,7 @@ CELERY_QUEUES = (
 # Periodic tasks
 from datetime import timedelta
 from celery.schedules import crontab
+from thing import queries
 
 
 CELERYBEAT_SCHEDULE = {
@@ -257,12 +258,12 @@ CELERYBEAT_SCHEDULE = {
 
     'localprice_cache': {
         'task': 'thing.periodic_query_runner',
-        'schedule': crontab(minute='*/5'),
+        'schedule': crontab(minute='*/3'),
         'options': {
             'expires': 239*60,
             'queue': 'et_medium',
         },
-        'args': {}
+        'args': [queries.stationorder_localprice_update],
     },
 
     'avg_calculator': {
