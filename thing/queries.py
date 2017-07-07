@@ -633,7 +633,7 @@ INNER JOIN thing_freighterpricemodel pm ON fs.price_model_id=pm.id
 INNER JOIN thing_freightersystem fs2 ON fs2.price_model_id=pm.id AND fs2.system_id=30000142
 WHERE 
 	so.station_id != 60003760 
-    AND stdev.avg_price-stdev.stdev <= so.price AND so.price <= stdev.avg_price+stdev.stdev
+    AND so.price <= stdev.avg_price+stdev.stdev
     AND so.buy_order=0
 GROUP BY so.item_id, so.station_id
 """
@@ -643,7 +643,7 @@ SELECT *,
     ROUND(jita_price+jita_shipping, 2) AS jita_price_plus_shipping, 
     ROUND((jita_price+jita_shipping)*1.025*1.02, 2) AS imported_price,
     ROUND((jita_price+jita_shipping)*1.025*1.02*1.2, 2) AS twentypct_profit,
-    CAST((avg_price / (jita_price + jita_shipping)) * 10000 AS UNSIGNED)/100 AS overpriced_pct
+    CAST((avg_price / ((jita_price + jita_shipping)*1.025*1.02) * 10000 AS UNSIGNED)/100 AS overpriced_pct
 FROM (""" + stationorder_overpriced_base_query + """
     ) o 
    WHERE o.jita_price > 0
