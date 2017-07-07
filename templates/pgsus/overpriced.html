@@ -125,15 +125,15 @@
                     <thead>
                       <tr class="c">
                         <th>Item</th>
-                        <th style="text-align: right"><abbr title="30-day Volume">30</abbr></th>
-                        <th style="text-align: right"><abbr title="30-day Order Ct">Orders</abbr></th>
+                        <th style="text-align: right"><abbr title="30-day Region Volume">30</abbr></th>
+                        <th style="text-align: right"><abbr title="30-day Region Order Count">Orders</abbr></th>
                         <th>Station</th>
                         <th style="text-align: right">Local Price</th>
                         <th style="text-align: right"><abbr title="20% Profit Sell Price">20%</abbr></th>
                         <th style="text-align: right"><abbr title="Jita Price + Shipping">J+S</abbr></th>
                         <th style="text-align: right"><abbr title="Jita Price">J</abbr></th>
-                        <th style="text-align: right"><abbr title="5-day Volume">5</abbr></th>
-                        <th style="text-align: right"><abbr title="Overpriced Percent">Percent</abbr></th>
+                        <th style="text-align: right"><abbr title="5-day Region Volume">5</abbr></th>
+                        <th style="text-align: right"><abbr title="Overpriced Percent">%</abbr></th>
                       </tr>
                     </thead>
                     <tbody>
@@ -154,7 +154,7 @@
                       </tr>
                       {%- else -%}
                       <tr>
-                        <td colspan="8">No items.</td>
+                        <td colspan="10">No items.</td>
                       </tr>
                       {%- endfor %}
                     </tbody>

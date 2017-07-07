@@ -134,7 +134,10 @@ def buyback(request):
                         buyback_qty[buyback_item.item_id] = 0
                     buyback_qty[buyback_item.item_id] += entry['quantity']
 
-                    total_reward += entry['quantity'] * buyback_item.item.get_history_avg(pct=.95)
+                    total_reward += entry['quantity'] * buyback_item.item.get_history_avg(
+                        pct=.95,
+                        reprocess=buyback_item.reprocess
+                    )
                     total_volume += entry['quantity'] * buyback_item.item.volume
                 else:
                     parse_results['bad_lines'].append(entry['name'])
@@ -207,7 +210,6 @@ def fuel(request):
 
     min_date = datetime.datetime.utcnow() + datetime.timedelta(days=3)
     max_date = datetime.datetime.utcnow() + datetime.timedelta(days=28)
-
 
     out = render_page(
         'pgsus/fuel.html',
@@ -550,11 +552,11 @@ def overpriced(request):
 
 
 def seeding(request):
-    seed_data = dictfetchall(queries.stationorder_seeding_qty)
+    seed_data = dictfetchall(queries.stationorder_seeding_qty + " ORDER BY overpriced_pct DESC")
 
-    low_qty_only = False
-    if request.GET.get('low_qty_only') == '1':
-        low_qty_only = True
+    low_qty_only = True
+    if not request.GET.get('low_qty_only'):
+        low_qty_only = False
 
     station = request.GET.get('station')
     seeder = request.GET.get('seeder')
