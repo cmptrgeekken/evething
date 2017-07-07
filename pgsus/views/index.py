@@ -468,7 +468,7 @@ def overpriced(request):
 
     idx = 0
 
-    all_items = dictfetchall(queries.stationorder_overpriced + " ORDER BY overpriced_pct DESC", 'overpriced', 5*60)
+    all_items = dictfetchall(queries.stationorder_overpriced_cached + " ORDER BY overpriced_pct DESC")
 
     for item in all_items:
         if item['station_name'] not in stations:

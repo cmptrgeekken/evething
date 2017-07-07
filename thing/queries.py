@@ -657,6 +657,9 @@ stationorder_localprice_update = """
 INSERT INTO `thing_cache_localprice`
 %s;""" % stationorder_overpriced
 
+stationorder_overpriced_cached = """
+SELECT * FROM `thing_cache_localprice`"""
+
 stationorder_localprice_create = """
 CREATE TABLE `thing_cache_localprice` (
   `item_id` int(11) NOT NULL,
