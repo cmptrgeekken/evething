@@ -34,13 +34,13 @@ from thing import queries
 class PeriodicQueryRunner(APITask):
     name = 'thing.periodic_query_runner'
 
-    def run(self, query):
+    def run(self, *queries):
         self.init()
 
-        cursor = get_cursor()
-        cursor.execute(query)
-
-        cursor.close()
+        for query in queries:
+            cursor = get_cursor()
+            cursor.execute(query)
+            cursor.close()
 
         return True
 

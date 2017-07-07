@@ -263,7 +263,7 @@ CELERYBEAT_SCHEDULE = {
             'expires': 239*60,
             'queue': 'et_medium',
         },
-        'args': [queries.stationorder_localprice_update],
+        'args': [queries.stationorder_localprice_truncate, queries.stationorder_localprice_update],
     },
 
     'avg_calculator': {

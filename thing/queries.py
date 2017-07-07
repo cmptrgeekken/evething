@@ -649,14 +649,13 @@ FROM (""" + stationorder_overpriced_base_query + """
    WHERE o.jita_price > 0
 """
 
-stationorder_localprice_update = """
-START TRANSACTION;
-    TRUNCATE TABLE `thing_cache_localprice`;
+stationorder_localprice_truncate = """
+TRUNCATE TABLE `thing_cache_localprice`;
+"""
 
-    INSERT INTO `thing_cache_localprice`
-%s;
-COMMIT;
-""" % stationorder_overpriced
+stationorder_localprice_update = """
+INSERT INTO `thing_cache_localprice`
+%s;""" % stationorder_overpriced
 
 stationorder_localprice_create = """
 CREATE TABLE `thing_cache_localprice` (
