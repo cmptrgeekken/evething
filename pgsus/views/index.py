@@ -548,6 +548,7 @@ def overpriced(request):
             total_items=idx,
             thirtyday_vol=thirtyday_vol,
             thirtyday_order=thirtyday_order,
+            thirtyday_profit=thirtyday_profit,
             end_item=min(page_size*page, idx),
         ),
         request
