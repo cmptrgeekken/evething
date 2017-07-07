@@ -468,7 +468,7 @@ def overpriced(request):
 
     idx = 0
 
-    all_items = dictfetchall(queries.stationorder_overpriced, 'overpriced', 5*60)
+    all_items = dictfetchall(queries.stationorder_overpriced + " ORDER BY overpriced_pct DESC", 'overpriced', 5*60)
 
     for item in all_items:
         if item['station_name'] not in stations:
@@ -552,7 +552,7 @@ def overpriced(request):
 
 
 def seeding(request):
-    seed_data = dictfetchall(queries.stationorder_seeding_qty + " ORDER BY overpriced_pct DESC")
+    seed_data = dictfetchall(queries.stationorder_seeding_qty)
 
     low_qty_only = True
     if not request.GET.get('low_qty_only'):
