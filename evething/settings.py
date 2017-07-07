@@ -258,7 +258,7 @@ CELERYBEAT_SCHEDULE = {
 
     'localprice_cache': {
         'task': 'thing.periodic_query_runner',
-        'schedule': crontab(minute='*/3'),
+        'schedule': crontab(minute='*/30'),
         'options': {
             'expires': 239*60,
             'queue': 'et_medium',
