@@ -605,9 +605,9 @@ SELECT
    i.name AS item_name,
    s.name AS station_name,  
    SUM(so.volume_remaining) AS volume,
-   SUM(so.volume_remaining*so.price)/SUM(so.volume_remaining) AS avg_price, 
+   ROUND(SUM(so.volume_remaining*so.price)/SUM(so.volume_remaining), 2) AS avg_price, 
    i.sell_fivepct_price AS jita_price, 
-   i.sell_fivepct_price*pm.cross_region_collateral+i.volume*pm.cross_region_m3 AS jita_shipping,
+   ROUND(i.sell_fivepct_price*pm.cross_region_collateral+i.volume*pm.cross_region_m3, 2) AS jita_shipping,
    ph30.thirtyday_vol AS thirtyday_vol,
    ph30.thirtyday_orders AS thirtyday_order,
    ph5.fiveday_vol AS fiveday_vol,
@@ -640,9 +640,9 @@ GROUP BY so.item_id, so.station_id
 
 stationorder_overpriced = """
 SELECT *, 
-    jita_price+jita_shipping AS jita_price_plus_shipping, 
-    (jita_price+jita_shipping)*1.025*1.02 AS imported_price,
-    (jita_price+jita_shipping)*1.025*1.02*1.2 AS twentypct_profit,
+    ROUND(jita_price+jita_shipping, 2) AS jita_price_plus_shipping, 
+    ROUND((jita_price+jita_shipping)*1.025*1.02, 2) AS imported_price,
+    ROUND((jita_price+jita_shipping)*1.025*1.02*1.2, 2) AS twentypct_profit,
     CAST((avg_price / (jita_price + jita_shipping)) * 10000 AS UNSIGNED)/100 AS overpriced_pct
 FROM (""" + stationorder_overpriced_base_query + """
     ) o 
@@ -677,14 +677,14 @@ CREATE TABLE `thing_cache_localprice` (
   `volume` decimal(20,0) DEFAULT NULL,
   `avg_price` decimal(20,2) DEFAULT NULL,
   `jita_price` decimal(20,2) NOT NULL,
-  `jita_shipping` decimal(20,2) NOT NULL DEFAULT '0.0000',
+  `jita_shipping` decimal(20,2) NOT NULL DEFAULT '0.00',
   `thirtyday_vol` decimal(20,0) DEFAULT NULL,
   `thirtyday_order` decimal(20,0) DEFAULT NULL,
   `fiveday_vol` decimal(20,0) DEFAULT NULL,
   `five_order` decimal(20,0) DEFAULT NULL,
-  `jita_price_plus_shipping` decimal(20,2) NOT NULL DEFAULT '0.0000',
-  `imported_price` decimal(20,2) NOT NULL DEFAULT '0.000000000',
-  `twentypct_profit` decimal(20,2) NOT NULL DEFAULT '0.0000000000',
+  `jita_price_plus_shipping` decimal(20,2) NOT NULL DEFAULT '0.00',
+  `imported_price` decimal(20,2) NOT NULL DEFAULT '0.00',
+  `twentypct_profit` decimal(20,2) NOT NULL DEFAULT '0.00',
   `overpriced_pct` decimal(20,2) DEFAULT NULL,
   PRIMARY KEY (`item_id`,`station_id`),
   KEY `avg_price_idx` (`avg_price`),
