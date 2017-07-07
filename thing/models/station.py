@@ -46,16 +46,16 @@ def roman_to_int(n):
 
 
 class Station(models.Model):
-    id = models.IntegerField(primary_key=True)
+    id = models.IntegerField(primary_key=True, auto_created=False)
     name = models.CharField(max_length=128)
     short_name = models.CharField(max_length=64, default='')
     is_citadel = models.BooleanField(default=False)
     is_unknown = models.BooleanField(default=False)
 
     load_market_orders = models.BooleanField(default=False)
-    market_profile = models.ForeignKey(UserProfile, null=True)
+    market_profile = models.ForeignKey(UserProfile, null=True, default=None)
 
-    system = models.ForeignKey(System, blank=True, null=True)
+    system = models.ForeignKey(System, blank=True, null=True, default=None)
 
     class Meta:
         app_label = 'thing'

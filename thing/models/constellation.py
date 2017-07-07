@@ -29,7 +29,7 @@ from thing.models.region import Region
 
 
 class Constellation(models.Model):
-    id = models.IntegerField(primary_key=True)
+    id = models.IntegerField(primary_key=True, auto_created=False)
     name = models.CharField(max_length=64)
 
     region = models.ForeignKey(Region)

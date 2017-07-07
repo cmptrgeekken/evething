@@ -29,7 +29,7 @@ from thing.models.constellation import Constellation
 
 
 class System(models.Model):
-    id = models.IntegerField(primary_key=True)
+    id = models.IntegerField(primary_key=True, auto_created=False)
     name = models.CharField(max_length=32)
 
     constellation = models.ForeignKey(Constellation)
