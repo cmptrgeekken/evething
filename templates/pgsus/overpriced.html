@@ -19,70 +19,73 @@
         <div class="col-lg-12">
 
           <h2><a data-toggle="collapse" href="#formEntry" aria-expanded="False"><i class="fa fa-chevron-right"></i>Configuration</a></h2>
-          <form id="formEntry" class="collapse form-horizontal{% if items|length == 0 %} in{% endif %}" method="post" action="{{ url('pgsus.views.overpriced') }}">
+          <form id="formEntry" class="form-horizontal" method="post" action="{{ url('pgsus.views.overpriced') }}">
+            <div class="collapse{% if overpriced_items|length == 0 %} in{% endif %}">
+
+
               <input type="hidden" name="page" value="{{ page }}"/>
-            {{ csrf() }}
-            <div class="form-group">
-                <label class="col-sm-4 col-form-label" for="item_list">Items:</label>
-                <div class="col-sm-8">
-                    <textarea name="item_list" id="item_list" rows="10" style="width: 65%;" placeholder="Paste fittings to view here (e.g., 50MN Y-T8 Compact Microwarpdrive)">{{ item_list }}</textarea>
+                {{ csrf() }}
+                <div class="form-group">
+                    <label class="col-sm-4 col-form-label" for="item_list">Items:</label>
+                    <div class="col-sm-8">
+                        <textarea name="item_list" id="item_list" rows="10" style="width: 65%;" placeholder="Paste fittings to view here (e.g., 50MN Y-T8 Compact Microwarpdrive)">{{ item_list }}</textarea>
+                    </div>
                 </div>
-            </div>
-            <div class="form-group">
-                  <label class="col-sm-4 col-form-label" for="station_names">Stations:</label>
-                  <div class="col-sm-8">
-                      <select name="station_names" id="station_names" multiple="multiple" class="js-select2 input-lg">
-                          {% for station, selected in stations.items() %}
-                          <option value="{{station}}"{%if selected %} selected{% endif %}>{{ station }}</option>
-                          {% endfor %}
-                      </select>
+                <div class="form-group">
+                      <label class="col-sm-4 col-form-label" for="station_names">Stations:</label>
+                      <div class="col-sm-8">
+                          <select name="station_names" id="station_names" multiple="multiple" class="js-select2 input-lg">
+                              {% for station, selected in stations.items() %}
+                              <option value="{{station}}"{%if selected %} selected{% endif %}>{{ station }}</option>
+                              {% endfor %}
+                          </select>
+                      </div>
                   </div>
-              </div>
 
-              <div class="form-group">
-                  <label class="col-sm-4 col-form-label" for="market_groups">Market Groups:</label>
-                  <div class="col-sm-8">
-                      <select name="market_groups" id="market_groups" multiple="multiple" class="js-select2 input-lg">
-                          {% for group in market_groups %}
-                          <option value="{{group}}"{%if market_groups[group] %} selected{% endif %}>{{group}}</option>
-                          {% endfor %}
-                      </select>
+                  <div class="form-group">
+                      <label class="col-sm-4 col-form-label" for="market_groups">Market Groups:</label>
+                      <div class="col-sm-8">
+                          <select name="market_groups" id="market_groups" multiple="multiple" class="js-select2 input-lg">
+                              {% for group in market_groups %}
+                              <option value="{{group}}"{%if market_groups[group] %} selected{% endif %}>{{group}}</option>
+                              {% endfor %}
+                          </select>
+                      </div>
                   </div>
-              </div>
 
-              <div class="form-group">
-                  <label class="col-sm-4 col-form-label" for="pct_over">Percent Over:</label>
-                  <div class="col-sm-8">
-                      <select name="pct_over" id="pct_over" class="js-select2 input-lg">
-                          <option value="120"{%if pct_over==120 %} selected{% endif %}>120%</option>
-                          <option value="150"{%if pct_over==150 %} selected{% endif %}>150%</option>
-                          <option value="200"{%if pct_over==200 %} selected{% endif %}>200%</option>
-                          <option value="300"{%if pct_over==300 %} selected{% endif %}>300%</option>
-                          <option value="500"{%if pct_over==500 %} selected{% endif %}>500%</option>
-                      </select>
+                  <div class="form-group">
+                      <label class="col-sm-4 col-form-label" for="pct_over">Percent Over:</label>
+                      <div class="col-sm-8">
+                          <select name="pct_over" id="pct_over" class="js-select2 input-lg">
+                              <option value="120"{%if pct_over==120 %} selected{% endif %}>120%</option>
+                              <option value="150"{%if pct_over==150 %} selected{% endif %}>150%</option>
+                              <option value="200"{%if pct_over==200 %} selected{% endif %}>200%</option>
+                              <option value="300"{%if pct_over==300 %} selected{% endif %}>300%</option>
+                              <option value="500"{%if pct_over==500 %} selected{% endif %}>500%</option>
+                          </select>
+                      </div>
                   </div>
-              </div>
 
-              <div class="form-group">
-                  <label class="col-sm-4 col-form-label" for="thirtyday_vol">30-day Volume:</label>
-                  <div class="col-sm-8">
-                      <select name="thirtyday_vol" id="thirtyday_vol" class="js-select2 input-lg">
-                          {% for i in [1, 10, 100, 1000, 10000, 100000, 1000000] %}
-                          <option value="{{ i }}"{% if thirtyday_vol == i %} selected{% endif %}>{{ i }}</option>
-                          {% endfor %}
-                      </select>
+                  <div class="form-group">
+                      <label class="col-sm-4 col-form-label" for="thirtyday_vol">30-day Volume:</label>
+                      <div class="col-sm-8">
+                          <select name="thirtyday_vol" id="thirtyday_vol" class="js-select2 input-lg">
+                              {% for i in [1, 10, 100, 1000, 10000, 100000, 1000000] %}
+                              <option value="{{ i }}"{% if thirtyday_vol == i %} selected{% endif %}>{{ i }}</option>
+                              {% endfor %}
+                          </select>
+                      </div>
                   </div>
-              </div>
-              <div class="form-group">
-                  <label class="col-sm-4 col-form-label" for="thirtyday_order">30-day Order Count:</label>
-                  <div class="col-sm-8">
-                      <select name="thirtyday_order" id="thirtyday_order" class="js-select2 input-lg">
-                          {% for i in [1, 5, 50, 100, 500, 1000, 5000] %}
-                          <option value="{{ i }}"{% if thirtyday_order == i %} selected{% endif %}>{{ i }}</option>
-                          {% endfor %}
-                      </select>
+                  <div class="form-group">
+                      <label class="col-sm-4 col-form-label" for="thirtyday_order">30-day Order Count:</label>
+                      <div class="col-sm-8">
+                          <select name="thirtyday_order" id="thirtyday_order" class="js-select2 input-lg">
+                              {% for i in [1, 5, 50, 100, 500, 1000, 5000] %}
+                              <option value="{{ i }}"{% if thirtyday_order == i %} selected{% endif %}>{{ i }}</option>
+                              {% endfor %}
+                          </select>
+                      </div>
                   </div>
-              </div>
 
                 <div class="form-group">
                   <label class="col-sm-4 col-form-label" for="page_size">Items per Page:</label>
@@ -98,7 +101,7 @@
               <button type="submit" class="btn btn-primary">
                   Submit
               </button>
-
+        </div>
 
           <div class="row">
               <div class="col-lg-12">
@@ -133,6 +136,7 @@
                         <th style="text-align: right"><abbr title="Jita Price + Shipping">J+S</abbr></th>
                         <th style="text-align: right"><abbr title="Jita Price">J</abbr></th>
                         <th style="text-align: right"><abbr title="5-day Region Volume">5</abbr></th>
+                        <th style="text-align: right"><abbr title="30-day Profits">$$</abbr></th>
                         <th style="text-align: right"><abbr title="Overpriced Percent">%</abbr></th>
                       </tr>
                     </thead>
@@ -148,6 +152,7 @@
                         <td style="text-align: right">{{ item.jita_price_plus_shipping|round_price|commas }}</td>
                         <td style="text-align: right">{{ item.jita_price|round_price|commas }}</td>
                         <td style="text-align: right">{{ (item.fiveday_vol or 0)|commas }}</td>
+                        <td style="text-align: right">{{ ((item.twentypct_profit-item.jita_price_plus_shipping)*item.thirtyday_vol)|commas }}</td>
                         {% autoescape off %}
                         <td style="text-align: right">{{ item.overpriced_pct|round_nodecimal|commas }}%</td>
                         {% endautoescape %}
