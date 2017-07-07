@@ -146,6 +146,7 @@
                         <th style="text-align: right"><abbr title="Jita Price + Shipping">J+S</abbr></th>
                         <th style="text-align: right"><abbr title="Jita Price">J</abbr></th>
                         <th style="text-align: right"><abbr title="5-day Region Volume">5</abbr></th>
+                        <th style="text-align: right"><abbr title="Current Market Volume">V</abbr></th>
                         <th style="text-align: right"><abbr title="30-day Profits">$$</abbr></th>
                         <th style="text-align: right"><abbr title="Overpriced Percent">%</abbr></th>
                       </tr>
@@ -162,6 +163,7 @@
                         <td style="text-align: right">{{ item.jita_price_plus_shipping|round_price|commas }}</td>
                         <td style="text-align: right">{{ item.jita_price|round_price|commas }}</td>
                         <td style="text-align: right">{{ (item.fiveday_vol or 0)|commas }}</td>
+                        <td style="text-align: right">{{ (item.volume or 0)|commas }}</td>
                         <td style="text-align: right">{{ ((item.twentypct_profit-item.jita_price_plus_shipping)*item.thirtyday_vol)|commas }}</td>
                         {% autoescape off %}
                         <td style="text-align: right">{{ item.overpriced_pct|round_nodecimal|commas }}%</td>
@@ -169,7 +171,7 @@
                       </tr>
                       {%- else -%}
                       <tr>
-                        <td colspan="10">No items.</td>
+                        <td colspan="12">No items.</td>
                       </tr>
                       {%- endfor %}
                     </tbody>
