@@ -509,7 +509,7 @@ def overpriced(request):
         if not station_found:
             continue
 
-        if int(item['overpriced_pct']) < int(pct_over):
+        if pct_over > 0 and int(item['overpriced_pct']) < int(pct_over):
             continue
 
         if item['thirtyday_vol'] is None or int(item['thirtyday_vol']) < thirtyday_vol:
