@@ -17,10 +17,10 @@
 <section class="container section-md">
       <div class="row">
         <div class="col-lg-12">
+        <form id="formEntry" class="form-horizontal" method="post" action="{{ url('pgsus.views.overpriced') }}">
+          <h2><a data-toggle="collapse" href="#collapse-target" aria-expanded="False"><i class="fa fa-chevron-right"></i>Configuration</a></h2>
 
-          <h2><a data-toggle="collapse" href="#formEntry" aria-expanded="False"><i class="fa fa-chevron-right"></i>Configuration</a></h2>
-          <form id="formEntry" class="form-horizontal" method="post" action="{{ url('pgsus.views.overpriced') }}">
-            <div class="collapse{% if overpriced_items|length == 0 %} in{% endif %}">
+            <div id="collapse-target" class="collapse{% if overpriced_items|length == 0 %} in{% endif %}">
 
 
               <input type="hidden" name="page" value="{{ page }}"/>
@@ -86,6 +86,16 @@
                           </select>
                       </div>
                   </div>
+                    <div class="form-group">
+                        <label class="col-sm-4 col-form-label" for="thirtyday_profit">30-day Profit:</label>
+                        <div class="col-sm-8">
+                            <select name="thirtyday_profit" id="thirtyday_profit" class="js-select2 input-lg">
+                                {% for i in [0, 1000000, 10000000, 100000000, 1000000000, 10000000000] %}
+                                <option value="{{ i }}"{% if thirtyday_profit == i %} selected{% endif %}>{{ i|commas }} ISK</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
 
                 <div class="form-group">
                   <label class="col-sm-4 col-form-label" for="page_size">Items per Page:</label>
@@ -186,8 +196,8 @@
               </ul>
             </nav>
 
-          </form>
         </div>
+        </form>
       </div>
 </section>
 {% endblock %}

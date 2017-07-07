@@ -431,6 +431,7 @@ def overpriced(request):
     page_size = 50
     thirtyday_vol = 10
     thirtyday_order = 5
+    thirtyday_profit = 0
 
     item_list = ''
     item_names = set()
@@ -441,6 +442,7 @@ def overpriced(request):
         pct_over = int(request.POST.get('pct_over'))
         thirtyday_vol = int(request.POST.get('thirtyday_vol'))
         thirtyday_order = int(request.POST.get('thirtyday_order'))
+        thirtyday_profit = int(request.POST.get('thirtyday_profit'))
         page = int(request.POST.get('page'))
         page_size = int(request.POST.get('page_size'))
 
@@ -514,6 +516,9 @@ def overpriced(request):
             continue
 
         if item['thirtyday_order'] is None or int(item['thirtyday_order']) < thirtyday_order:
+            continue
+
+        if item['thirtyday_vol'] * (item['twentypct_profit'] - item['jita_price_plus_shipping']) < thirtyday_profit:
             continue
 
         if len(item_names) > 0 and item['item_name'].lower() not in item_names:
