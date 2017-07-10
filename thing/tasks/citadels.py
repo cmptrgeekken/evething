@@ -61,6 +61,7 @@ class Citadels(APITask):
                 existing_citadel.name = citadel['name']
                 existing_citadel.is_unknown = False
                 existing_citadel.is_citadel = True
+                existing_citadel.system_id = citadel['systemId']
 
                 existing_citadel.save()
 

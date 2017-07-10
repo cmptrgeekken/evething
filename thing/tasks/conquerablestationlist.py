@@ -65,6 +65,7 @@ class ConquerableStationList(APITask):
             # Station exists and name has changed, update it
             elif station.name != row.attrib['stationName']:
                 station.name = row.attrib['stationName']
+                station.system_id = row.attrib['solarSystemID']
                 station.save()
 
         # Create any new stations
