@@ -62,9 +62,12 @@
                 </td>
                 <td>
                   {% if contract.z_shipping_invalid %}
-                    <b class="neg">Invalid!</b>
+                  <div><b class="neg">Invalid!</b></div>
                   {% else %}
                     {{ contract.z_price_model.name }}
+                  {% endif %}
+                  {% if contract.z_has_station %}
+                  <div><b class="neg">!! Station !!</b></div>
                   {% endif %}
                 </td>
                 <td>
