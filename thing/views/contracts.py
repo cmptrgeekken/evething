@@ -184,10 +184,6 @@ def courier_contracts(request):
         contract.z_reward_diff = 0
         contract.z_has_station = False
 
-        if not contract.start_station.is_citadel or not contract.end_station.is_citadel:
-            contract.z_shipping_rate += 5000000
-            contract.z_has_station = True
-
         start_system_id = contract.start_station.system_id
         end_system_id = contract.end_station.system_id
 
@@ -227,6 +223,11 @@ def courier_contracts(request):
                 contract.z_reward_low = True
             elif float(contract.z_reward_diff) / float(contract.reward) < -0.05:
                 contract.z_reward_high = True
+
+        if not contract.start_station.is_citadel or not contract.end_station.is_citadel:
+            if contract.z_shipping_rate is not None:
+                contract.z_shipping_rate += 5000000
+            contract.z_has_station = True
 
     # Render template
     return render_page(
