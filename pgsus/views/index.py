@@ -243,6 +243,7 @@ def freighter(request):
     shipping_m3 = ''
     shipping_collateral = ''
     shipping_info = None
+    is_station = False
 
     errors = []
 
@@ -253,6 +254,7 @@ def freighter(request):
             shipping_m3_input = request.POST.get('shipping_m3')
             shipping_m3_input = re.sub('[^\d]+', '', shipping_m3_input)
             shipping_m3 = int(shipping_m3_input)
+            is_station = int(request.POST.get('is_station')) == 1
         except ValueError:
             errors.append('Volume invalid')
 
@@ -318,6 +320,10 @@ def freighter(request):
             if shipping_info['max_collateral_exceeded']:
                 errors.append('Max Collateral for this route: %s ISK' % humanize(shipping_info['max_collateral']))
 
+            if is_station:
+                shipping_info['rate'] += 5000000
+                errors.append('A fee of 5,000,000 ISK has been applied since pick up or destination is a station.')
+
     out = render_page(
         'pgsus/freighter.html',
         dict(
@@ -329,6 +335,7 @@ def freighter(request):
             end_system_name=end_system_name,
             shipping_m3=shipping_m3,
             shipping_collateral=shipping_collateral,
+            is_station=is_station,
             errors=errors
         ),
         request,
