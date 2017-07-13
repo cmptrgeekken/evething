@@ -216,6 +216,9 @@ def courier_contracts(request):
             if contract.z_price_model.max_collateral < contract.collateral:
                 contract.z_collateral_invalid = True
 
+            if not contract.start_station.is_citadel or not contract.end_station.is_citadel:
+                    contract.z_shipping_rate += 5000000
+
             contract.z_reward_diff = contract.z_shipping_rate - contract.reward
             if contract.reward == 0:
                 contract.z_reward_low = True
@@ -225,8 +228,6 @@ def courier_contracts(request):
                 contract.z_reward_high = True
 
         if not contract.start_station.is_citadel or not contract.end_station.is_citadel:
-            if contract.z_shipping_rate is not None:
-                contract.z_shipping_rate += 5000000
             contract.z_has_station = True
 
     # Render template
