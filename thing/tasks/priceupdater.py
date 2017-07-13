@@ -67,7 +67,7 @@ class PriceUpdater(APITask):
             url = api_url + str(page_number)
             data = self.fetch_esi_url(url, access_token)
             if data is False:
-                continue
+                break
 
             try:
                 orders = json.loads(data)
@@ -76,6 +76,12 @@ class PriceUpdater(APITask):
 
             if len(orders) == 0:
                 break
+
+            existing_orders = StationOrder.objects.filter(
+                station_id=station_id
+            ).values_list('order_id')
+
+            existing_order_ids = set([o[0] for o in existing_orders])
 
             new_orders = []
             updated_orders = {}

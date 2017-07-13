@@ -37,7 +37,7 @@
                 <div class="col-md-12">
                     <h3>Contract Description:</h3>
                     <b>{{ delivery_date.strftime('%b %d') }} ({{ main_char_name }})</b>
-                    <button class="btn btn-xs" type="button" data-clipboard-text="{{ delivery_date.strftime('%b %m') }} ({{ main_char_name }})">
+                    <button class="btn btn-xs" type="button" data-clipboard-text="{{ delivery_date.strftime('%b %d') }} ({{ main_char_name }})">
                         <img src="{{ STATIC_URL }}pgsus/img/clippy.svg" width="13" title="Copy to clipboard">
                     </button>
                 </div>
