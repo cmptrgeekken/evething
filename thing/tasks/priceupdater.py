@@ -124,6 +124,8 @@ class PriceUpdater(APITask):
                 else:
                     sql += new_sql
 
+            sql = sql.rstrip(', ')
+
             cursor = self.get_cursor()
             cursor.execute(queries.bulk_stationorders_insert_update % sql)
 
