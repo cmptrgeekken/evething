@@ -643,7 +643,7 @@ SELECT *,
     ROUND(jita_price+jita_shipping, 2) AS jita_price_plus_shipping, 
     ROUND((jita_price+jita_shipping)*1.025*1.02, 2) AS imported_price,
     ROUND((jita_price+jita_shipping)*1.025*1.02*1.2, 2) AS twentypct_profit,
-    CAST((avg_price / ((jita_price + jita_shipping)*1.025*1.02) * 10000 AS UNSIGNED)/100 AS overpriced_pct
+    CAST((avg_price / ((jita_price + jita_shipping)*1.025*1.02)) * 10000 AS UNSIGNED)/100 AS overpriced_pct
 FROM (""" + stationorder_overpriced_base_query + """
     ) o 
    WHERE o.jita_price > 0
