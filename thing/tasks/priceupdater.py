@@ -102,7 +102,7 @@ class PriceUpdater(APITask):
 
             sql = ""
             for o in station_orders:
-                new_sql = "('%s', '%s', '%s', '%s', '%s', '%s', %f, '%s', '%s', '%s', '%s', '%s', '%s'), " \
+                new_sql = "('%s', '%s', '%s', '%s', '%s', '%s', %f, '%d', '%s', '%s', '%s', '%s', '%s'), " \
                        % (str(o.order_id),
                           str(o.item_id),
                           str(o.station_id),
@@ -110,7 +110,7 @@ class PriceUpdater(APITask):
                           str(o.volume_remaining),
                           str(o.minimum_volume),
                           o.price,
-                          str(o.buy_order),
+                          o.buy_order,
                           str(o.issued),
                           o.expires,
                           o.range,
