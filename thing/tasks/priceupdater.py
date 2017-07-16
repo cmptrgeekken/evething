@@ -48,12 +48,12 @@ class PriceUpdater(APITask):
             self.log_warn('No refresh token found for station %d!' % station.id)
             return
 
-        access_token = None
-        token_expires = None
-
         existing_orders = StationOrder.objects.filter(
             station_id=station_id
         ).values_list('order_id')
+
+        access_token = None
+        token_expires = None
 
         existing_order_ids = set([o[0] for o in existing_orders])
 
@@ -77,7 +77,7 @@ class PriceUpdater(APITask):
             if len(orders) == 0:
                 break
 
-            new_orders = []
+            new_orders = dict()
             updated_orders = {}
             updated_order_map = {}
             current_order_ids = []
@@ -107,6 +107,7 @@ class PriceUpdater(APITask):
                     order_id=station_order.order_id,
                     price=station_order.price,
                     volume_remaining=station_order.volume_remaining,
+                    station_id=station_id,
                 )
 
                 # Ignore stations we're not tracking
@@ -119,10 +120,11 @@ class PriceUpdater(APITask):
                     current_order_ids.append(station_order.order_id)
                 else:
                     existing_order_ids.add(station_order.order_id)
-                    new_orders.append(station_order)
+                    if station_order.order_id not in new_orders:
+                        new_orders[station_order.order_id] = station_order
 
             # Insert new orders
-            StationOrder.objects.bulk_create(new_orders)
+            StationOrder.objects.bulk_create(new_orders.items())
 
             # Attempt at more-efficient bulk updates
             if len(updated_orders) > 0:
@@ -150,5 +152,8 @@ class PriceUpdater(APITask):
         StationOrder.objects.filter(station_id=station_id).exclude(
             last_updated__gte=start_time
         ).delete()
+
+        # Delete all StationOrderUpdater entries for this station
+        StationOrderUpdater.objects.filter(station_id=station_id).delete()
 
         return True

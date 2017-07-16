@@ -36,6 +36,7 @@ class StationOrderUpdater(models.Model):
     order_id = models.BigIntegerField(primary_key=True)
     volume_remaining = models.IntegerField()
     price = models.DecimalField(max_digits=20, decimal_places=2)
+    station_id = models.IntegerField(default=None, db_index=True)
 
     class Meta:
         app_label = 'thing'
