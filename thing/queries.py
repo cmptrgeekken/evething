@@ -701,7 +701,7 @@ CREATE TABLE `thing_cache_localprice` (
 
 
 bulk_stationorders_insert_update = """
-INSERT INTO thing_stationorder (order_id,item_id,station_id,volume_entered,volume_remaining,minimum_volume,price,buy_order,issued,expires,range,last_updated,times_updated)
+INSERT INTO thing_stationorder (`order_id`,`item_id`,`station_id`,`volume_entered`,`volume_remaining`,`minimum_volume`,`price`,`buy_order`,`issued`,`expires`,`range`,`last_updated`,`times_updated`)
     VALUES %s 
 ON DUPLICATE KEY UPDATE 
     last_updated=NOW(),
