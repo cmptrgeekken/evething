@@ -102,20 +102,20 @@ class PriceUpdater(APITask):
 
             sql = ""
             for o in station_orders:
-                new_sql = "(%d, %d, %d, %d, %d, %d, %f, %d, '%s', '%s', '%s', '%s', %d), " \
-                       % (o.order_id,
-                          o.item_id,
-                          o.station_id,
-                          o.volume_entered,
-                          o.volume_remaining,
-                          o.minimum_volume,
+                new_sql = "('%s', '%s', '%s', '%s', '%s', '%s', %f, '%s', '%s', '%s', '%s', '%s', '%s'), " \
+                       % (str(o.order_id),
+                          str(o.item_id),
+                          str(o.station_id),
+                          str(o.volume_entered),
+                          str(o.volume_remaining),
+                          str(o.minimum_volume),
                           o.price,
-                          o.buy_order,
-                          o.issued,
+                          str(o.buy_order),
+                          str(o.issued),
                           o.expires,
                           o.range,
                           o.last_updated,
-                          o.times_updated)
+                          str(o.times_updated))
 
                 if len(''.join([sql, new_sql])) > 16777216:
                     cursor = self.get_cursor()
