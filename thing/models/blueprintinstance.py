@@ -34,8 +34,8 @@ from thing.models.blueprintcomponent import BlueprintComponent
 
 class BlueprintInstance(models.Model):
     """Blueprint instances - an owned blueprint"""
-    user = models.ForeignKey(User, blank=True, null=True)
-    blueprint = models.ForeignKey(Blueprint)
+    user = models.ForeignKey(User, blank=True, null=True, on_delete=models.DO_NOTHING)
+    blueprint = models.ForeignKey(Blueprint, on_delete=models.DO_NOTHING)
 
     original = models.BooleanField(default=False)
     material_level = models.IntegerField(default=0)

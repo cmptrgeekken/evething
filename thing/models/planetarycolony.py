@@ -31,8 +31,8 @@ from thing.models.system import System
 
 class Colony(models.Model):
     """Planetary Colony"""
-    character = models.ForeignKey(Character)
-    system = models.ForeignKey(System)
+    character = models.ForeignKey(Character, on_delete=models.DO_NOTHING)
+    system = models.ForeignKey(System, on_delete=models.DO_NOTHING)
     planet_id = models.IntegerField()
     planet = models.CharField(max_length=128)
     planet_type = models.CharField(max_length=32)

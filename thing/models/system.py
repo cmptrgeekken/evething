@@ -32,7 +32,7 @@ class System(models.Model):
     id = models.IntegerField(primary_key=True, auto_created=False)
     name = models.CharField(max_length=32)
 
-    constellation = models.ForeignKey(Constellation)
+    constellation = models.ForeignKey(Constellation, on_delete=models.DO_NOTHING)
 
     class Meta:
         app_label = 'thing'

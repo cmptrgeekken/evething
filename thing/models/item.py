@@ -36,8 +36,8 @@ class Item(models.Model):
     id = models.IntegerField(primary_key=True)
     name = models.CharField(max_length=128)
 
-    item_group = models.ForeignKey(ItemGroup)
-    market_group = models.ForeignKey(MarketGroup, blank=True, null=True)
+    item_group = models.ForeignKey(ItemGroup, on_delete=models.DO_NOTHING)
+    market_group = models.ForeignKey(MarketGroup, blank=True, null=True, on_delete=models.DO_NOTHING)
 
     portion_size = models.IntegerField()
     # 0.0025 -> 10,000,000,000

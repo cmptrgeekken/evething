@@ -33,8 +33,8 @@ ROMAN = ['', 'I', 'II', 'III', 'IV', 'V']
 
 class CharacterSkill(models.Model):
     """Character skill"""
-    character = models.ForeignKey(Character)
-    skill = models.ForeignKey(Skill)
+    character = models.ForeignKey(Character, on_delete=models.DO_NOTHING)
+    skill = models.ForeignKey(Skill, on_delete=models.DO_NOTHING)
 
     level = models.SmallIntegerField()
     points = models.IntegerField()

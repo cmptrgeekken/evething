@@ -31,8 +31,8 @@ from thing.models.region import Region
 
 class PriceHistory(models.Model):
     """Historical item price data"""
-    region = models.ForeignKey(Region)
-    item = models.ForeignKey(Item)
+    region = models.ForeignKey(Region, on_delete=models.DO_NOTHING)
+    item = models.ForeignKey(Item, on_delete=models.DO_NOTHING)
 
     date = models.DateField(db_index=True)
     minimum = models.DecimalField(max_digits=18, decimal_places=2)

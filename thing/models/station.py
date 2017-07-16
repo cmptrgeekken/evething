@@ -53,9 +53,9 @@ class Station(models.Model):
     is_unknown = models.BooleanField(default=False)
 
     load_market_orders = models.BooleanField(default=False)
-    market_profile = models.ForeignKey(UserProfile, null=True, default=None)
+    market_profile = models.ForeignKey(UserProfile, null=True, default=None, on_delete=models.DO_NOTHING)
 
-    system = models.ForeignKey(System, blank=True, null=True, default=None)
+    system = models.ForeignKey(System, blank=True, null=True, default=None, on_delete=models.DO_NOTHING)
 
     class Meta:
         app_label = 'thing'

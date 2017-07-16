@@ -87,7 +87,7 @@ class CharacterDetails(models.Model):
     )
 
     last_known_location = models.CharField(max_length=255, default='')
-    ship_item = models.ForeignKey(Item, blank=True, null=True)
+    ship_item = models.ForeignKey(Item, blank=True, null=True, on_delete=models.DO_NOTHING)
     ship_name = models.CharField(max_length=128, default='')
 
     class Meta:

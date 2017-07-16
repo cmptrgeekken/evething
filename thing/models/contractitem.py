@@ -32,7 +32,7 @@ from thing.models.contract import Contract
 class ContractItem(models.Model):
     """Contract items"""
     contract_id = models.IntegerField(db_index=True)
-    item = models.ForeignKey(Item, related_name='contract_items')
+    item = models.ForeignKey(Item, related_name='contract_items', on_delete=models.DO_NOTHING)
 
     quantity = models.IntegerField()
     raw_quantity = models.IntegerField()

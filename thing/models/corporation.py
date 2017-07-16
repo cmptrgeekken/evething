@@ -34,7 +34,7 @@ class Corporation(models.Model):
     name = models.CharField(max_length=64)
     ticker = models.CharField(max_length=5, default='')
 
-    alliance = models.ForeignKey(Alliance, blank=True, null=True)
+    alliance = models.ForeignKey(Alliance, blank=True, null=True, on_delete=models.DO_NOTHING)
 
     division1 = models.CharField(max_length=64, default='')
     division2 = models.CharField(max_length=64, default='')

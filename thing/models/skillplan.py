@@ -38,7 +38,7 @@ class SkillPlan(models.Model):
         (GLOBAL_VISIBILITY, 'Global'),
     )
 
-    user = models.ForeignKey(User, null=True, blank=True)
+    user = models.ForeignKey(User, null=True, blank=True, on_delete=models.DO_NOTHING)
 
     name = models.CharField(max_length=64)
     visibility = models.IntegerField(default=1, choices=VISIBILITY_CHOICES)

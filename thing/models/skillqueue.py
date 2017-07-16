@@ -34,8 +34,8 @@ from thing.models.skill import Skill
 
 class SkillQueue(models.Model):
     """Skill Queue"""
-    character = models.ForeignKey(Character)
-    skill = models.ForeignKey(Skill)
+    character = models.ForeignKey(Character, on_delete=models.DO_NOTHING)
+    skill = models.ForeignKey(Skill, on_delete=models.DO_NOTHING)
 
     start_time = models.DateTimeField()
     end_time = models.DateTimeField()

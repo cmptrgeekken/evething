@@ -34,9 +34,9 @@ from thing.models.item import Item
 class Pin(models.Model):
     """Planetary Pin"""
     pin_id = models.BigIntegerField(db_index=True)
-    colony = models.ForeignKey(Colony)
+    colony = models.ForeignKey(Colony, on_delete=models.DO_NOTHING)
 
-    type = models.ForeignKey(Item, related_name='+')
+    type = models.ForeignKey(Item, related_name='+', on_delete=models.DO_NOTHING)
     schematic = models.IntegerField()
 
     cycle_time = models.IntegerField()
@@ -84,8 +84,8 @@ class Pin(models.Model):
 
 
 class PinContent(models.Model):
-    pin = models.ForeignKey(Pin)
-    item = models.ForeignKey(Item, related_name='+')
+    pin = models.ForeignKey(Pin, on_delete=models.DO_NOTHING)
+    item = models.ForeignKey(Item, related_name='+', on_delete=models.DO_NOTHING)
     quantity = models.IntegerField()
 
     class Meta:

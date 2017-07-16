@@ -31,7 +31,7 @@ from thing.models.corpwallet import CorpWallet
 
 
 class Campaign(models.Model):
-    user = models.ForeignKey(User)
+    user = models.ForeignKey(User, on_delete=models.DO_NOTHING)
 
     title = models.CharField(max_length=32)
     slug = models.SlugField(max_length=32)
