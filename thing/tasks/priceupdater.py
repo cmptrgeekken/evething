@@ -48,14 +48,8 @@ class PriceUpdater(APITask):
             self.log_warn('No refresh token found for station %d!' % station.id)
             return
 
-        existing_orders = StationOrder.objects.filter(
-            station_id=station_id
-        ).values_list('order_id')
-
         access_token = None
         token_expires = None
-
-        existing_order_ids = set([o[0] for o in existing_orders])
 
         start_time = datetime.now()
 
@@ -77,10 +71,7 @@ class PriceUpdater(APITask):
             if len(orders) == 0:
                 break
 
-            new_orders = dict()
-            updated_orders = {}
-            updated_order_map = {}
-            current_order_ids = []
+            station_orders = []
             for order in orders:
                 # Create the new order object
                 remaining = int(order['volume_remain'])
@@ -103,48 +94,26 @@ class PriceUpdater(APITask):
                     last_updated=start_time,
                 )
 
-                order_updater = StationOrderUpdater(
-                    order_id=station_order.order_id,
-                    price=station_order.price,
-                    volume_remaining=station_order.volume_remaining,
-                    station_id=station_id,
-                )
-
                 # Ignore stations we're not tracking
                 if int(order['location_id']) != int(station_id):
                     continue
 
-                if station_order.order_id in existing_order_ids:
-                    updated_orders[station_order.order_id] = order_updater
-                    updated_order_map[station_order.order_id] = station_order
-                    current_order_ids.append(station_order.order_id)
+                station_orders.append(station_order)
+
+            sql = ""
+            for o in station_orders:
+                new_sql = "(%d, %d, %d, %d, %d, %d, %d, %d, %s, %s, %s, %s, %d), " \
+                       % o.order_id, o.item_id, o.station_id, o.volume_entered, o.volume_remaining, o.minimum_volume, o.price, o.buy_order, o.issued, o.expires, o.range, o.last_updated, o.times_updated
+
+                if len(''.join([sql, new_sql])) > 16777216:
+                    cursor = self.get_cursor()
+                    cursor.execute(queries.bulk_stationorders_insert_update % sql)
+                    sql = new_sql
                 else:
-                    existing_order_ids.add(station_order.order_id)
-                    if station_order.order_id not in new_orders:
-                        new_orders[station_order.order_id] = station_order
+                    sql += new_sql
 
-            # Insert new orders
-            StationOrder.objects.bulk_create(new_orders.items())
-
-            # Attempt at more-efficient bulk updates
-            if len(updated_orders) > 0:
-                StationOrderUpdater.objects.filter(order_id__in=current_order_ids).delete()
-                StationOrderUpdater.objects.bulk_create(updated_orders.values())
-
-                cursor = self.get_cursor()
-                cursor.execute(queries.stationorder_ids_to_update)
-                order_ids = set([col[0] for col in cursor.fetchall()])
-
-                for id in order_ids:
-                    if id in updated_order_map:
-                        order_update = updated_orders[id]
-                        order = updated_order_map[id]
-                        order.times_updated += 1
-                        order.price = order_update.price
-                        order.volume_remaining = order_update.volume_remaining
-                        order.save()
-
-            StationOrder.objects.filter(order_id__in=current_order_ids).update(last_updated=start_time)
+            cursor = self.get_cursor()
+            cursor.execute(queries.bulk_stationorders_insert_update % sql)
 
             page_number += 1
 
@@ -152,8 +121,5 @@ class PriceUpdater(APITask):
         StationOrder.objects.filter(station_id=station_id).exclude(
             last_updated__gte=start_time
         ).delete()
-
-        # Delete all StationOrderUpdater entries for this station
-        StationOrderUpdater.objects.filter(station_id=station_id).delete()
 
         return True

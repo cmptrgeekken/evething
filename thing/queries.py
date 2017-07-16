@@ -698,3 +698,13 @@ CREATE TABLE `thing_cache_localprice` (
   KEY `group_idx` (`grp` ASC, `mg1` ASC, `mg2` ASC, `mg3` ASC, `mg4` ASC, `mg5` ASC, `mg6` ASC)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 """
+
+
+bulk_stationorders_insert_update = """
+INSERT INTO thing_stationorder 
+    VALUES %s 
+ON DUPLICATE KEY UPDATE 
+    last_updated=NOW(),
+    times_updated=IF(price!=VALUES(price),times_updated+1,times_updated), 
+    price=VALUES(price),
+    volume_remaining=VALUES(volume_remaining)"""
