@@ -34,13 +34,13 @@ from thing.models.station import Station
 
 class Transaction(models.Model):
     """Wallet Transactions"""
-    station = models.ForeignKey(Station)
-    item = models.ForeignKey(Item)
+    station = models.ForeignKey(Station, on_delete=models.DO_NOTHING)
+    item = models.ForeignKey(Item, on_delete=models.DO_NOTHING)
 
-    character = models.ForeignKey(Character)
-    corp_wallet = models.ForeignKey(CorpWallet, null=True, blank=True)
-    other_char = models.ForeignKey(Character, null=True, blank=True, related_name='transaction_others')
-    other_corp = models.ForeignKey(Corporation, null=True, blank=True)
+    character = models.ForeignKey(Character, on_delete=models.DO_NOTHING)
+    corp_wallet = models.ForeignKey(CorpWallet, null=True, blank=True, on_delete=models.DO_NOTHING)
+    other_char = models.ForeignKey(Character, null=True, blank=True, related_name='transaction_others', on_delete=models.DO_NOTHING)
+    other_corp = models.ForeignKey(Corporation, null=True, blank=True, on_delete=models.DO_NOTHING)
 
     transaction_id = models.BigIntegerField(db_index=True)
     date = models.DateTimeField(db_index=True)

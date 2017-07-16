@@ -31,12 +31,12 @@ from thing.models.spskill import SPSkill
 
 
 class SPEntry(models.Model):
-    skill_plan = models.ForeignKey(SkillPlan, related_name='entries')
+    skill_plan = models.ForeignKey(SkillPlan, related_name='entries', on_delete=models.DO_NOTHING)
 
     position = models.IntegerField()
 
-    sp_remap = models.ForeignKey(SPRemap, blank=True, null=True)
-    sp_skill = models.ForeignKey(SPSkill, blank=True, null=True)
+    sp_remap = models.ForeignKey(SPRemap, blank=True, null=True, on_delete=models.DO_NOTHING)
+    sp_skill = models.ForeignKey(SPSkill, blank=True, null=True, on_delete=models.DO_NOTHING)
 
     class Meta:
         app_label = 'thing'

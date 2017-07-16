@@ -31,7 +31,7 @@ from thing.models.corporation import Corporation
 class CorpWallet(models.Model):
     """Corporation wallets"""
     account_id = models.IntegerField(primary_key=True)
-    corporation = models.ForeignKey(Corporation)
+    corporation = models.ForeignKey(Corporation, on_delete=models.DO_NOTHING)
     account_key = models.IntegerField()
     description = models.CharField(max_length=64)
     balance = models.DecimalField(max_digits=18, decimal_places=2)

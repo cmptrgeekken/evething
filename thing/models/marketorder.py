@@ -35,10 +35,10 @@ class MarketOrder(models.Model):
     """Market orders"""
     order_id = models.BigIntegerField(primary_key=True)
 
-    station = models.ForeignKey(Station)
-    item = models.ForeignKey(Item)
-    character = models.ForeignKey(Character)
-    corp_wallet = models.ForeignKey(CorpWallet, null=True, blank=True)
+    station = models.ForeignKey(Station, on_delete=models.DO_NOTHING)
+    item = models.ForeignKey(Item, on_delete=models.DO_NOTHING)
+    character = models.ForeignKey(Character, on_delete=models.DO_NOTHING)
+    corp_wallet = models.ForeignKey(CorpWallet, null=True, blank=True, on_delete=models.DO_NOTHING)
 
     creator_character_id = models.IntegerField(db_index=True)
 

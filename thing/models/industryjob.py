@@ -70,20 +70,20 @@ class IndustryJob(models.Model):
         (INVENTION_ACTIVITY, 'Invention'),
     )
 
-    character = models.ForeignKey(Character)
-    corporation = models.ForeignKey(Corporation, blank=True, null=True)
+    character = models.ForeignKey(Character, on_delete=models.DO_NOTHING)
+    corporation = models.ForeignKey(Corporation, blank=True, null=True, on_delete=models.DO_NOTHING)
 
     job_id = models.IntegerField()
     installer_id = models.IntegerField()
 
-    system = models.ForeignKey(System)
+    system = models.ForeignKey(System, on_delete=models.DO_NOTHING)
     activity = models.IntegerField(choices=ACTIVITY_CHOICES)
-    blueprint = models.ForeignKey(Blueprint, related_name='job_installed_blueprints')
+    blueprint = models.ForeignKey(Blueprint, related_name='job_installed_blueprints', on_delete=models.DO_NOTHING)
     output_location_id = models.BigIntegerField()
     runs = models.IntegerField()
     team_id = models.BigIntegerField()
     licensed_runs = models.IntegerField()
-    product = models.ForeignKey(Item, related_name='job_products', null=True, blank=True)
+    product = models.ForeignKey(Item, related_name='job_products', null=True, blank=True, on_delete=models.DO_NOTHING)
     status = models.IntegerField(choices=STATUS_CHOICES)
     duration = models.IntegerField()
 

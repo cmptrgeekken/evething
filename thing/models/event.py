@@ -32,7 +32,7 @@ from core.util import total_seconds
 
 
 class Event(models.Model):
-    user = models.ForeignKey(User)
+    user = models.ForeignKey(User, on_delete=models.DO_NOTHING)
     issued = models.DateTimeField()
     text = models.TextField()
 

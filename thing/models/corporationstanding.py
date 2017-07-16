@@ -30,8 +30,8 @@ from thing.models.corporation import Corporation
 
 
 class CorporationStanding(models.Model):
-    corporation = models.ForeignKey(Corporation)
-    character = models.ForeignKey(Character)
+    corporation = models.ForeignKey(Corporation, on_delete=models.DO_NOTHING)
+    character = models.ForeignKey(Character, on_delete=models.DO_NOTHING)
 
     standing = models.DecimalField(max_digits=4, decimal_places=2)
 

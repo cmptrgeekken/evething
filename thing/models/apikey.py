@@ -101,7 +101,7 @@ class APIKey(models.Model):
         CORP_WALLET_TRANSACTIONS_MASK,
     )
 
-    user = models.ForeignKey(User)
+    user = models.ForeignKey(User, on_delete=models.DO_NOTHING)
 
     keyid = models.IntegerField(verbose_name='Key ID', db_index=True)
     vcode = models.CharField(max_length=64, verbose_name='Verification code')
@@ -123,8 +123,8 @@ class APIKey(models.Model):
     characters = models.ManyToManyField(Character, related_name='apikeys')
 
     # this is only used for corporate keys, ugh
-    corp_character = models.ForeignKey(Character, null=True, blank=True, related_name='corporate_apikey')
-    corporation = models.ForeignKey(Corporation, null=True, blank=True)
+    corp_character = models.ForeignKey(Character, null=True, blank=True, related_name='corporate_apikey', on_delete=models.DO_NOTHING)
+    corporation = models.ForeignKey(Corporation, null=True, blank=True, on_delete=models.DO_NOTHING)
 
     class Meta:
         app_label = 'thing'

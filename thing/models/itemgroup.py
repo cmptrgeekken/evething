@@ -32,7 +32,7 @@ class ItemGroup(models.Model):
     id = models.IntegerField(primary_key=True)
     name = models.CharField(max_length=128)
 
-    category = models.ForeignKey(ItemCategory)
+    category = models.ForeignKey(ItemCategory, on_delete=models.DO_NOTHING)
 
     class Meta:
         app_label = 'thing'

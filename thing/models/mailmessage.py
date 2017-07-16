@@ -34,7 +34,7 @@ TAG_RE = re.compile('<[^>]+>')
 
 
 class MailMessage(models.Model):
-    character = models.ForeignKey(Character)
+    character = models.ForeignKey(Character, on_delete=models.DO_NOTHING)
 
     message_id = models.BigIntegerField()
     sender_id = models.IntegerField()
