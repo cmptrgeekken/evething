@@ -31,8 +31,8 @@ from thing.models.station import Station
 
 class ItemStationSeed(models.Model):
     id = models.IntegerField(primary_key=True)
-    item = models.ForeignKey(Item)
-    station = models.ForeignKey(Station)
+    item = models.ForeignKey(Item, on_delete=models.DO_NOTHING)
+    station = models.ForeignKey(Station, on_delete=models.DO_NOTHING)
     min_qty = models.IntegerField(default=0, null=False)
     active = models.BooleanField(default=False)
 

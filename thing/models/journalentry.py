@@ -35,8 +35,8 @@ from thing.models.reftype import RefType
 
 class JournalEntry(models.Model):
     """Wallet journal entries"""
-    character = models.ForeignKey(Character)
-    corp_wallet = models.ForeignKey(CorpWallet, null=True, blank=True)
+    character = models.ForeignKey(Character, on_delete=models.DO_NOTHING)
+    corp_wallet = models.ForeignKey(CorpWallet, null=True, blank=True, on_delete=models.DO_NOTHING)
 
     date = models.DateTimeField(db_index=True)
 
@@ -53,7 +53,7 @@ class JournalEntry(models.Model):
     balance = models.DecimalField(max_digits=17, decimal_places=2)
     reason = models.CharField(max_length=255)
 
-    tax_corp = models.ForeignKey(Corporation, null=True, blank=True)
+    tax_corp = models.ForeignKey(Corporation, null=True, blank=True, on_delete=models.DO_NOTHING)
     tax_amount = models.DecimalField(max_digits=14, decimal_places=2)
 
     class Meta:

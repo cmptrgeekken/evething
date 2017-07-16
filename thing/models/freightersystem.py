@@ -30,8 +30,8 @@ from thing.models.freighterpricemodel import FreighterPriceModel
 
 
 class FreighterSystem(models.Model):
-    price_model = models.ForeignKey(FreighterPriceModel)
-    system = models.ForeignKey(System)
+    price_model = models.ForeignKey(FreighterPriceModel, on_delete=models.DO_NOTHING)
+    system = models.ForeignKey(System, on_delete=models.DO_NOTHING)
 
     class Meta:
         app_label = 'thing'

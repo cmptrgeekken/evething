@@ -34,8 +34,8 @@ from thing.models.station import Station
 class StationOrder(models.Model):
     """Station orders"""
     order_id = models.BigIntegerField(primary_key=True)
-    item = models.ForeignKey(Item)
-    station = models.ForeignKey(Station)
+    item = models.ForeignKey(Item, on_delete=models.DO_NOTHING)
+    station = models.ForeignKey(Station, on_delete=models.DO_NOTHING)
     volume_entered = models.IntegerField()
     volume_remaining = models.IntegerField()
     minimum_volume = models.IntegerField()

@@ -29,8 +29,8 @@ from thing.models.item import Item
 
 
 class ItemMaterial(models.Model):
-    item = models.ForeignKey(Item, related_name='item')
-    material = models.ForeignKey(Item, related_name='item_material')
+    item = models.ForeignKey(Item, related_name='item', on_delete=models.DO_NOTHING)
+    material = models.ForeignKey(Item, related_name='item_material', on_delete=models.DO_NOTHING)
     quantity = models.IntegerField()
 
     class Meta:

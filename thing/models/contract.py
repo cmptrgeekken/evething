@@ -31,18 +31,18 @@ from thing.models.station import Station
 
 
 class Contract(models.Model):
-    character = models.ForeignKey(Character)
-    corporation = models.ForeignKey(Corporation, blank=True, null=True)
+    character = models.ForeignKey(Character, on_delete=models.DO_NOTHING)
+    corporation = models.ForeignKey(Corporation, blank=True, null=True, on_delete=models.DO_NOTHING)
 
     contract_id = models.IntegerField(db_index=True)
 
-    issuer_char = models.ForeignKey(Character, blank=True, null=True, related_name='+')
-    issuer_corp = models.ForeignKey(Corporation, related_name='+')
+    issuer_char = models.ForeignKey(Character, blank=True, null=True, related_name='+', on_delete=models.DO_NOTHING)
+    issuer_corp = models.ForeignKey(Corporation, related_name='+', on_delete=models.DO_NOTHING)
     assignee_id = models.IntegerField(default=0)
     acceptor_id = models.IntegerField(default=0)
 
-    start_station = models.ForeignKey(Station, blank=True, null=True, related_name='+')
-    end_station = models.ForeignKey(Station, blank=True, null=True, related_name='+')
+    start_station = models.ForeignKey(Station, blank=True, null=True, related_name='+', on_delete=models.DO_NOTHING)
+    end_station = models.ForeignKey(Station, blank=True, null=True, related_name='+', on_delete=models.DO_NOTHING)
 
     type = models.CharField(max_length=16)
     status = models.CharField(max_length=24)

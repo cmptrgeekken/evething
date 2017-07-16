@@ -69,6 +69,11 @@ class Station(models.Model):
     # Build the short name when this object is saved
     def save(self, *args, **kwargs):
         self._make_shorter_name()
+        if self.system_id == 0:
+            self.system_id = None
+        if self.market_profile_id == 0:
+            self.market_profile_id = None
+
         super(Station, self).save(*args, **kwargs)
 
     def _make_shorter_name(self):

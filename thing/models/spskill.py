@@ -29,7 +29,7 @@ from thing.models.skill import Skill
 
 
 class SPSkill(models.Model):
-    skill = models.ForeignKey(Skill)
+    skill = models.ForeignKey(Skill, on_delete=models.DO_NOTHING)
 
     level = models.IntegerField()
     priority = models.IntegerField()

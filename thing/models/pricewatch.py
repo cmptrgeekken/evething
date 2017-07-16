@@ -30,10 +30,11 @@ from thing.models.item import Item
 
 class PriceWatch(models.Model):
     id = models.IntegerField(primary_key=True)
-    item = models.ForeignKey(Item)
+    item = models.ForeignKey(Item, on_delete=models.DO_NOTHING)
     price_group = models.CharField(max_length=64, null=True)
     price_type = models.CharField(max_length=8, default='5day')
     price_pct = models.DecimalField(max_digits=18, decimal_places=2, default=1)
+    reprocess = models.BooleanField(default=False)
     active = models.BooleanField(default=False)
 
     class Meta:

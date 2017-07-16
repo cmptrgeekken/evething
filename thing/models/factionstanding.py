@@ -31,8 +31,8 @@ from thing.models.faction import Faction
 
 class FactionStanding(models.Model):
     """Faction standings"""
-    faction = models.ForeignKey(Faction)
-    character = models.ForeignKey(Character)
+    faction = models.ForeignKey(Faction, on_delete=models.DO_NOTHING)
+    character = models.ForeignKey(Character, on_delete=models.DO_NOTHING)
 
     standing = models.DecimalField(max_digits=4, decimal_places=2)
 

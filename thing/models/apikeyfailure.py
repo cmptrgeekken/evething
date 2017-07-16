@@ -29,7 +29,7 @@ from django.db import models
 
 class APIKeyFailure(models.Model):
     """APIKey permanent failure log"""
-    user = models.ForeignKey(User)
+    user = models.ForeignKey(User, on_delete=models.DO_NOTHING)
     keyid = models.IntegerField()
 
     fail_time = models.DateTimeField(db_index=True)

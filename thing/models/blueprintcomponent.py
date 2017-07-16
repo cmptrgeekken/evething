@@ -32,10 +32,10 @@ from thing.models.industryjob import IndustryJob
 
 class BlueprintComponent(models.Model):
     """Blueprint components"""
-    blueprint = models.ForeignKey(Blueprint)
+    blueprint = models.ForeignKey(Blueprint, on_delete=models.DO_NOTHING)
 
     activity = models.IntegerField(choices=IndustryJob.ACTIVITY_CHOICES)
-    item = models.ForeignKey(Item)
+    item = models.ForeignKey(Item, on_delete=models.DO_NOTHING)
     count = models.IntegerField()
     consumed = models.BooleanField(default=False)
 

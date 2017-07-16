@@ -33,7 +33,7 @@ class MarketGroup(MPTTModel):
     id = models.IntegerField(primary_key=True)
     name = models.CharField(max_length=100)
 
-    parent = TreeForeignKey('self', blank=True, null=True, related_name='children')
+    parent = TreeForeignKey('self', blank=True, null=True, related_name='children', on_delete=models.DO_NOTHING)
 
     class Meta:
         app_label = 'thing'

@@ -34,10 +34,10 @@ class ItemOrder(models.Model):
     """Item orders"""
     id = models.BigIntegerField(primary_key=True)
 
-    region = models.ForeignKey(Region, default=None)
+    region = models.ForeignKey(Region, default=None, on_delete=models.DO_NOTHING)
 
-    location = models.ForeignKey(Station)
-    item = models.ForeignKey(Item)
+    location = models.ForeignKey(Station, on_delete=models.DO_NOTHING)
+    item = models.ForeignKey(Item, on_delete=models.DO_NOTHING)
 
     price = models.DecimalField(max_digits=14, decimal_places=2)
     total_price = models.DecimalField(max_digits=17, decimal_places=2)
