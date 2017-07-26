@@ -6,6 +6,8 @@ local_file="/home/kbeck/projects/thingenv/evething/db/sqlite-latest.sqlite.bz2"
 modified=$(curl --silent --head $remote_file |
            awk -F: '/^Last-Modified/ { print $2 }')
 remote_ctime=$(date --date="$modified" +%s)
+force="$1"
+
 if [ -e $local_file ]; then
     local_ctime=$(stat -c %z "$local_file")
     local_ctime=$(date --date="$local_ctime" +%s)
@@ -17,6 +19,12 @@ if [ $local_ctime = false ] || [ $local_ctime -lt $remote_ctime ]; then
     cd /home/kbeck/projects/thingenv/evething
     curl -sS $remote_file > $local_file
     bzip2 -dk -f $local_file
+    force="--force"
+    source ../bin/activate
+    python import.py
+fi
+
+if [ "$force" ==  "--force" ]; then
     source ../bin/activate
     python import.py
 fi

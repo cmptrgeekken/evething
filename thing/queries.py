@@ -709,3 +709,13 @@ ON DUPLICATE KEY UPDATE
     times_updated=IF(price!=VALUES(price),times_updated+1,times_updated), 
     price=VALUES(price),
     volume_remaining=VALUES(volume_remaining)"""
+
+industryjob_active_items_summary = """
+SELECT i.name,
+       SUM(ij.runs)*bp.count 
+FROM thing_industryjob ij 
+	INNER JOIN thing_item i ON ij.product_id=i.id
+	INNER JOIN thing_blueprintproduct bp ON bp.blueprint_id=ij.blueprint_id AND bp.item_id=i.id
+WHERE ij.status=1 AND ij.activity=1 AND bp.activity=1
+GROUP BY i.name
+"""
