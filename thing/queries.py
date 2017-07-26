@@ -545,6 +545,7 @@ select i.name AS item_name,
     INNER JOIN thing_item i ON iss.item_id=i.id
     INNER JOIN thing_station s ON iss.station_id=s.id
     LEFT JOIN thing_stationorder so ON iss.station_id=so.station_id and iss.item_id=so.item_id 
+    WHERE so.buy_order IS NULL or so.buy_order=0
     GROUP BY iss.item_id,so.station_id
     ORDER BY i.name, s.name
 """
