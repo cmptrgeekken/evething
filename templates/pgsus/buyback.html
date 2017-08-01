@@ -13,18 +13,7 @@
     </div>
 </section>
 
-
-
 <section class="container section-md">
-    <div class="row">
-        <div class="col-md-12">
-            <div class="alert alert-info" role="alert" style="text-align: center;">
-              <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
-              <span class="sr-only">Update:</span>
-              Buyback rate has been reduced to 95% of the 5-day average, rather than 100% of the average, to ensure continued operation. Thanks for your business!
-            </div>
-        </div>
-    </div>
     <div class="row">
         <div class="col-md-6">
             {% if parse_results and parse_results['bad_lines']|length > 0 %}
@@ -70,7 +59,7 @@
                         {{ buyback_qty.get(item.item_id)|commas }}
                     </td>
                     <td>{{ item.item.name }}</td>
-                    <td><abbr title="{{(item.item.get_history_avg(pct=0.95)*buyback_qty.get(item.item_id)) | commas}} ISK">{{ (item.item.get_history_avg(pct=0.95)*buyback_qty.get(item.item_id))| humanize }} ISK</abbr></td>
+                    <td><abbr title="{{(item.get_price()*buyback_qty.get(item.item_id)) | commas}} ISK">{{ (item.get_price()*buyback_qty.get(item.item_id))| humanize }} ISK</abbr></td>
                 </tr>
                 {% endfor %}
             </table>
@@ -101,7 +90,7 @@
         </div>
         <div class="col-md-5 col-md-push-1">
             <h2>Accepted Items</h2>
-            <i>Pricing is 95% of the 5-day Jita average (Last Updated: {{ price_last_updated.strftime('%Y-%m-%d') }})</i>
+            <i>Pricing Last Updated: {{ price_last_updated.strftime('%Y-%m-%d') }}</i>
             <table class="table table-bordered table-hover">
                 {% set vars = {'current_group': False} %}
                 {% for item in items %}
@@ -112,8 +101,15 @@
                     </tr>
                     {%- endif %}
                 <tr>
-                    <td>{{ item.item.name }}</td>
-                    <td><abbr title="{{item.item.get_history_avg(pct=0.95) | commas}} ISK">{{ item.item.get_history_avg(pct=0.95) | humanize }} ISK</abbr></td>
+                    <td width="240">
+                        {{ item.item.name }}<br/>
+                        <i><small>
+                            {{ item.get_buyback_type() }}
+                        </small></i>
+                    </td>
+                    <td>
+                        <abbr title="{{item.get_price() | commas}} ISK">{{ item.get_price() | humanize }} ISK</abbr>
+                    </td>
                 </tr>
                 {% endfor %}
             </table>

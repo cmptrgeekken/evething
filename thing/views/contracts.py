@@ -116,8 +116,29 @@ def item_contracts(request):
             contract_id=contract.contract_id
         )
 
+        buyback_items_query = PriceWatch.objects.filter(
+            active=True,
+            price_group__isnull=False
+        ).distinct()
+
+        buyback_items = dict()
+
+        for b_item in buyback_items_query:
+            buyback_items[b_item.item_id] = b_item
+
         for contract_item in contract_items:
-            contract.z_calculated_reward += contract_item.quantity * contract_item.item.get_history_avg(issued=contract.date_issued, pct=.95)
+            if contract_item.item_id not in buyback_items:
+                contract.z_invalid_item = True
+                continue
+
+            buyback_item = buyback_items[contract_item.item_id]
+
+            if not contract_item.included:
+                buyback_price = buyback_item.get_price(issued=contract.date_issued, pct=1)
+            else:
+                buyback_price = buyback_item.get_price(issued=contract.date_issued)
+
+            contract.z_calculated_reward += contract_item.quantity * buyback_price
             contract.z_items += '<div>%s %s</div>' % (commas(contract_item.quantity), contract_item.item.name)
 
             if contract_item.item.name.endswith("Fuel Block") and not contract_item.included:

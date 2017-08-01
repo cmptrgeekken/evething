@@ -134,9 +134,7 @@ def buyback(request):
                         buyback_qty[buyback_item.item_id] = 0
                     buyback_qty[buyback_item.item_id] += entry['quantity']
 
-                    total_reward += entry['quantity'] * buyback_item.item.get_history_avg(
-                        pct=.95
-                    )
+                    total_reward += entry['quantity'] * buyback_item.get_price()
                     total_volume += entry['quantity'] * buyback_item.item.volume
                 else:
                     parse_results['bad_lines'].append(entry['name'])
@@ -355,7 +353,15 @@ def pricer(request):
         except evepaste.Unparsable:
             parse_results = None
 
+    selected_stations = None
+
     total_volume = 0
+
+    stations = dict()
+
+    station_list = Station.objects.filter(load_market_orders=True)
+    for station in station_list:
+        stations[station.id] = station
 
     item_list = []
     pricer_items = {}
@@ -364,6 +370,15 @@ def pricer(request):
     total_worst = 0
     total_shipping = 0
     total_price = 0
+    multiplier = 1
+
+    if request.method == 'POST':
+        selected_stations = [int(i) for i in request.POST.getlist('stations')]
+        multiplier = int(request.POST['multiplier'])
+
+        for id in selected_stations:
+            stations[id].z_selected = True
+
     if parse_results is not None:
         for kind, results in parse_results['results']:
             for entry in results:
@@ -373,12 +388,12 @@ def pricer(request):
                         'qty': 0,
                         'item': None,
                     }
-                pricer_items[name]['qty'] += entry['quantity']
+                pricer_items[name]['qty'] += entry['quantity']*multiplier
 
             items = Item.objects.filter(name__iregex=r'(^' + '$|^'.join([re.escape(n) for n in pricer_items.keys()]) + '$)')
             for item in items:
                 pricer_item = pricer_items[item.name.lower()]
-                item.get_current_orders(pricer_item['qty'])
+                item.get_current_orders(pricer_item['qty'], station_ids=selected_stations)
 
                 total_volume += item.z_ttl_volume
                 total_shipping += item.z_ttl_shipping
@@ -405,7 +420,9 @@ def pricer(request):
             total_volume=total_volume,
             total_shipping=total_shipping,
             total_price=total_price,
-            price_last_updated=price_last_updated
+            price_last_updated=price_last_updated,
+            stations=stations,
+            multiplier=multiplier,
         ),
         request,
     )

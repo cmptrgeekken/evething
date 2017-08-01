@@ -66,7 +66,24 @@ class Item(models.Model):
     def icon(self, w=32):
         return "https://imageserver.eveonline.com/InventoryType/%d_%d.png" % (self.id, w)
 
-    def get_current_orders(self, quantity, buy=False, ignored_stations=None):
+    def get_reprocessed_items(self):
+        from itemmaterial import ItemMaterial
+
+        materials = ItemMaterial.objects.filter(
+            item_id=self.id,
+        ).select_related('item_material')
+
+        items = []
+
+        for material in materials:
+            item = material.material
+            item.z_qty = material.quantity
+
+            items.append(item)
+
+        return items
+
+    def get_current_orders(self, quantity, buy=False, station_ids=None):
         from thing.models.itemstationseed import ItemStationSeed
         from thing.models.stationorder import StationOrder
 
@@ -77,8 +94,8 @@ class Item(models.Model):
         for seed_item in seed_items:
             orders = orders.exclude(item_id=seed_item.item_id, station_id=seed_item.station_id)
 
-        if ignored_stations is not None:
-            orders = orders.exclude(station_id__in=ignored_stations)
+        if station_ids is not None:
+            orders = orders.filter(station_id__in=station_ids)
 
         orders = orders.select_related('item')
 
@@ -118,16 +135,15 @@ class Item(models.Model):
 
             last_updated = order.last_updated if last_updated is None else max(last_updated, order.last_updated)
 
-            if order.station_id not in stations:
-                stations[order.station_id] = 0
-            stations[order.station_id] += 1
+            if order_qty > 0:
+                if order.station_id not in stations:
+                    stations[order.station_id] = 0
+                stations[order.station_id] += 1
 
-            ttl_shipping += order.z_shipping*order_qty
-            ttl_price_plus_shipping += order.z_price_with_shipping*order_qty
+                ttl_shipping += order.z_shipping*order_qty
+                ttl_price_plus_shipping += order.z_price_with_shipping*order_qty
 
-            ttl_price_multibuy = quantity * order.price
-            if qty_remaining <= 0:
-                break
+                ttl_price_multibuy = (quantity - qty_remaining) * order.price
 
         self.z_qty_remaining = qty_remaining
         self.z_qty = quantity - qty_remaining
@@ -144,8 +160,18 @@ class Item(models.Model):
 
         return orders_list, ttl_price_best, ttl_price_multibuy, last_updated, qty_remaining, len(stations)
 
-    def get_history_avg(self, days=5, region_id=10000002, issued=None, pct=1.0):
+    def get_history_avg(self, days=5, region_id=10000002, issued=None, pct=1.0, reprocess=False):
         from thing.models.pricehistory import PriceHistory
+
+        average = 0
+
+        if reprocess:
+            materials = self.get_reprocessed_items()
+            for material in materials:
+                # TODO: Calculate reprocessing rate correctly
+                average += material.z_qty * .875 * material.get_history_avg(days=days, region_id=region_id, issued=issued, pct=pct, reprocess=False)
+
+            return average
 
         query = PriceHistory.objects.filter(
             item_id=self.id,
@@ -165,7 +191,9 @@ class Item(models.Model):
         if results['total_value'] is None:
             return 0
 
-        return round(float(results['total_value'] / results['total_volume']) * pct, 2)
+        average = round(float(results['total_value'] / results['total_volume']) * pct, 2)
+
+        return average
 
     def get_volume(self, days=7):
         iph_days = self.pricehistory_set.all()[:days]

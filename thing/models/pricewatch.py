@@ -33,13 +33,36 @@ class PriceWatch(models.Model):
     item = models.ForeignKey(Item, on_delete=models.DO_NOTHING)
     price_group = models.CharField(max_length=64, null=True)
     price_type = models.CharField(max_length=8, default='5day')
-    price_pct = models.DecimalField(max_digits=18, decimal_places=2, default=1)
+    price_pct = models.FloatField(default=1)
     reprocess = models.BooleanField(default=False)
     active = models.BooleanField(default=False)
+
+    price_region_id = 10000002
+
+    def get_price(self, reprocess=None, issued=None, pct=None):
+        if reprocess is None:
+            reprocess = self.reprocess
+
+        if pct is None:
+            pct = self.price_pct
+
+        if self.price_type == '5day':
+            return self.item.get_history_avg(days=5, region_id=self.price_region_id, issued=issued,
+                                             pct=pct, reprocess=reprocess)
+        return 0
+
+    def get_buyback_type(self):
+        type_str = ''
+        if self.price_type == '5day':
+            type_str = '%0.0f%% of 5-day Jita Average' % (self.price_pct * 100.0)
+
+        if self.reprocess:
+            type_str += ' of max-reprocessed materials'
+
+        return type_str
 
     class Meta:
         app_label = 'thing'
 
     def __unicode__(self):
         return self.item.name
-
