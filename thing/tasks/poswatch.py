@@ -61,6 +61,8 @@ class PosWatch(APITask):
                 date=datetime.utcnow().date(),
             )
 
-            existing = pos_entries_query.filter(pos_id=pos_entry.posId).first()
+            existing = pos_entries_query.filter(pos_id=pos_entry.pos_id).first()
             if not existing:
                 PosWatchPosHistory.objects.insert(pos_entry)
+
+        return True
