@@ -212,7 +212,7 @@ class APITask(Task):
 
     # ---------------------------------------------------------------------------
 
-    def fetch_api(self, url, params, use_auth=True, log_error=True):
+    def fetch_api(self, url, params, use_auth=True, log_error=True, vCode=None, keyID=None):
         """
         Fetch API data either from the API cache (if cached) or from the actual
         API server, then parse the returned XML. Sort of handles errors.
@@ -221,7 +221,7 @@ class APITask(Task):
 
         # Add the API key information
         if use_auth:
-            params['keyID'] = self.apikey.keyid
+            params['keyID'] = keyID or self.apikey.keyid
 
         # Check the API cache for this URL/params combo
 
@@ -238,7 +238,7 @@ class APITask(Task):
 
             # Add the vCode to params now
             if use_auth:
-                params['vCode'] = self.apikey.vcode
+                params['vCode'] = vCode or self.apikey.vcode
 
             # Fetch the URL
             full_url = urljoin(settings.API_HOST, url)

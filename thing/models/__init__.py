@@ -69,3 +69,8 @@ from thing.models.planetarypin import Pin, PinContent
 # freighter
 from thing.models.freightersystem import FreighterSystem
 from thing.models.freighterpricemodel import FreighterPriceModel
+
+# poswatch
+from thing.models.poswatchcorpdeposit import PosWatchCorpDeposit
+from thing.models.poswatchcorporation import PosWatchCorporation
+from thing.models.poswatchposhistory import PosWatchPosHistory
