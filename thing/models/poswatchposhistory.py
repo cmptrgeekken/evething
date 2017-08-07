@@ -24,12 +24,12 @@
 # ------------------------------------------------------------------------------
 
 from django.db import models
-from thing.models.poswatchcorporation import PosWatchCorporation
+from thing.models.corporation import Corporation
 
 
 class PosWatchPosHistory(models.Model):
     id = models.BigIntegerField(primary_key=True)
-    corp = models.ForeignKey(PosWatchCorporation)
+    corp = models.ForeignKey(Corporation)
     type_id = models.IntegerField()
     pos_id = models.IntegerField()
     state = models.IntegerField()
