@@ -42,7 +42,7 @@ class PosWatch(APITask):
     # Do the actual work for wallet journal entries
     def _work(self, url, corp):
 
-        self.fetch_api(url)
+        self.fetch_api(url, {})
 
         pos_entries_query = PosWatchPosHistory.objects.filter(corpId=corp.id)
 
