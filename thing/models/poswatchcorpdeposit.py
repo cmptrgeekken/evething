@@ -31,7 +31,7 @@ class PosWatchCorpDeposit(models.Model):
     id = models.BigIntegerField(primary_key=True)
     corpId = models.ForeignKey(PosWatchCorporation)
     date = models.DateField()
-    amount = models.DecimalField(decimal_places=2)
+    amount = models.DecimalField(decimal_places=2, max_digits=20)
 
     class Meta:
         app_label = 'thing'
