@@ -29,13 +29,13 @@ from thing.models.poswatchcorporation import PosWatchCorporation
 
 class PosWatchPosHistory(models.Model):
     id = models.BigIntegerField(primary_key=True)
-    corpId = models.ForeignKey(PosWatchCorporation)
-    typeId = models.IntegerField()
-    posId = models.IntegerField()
+    corp = models.ForeignKey(PosWatchCorporation)
+    type_id = models.IntegerField()
+    pos_id = models.IntegerField()
     state = models.IntegerField()
-    locationId = models.BigIntegerField()
+    location_id = models.BigIntegerField()
     date = models.DateField()
-    moonId = models.IntegerField()
+    moon_id = models.IntegerField()
 
     class Meta:
         app_label = 'thing'

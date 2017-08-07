@@ -44,22 +44,23 @@ class PosWatch(APITask):
 
         self.fetch_api(url, {})
 
-        pos_entries_query = PosWatchPosHistory.objects.filter(corpId=corp.id)
+        pos_entries_query = PosWatchPosHistory.objects.filter(corp_id=corp.id, date=datetime.utcnow().date())
 
         for row in self.root.findall('result/rowset/row'):
             stateTimestamp = self.parse_api_date(row.attrib['stateTimestamp'])
             onlineTimestamp = self.parse_api_date(row.attrib['onlineTimestamp'])
             standingOwnerId = int(row.attrib['standingOwnerID'])
+
             pos_entry = PosWatchPosHistory(
-                corpId=corp.id,
-                posId=int(row.attrib['itemID']),
-                typeId=int(row.attrib['typeID']),
-                locationId=int(row.attrib['locationID']),
-                moonId=int(row.attrib['moonID']),
+                corp=corp,
+                pos_id=int(row.attrib['itemID']),
+                type_id=int(row.attrib['typeID']),
+                location_id=int(row.attrib['locationID']),
+                moon_id=int(row.attrib['moonID']),
                 state=int(row.attrib['state']),
                 date=datetime.utcnow().date(),
             )
 
-            existing = pos_entries_query.filter(date=pos_entry.date, posId=pos_entry.posId).first()
+            existing = pos_entries_query.filter(pos_id=pos_entry.posId).first()
             if not existing:
                 PosWatchPosHistory.objects.insert(pos_entry)
