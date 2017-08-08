@@ -23,6 +23,7 @@
                     <tr class="c">
                       <th>Corp</th>
                       <th>Days Offline</th>
+                      <th>Active Towers</th>
                       <th>Tax Remaining</th>
                       <th>Tax Paid</th>
                       <th>Tax Total</th>
@@ -36,7 +37,8 @@
                         {{ tax.corp_name }}
                       </td>
                       <td>{{ tax.days_offline | commas }}</td>
-                      <td>{{ tax.tax_remaining | commas }}</td>
+                      <td>{{ tax.tower_count | commas }}</td>
+                      <td>{{ tax.tax_remaining | commas }} ({{ tax.tax_remaining | humanize }})</td>
                       <td>{{ tax.tax_paid | commas }}</td>
                       <td>{{ tax.tax_total | commas }}</td>
                     </tr>
