@@ -2,7 +2,7 @@ from django.contrib import admin
 from thing.models import APIKey, BlueprintInstance, Campaign, Character, CharacterConfig, Corporation, \
     Alliance, APIKeyFailure, Asset, AssetSummary, BlueprintComponent, Blueprint, CorpWallet, \
     TaskState, CharacterDetails, Contract, UserProfile, Transaction, JournalEntry, Colony, Pin, BlueprintProduct, \
-    IndustryJob, SkillPlan
+    IndustryJob, SkillPlan, FreighterPriceModel, FreighterSystem, PriceWatch, PosWatchCorpDeposit
 
 
 class APIKeyAdmin(admin.ModelAdmin):
@@ -140,3 +140,8 @@ admin.site.register(Colony, ColonyAdmin)
 admin.site.register(Pin, PinAdmin)
 admin.site.register(IndustryJob, IndustryJobAdmin)
 admin.site.register(SkillPlan, SkillPlanAdmin)
+
+admin.site.register(FreighterPriceModel)
+admin.site.register(FreighterSystem)
+admin.site.register(PriceWatch)
+admin.site.register(PosWatchCorpDeposit)
