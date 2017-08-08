@@ -25,7 +25,9 @@
 
 from django.db import models
 
-from thing.models import Constellation, Corporation, Alliance
+from thing.models.constellation import Constellation
+from thing.models.corporation import Corporation
+from thing.models.alliance import Alliance
 
 
 class System(models.Model):
