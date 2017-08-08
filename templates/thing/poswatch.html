@@ -22,6 +22,7 @@
                   <thead>
                     <tr class="c">
                       <th>Corp</th>
+                      <th>Contact</th>
                       <th>Days Offline</th>
                       <th>Active Towers</th>
                       <th>Tax Remaining</th>
@@ -36,6 +37,7 @@
                       <td>
                         {{ tax.corp_name }}
                       </td>
+                      <td>{{ tax.forum_handle }}</td>
                       <td>{{ tax.days_offline | commas }}</td>
                       <td>{{ tax.tower_count | commas }}</td>
                       <td>{{ tax.tax_remaining | commas }} ({{ tax.tax_remaining | humanize }})</td>
