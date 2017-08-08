@@ -36,7 +36,7 @@ class System(models.Model):
 
     constellation = models.ForeignKey(Constellation, on_delete=models.DO_NOTHING)
     corporation = models.ForeignKey(Corporation, on_delete=models.DO_NOTHING)
-    alliance = models.ForeignKey(Alliance, on_Delete=models.DO_NOTHING)
+    alliance = models.ForeignKey(Alliance, on_delete=models.DO_NOTHING)
 
     class Meta:
         app_label = 'thing'
