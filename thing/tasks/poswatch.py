@@ -49,7 +49,7 @@ class PosWatch(APITask):
         pos_entries_query = PosWatchPosHistory.objects.filter(corp_id=corp.id, date=current_date)
 
         # TODO: Don't hard-code alliance?
-        hrf_systems_query = System.objects.filter(alliance_name='Horde Reactionary Force')
+        hrf_systems_query = System.objects.filter(alliance__name='Horde Reactionary Force')
 
         hrf_systems = set([s.id for s in hrf_systems_query])
 
