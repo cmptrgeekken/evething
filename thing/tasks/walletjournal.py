@@ -29,7 +29,7 @@ from collections import OrderedDict
 
 from .apitask import APITask
 
-from thing.models import Character, Corporation, JournalEntry, RefType, APIKey
+from thing.models import Character, Corporation, JournalEntry, RefType, APIKey, PosWatchCorpDeposit
 
 # ---------------------------------------------------------------------------
 # number of rows to request per WalletTransactions call, max is 2560
@@ -179,6 +179,16 @@ class WalletJournal(APITask):
                 )
                 if self.apikey.key_type == APIKey.CORPORATION_TYPE:
                     je.corp_wallet = corp_wallet
+
+                    # The Parrot!
+                    # TODO: Don't hardcode!
+                    if je.owner2_id == 277001029:
+                        deposit = PosWatchCorpDeposit(
+                            corp_id=je.owner1_id,
+                            date=je.date,
+                            amount=-je.amount,
+                        )
+                        deposit.save()
 
                 new.append(je)
 

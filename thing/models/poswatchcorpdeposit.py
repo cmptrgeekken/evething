@@ -30,7 +30,7 @@ from thing.models.corporation import Corporation
 
 class PosWatchCorpDeposit(models.Model):
     id = models.BigIntegerField(primary_key=True)
-    corpId = models.ForeignKey(Corporation)
+    corp = models.ForeignKey(Corporation)
     date = models.DateField()
     amount = models.DecimalField(decimal_places=2, max_digits=20)
 
