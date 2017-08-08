@@ -719,3 +719,17 @@ FROM thing_industryjob ij
 WHERE ij.status=1 AND ij.activity=1 AND bp.activity=1
 GROUP BY i.name
 """
+
+
+poswatch_taxman = """
+SELECT corp_id, corp_name, days_offline, tax_paid, tax_total, (tax_total-tax_paid) AS tax_remaining 
+FROM (SELECT c.id as corp_id,
+             c.name AS corp_name,
+             SUM(cd.amount) AS tax_paid,
+             (SELECT COUNT(*)*2000000 from thing_poswatch_poshistory ph WHERE ph.corp_id=cd.corp_id) AS tax_total, 
+             (SELECT DATEDIFF(NOW(), MAX(date)) FROM thing_poswatch_poshistory where corp_id=cd.corp_id AND state in (3,4)) AS days_offline 
+      FROM thing_poswatch_corpdeposit cd 
+        INNER JOIN thing_corporation c ON cd.corp_id=c.id 
+      GROUP BY c.name) taxes 
+WHERE tax_total > tax_paid;
+"""

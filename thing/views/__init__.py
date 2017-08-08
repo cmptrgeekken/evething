@@ -15,3 +15,4 @@ from thing.views.trade import *
 from thing.views.transactions import *
 from thing.views.wallet_journal import *
 from thing.views.pi import *
+from thing.views.poswatch import *

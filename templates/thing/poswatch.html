@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% import 'macros/icons.html' as icons %}
+
+{% block extra_js %}
+    <script type="text/javascript">$(document).ready(EVEthing.industry.onload);</script>
+{% endblock %}
+
+{% block title %}POS Watch{% endblock %}
+
+{% block content %}
+      <div class="row">
+        <ul class="nav nav-tabs">
+            <li class="active"><a href="#tab_incomplete" data-toggle="tab">Late Payment</a></li>
+            <li><a href="#tab_complete" data-toggle="tab">All</a></li>
+          </ul>
+          <br/>
+          <div class="tab-content">
+            {#- late -#}
+            <div class="tab-pane active" id="tab_incomplete">
+              <div class="col-sm-12">
+                <table class="table table-striped table-bordered table-condensed" id="incomplete-table">
+                  <thead>
+                    <tr class="c">
+                      <th>Corp</th>
+                      <th>Days Offline</th>
+                      <th>Tax Remaining</th>
+                      <th>Tax Paid</th>
+                      <th>Tax Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for tax in outstanding_tax_info-%}
+
+                    <tr>
+                      <td>
+                        {{ tax.corp_name }}
+                      </td>
+                      <td>{{ tax.days_offline | commas }}</td>
+                      <td>{{ tax.tax_remaining | commas }}</td>
+                      <td>{{ tax.tax_paid | commas }}</td>
+                      <td>{{ tax.tax_total | commas }}</td>
+                    </tr>
+                    {%- else %}
+                    <tr>
+                      <td colspan="13">All taxes have been paid!</td>
+                    </tr>
+                    {%- endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {#- complete -#}
+            <div class="tab-pane" id="tab_complete">
+              <div class="col-sm-12">
+                <table class="table table-striped table-bordered table-condensed" id="complete-table">
+                  <thead>
+                    <tr class="c">
+                      <th>Corp</th>
+                      <th>Contact</th>
+                      <th>Days Offline</th>
+                      <th>Tax Paid</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td colspan="13">Nope</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+{% endblock %}

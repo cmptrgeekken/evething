@@ -48,6 +48,8 @@ urlpatterns += patterns(
     (r'^thing/account/skillplan/delete/$', 'account_skillplan_delete'),
     (r'^thing/account/skillplan/edit/$', 'account_skillplan_edit'),
 
+    (r'^thing/poswatch/$', 'poswatch'),
+
     (r'^thing/assets/$', 'assets_summary'),
     (r'^thing/assets/filter/$', 'assets_filter'),
 
