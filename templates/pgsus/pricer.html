@@ -31,13 +31,29 @@
                         </ul>
                     </div>
                 {% endif %}
-                <textarea name="text_input" rows="15" style="width: 100%;" placeholder="Paste desired items here (e.g., 1000 Tritanium)">{{ text_input }}</textarea>
+                <textarea name="text_input" rows="10" style="width: 100%;" placeholder="Paste desired items here (e.g., 1000 Tritanium)">{{ text_input }}</textarea>
                 <div class="form-group">
                     <label class="col-sm-7 col-form-label" for="compress_ores">Compress Mineral Imports:</label>
                     <div class="col-sm-1">
                         <input id="compress_ores" type="checkbox"{% if compress_ores %} checked="checked"{% endif %} name="compress_ores" value="true"/>
                     </div>
                 </div>
+                <div class="form-group">
+                    <label class="col-sm-7 col-form-label" for="multiplier">Multiplier:</label>
+                    <div class="col-sm-1">
+                        <input id="multiplier" type="number" min="1" name="multiplier" value="{{ multiplier }}"/>
+                    </div>
+                </div>
+                <div class="form-group">
+                      <label class="col-sm-2 col-form-label" for="stations">Stations:</label>
+                      <div class="col-sm-8">
+                          <select name="stations" id="stations" class="js-select2 input-lg" multiple="multiple">
+                              {% for sta in stations %}
+                              <option value="{{sta}}"{%if stations[sta].z_selected %} selected{% endif %}>{{ stations[sta].short_name or stations[sta].name }}</option>
+                              {% endfor %}
+                          </select>
+                      </div>
+                  </div>
                 <button type="submit" class="btn btn-primary">
                     Submit
                 </button>
@@ -48,6 +64,7 @@
             <div class="col-md-12">
                 <h2>
                     Items to Purchase
+                    {% if price_last_updated %}
                     <i>
                         <small>
                             (Last Updated: <time class="timeago" datetime="{{price_last_updated|timeago}}">
@@ -55,6 +72,7 @@
                             </time>)
                         </small>
                     </i>
+                    {% endif %}
                 </h2>
                 <div class="form-group">
                     <table class="table table-bordered">
@@ -130,7 +148,7 @@
                             <th>Location</th>
                         </tr>
                         {% for order in item.z_orders %}
-                        <tr class="{% if False %}market-order-buy{% endif %}">
+                        <tr class="{% if order.z_order_qty > 0 %}market-order-buy{% endif %}">
                             <td class="align-right">
                                 <div>{{ order.volume_remaining|commas }}</div>
                                 {% if order.z_order_qty > 0 %}
