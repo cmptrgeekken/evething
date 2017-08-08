@@ -42,7 +42,9 @@ class PosWatch(APITask):
     # Do the actual work for wallet journal entries
     def _work(self, url, corp):
 
-        self.fetch_api(url, {})
+        # Fetch the API data
+        if self.fetch_api(url, {}) is False or self.root is None:
+            return
 
         current_date = datetime.utcnow().date()
 
