@@ -23,22 +23,32 @@
 # OF SUCH DAMAGE.
 # ------------------------------------------------------------------------------
 
-from django.db import models
+from .apitask import APITask
 
-from thing.models import Constellation, Corporation, Alliance
+from thing.models import System
 
 
-class System(models.Model):
-    id = models.IntegerField(primary_key=True, auto_created=False)
-    name = models.CharField(max_length=32)
+class Sovereignty(APITask):
+    name = 'thing.sovereignty'
 
-    constellation = models.ForeignKey(Constellation, on_delete=models.DO_NOTHING)
-    corporation = models.ForeignKey(Corporation, on_delete=models.DO_NOTHING)
-    alliance = models.ForeignKey(Alliance, on_Delete=models.DO_NOTHING)
+    def run(self, url, taskstate_id, apikey_id, zero):
+        if self.init(taskstate_id) is False:
+            return
 
-    class Meta:
-        app_label = 'thing'
-        ordering = ('name'),
+        # Fetch the API data
+        if self.fetch_api(url, {}, use_auth=False) is False or self.root is None:
+            return
 
-    def __unicode__(self):
-        return self.name
+        for row in self.root.findall('result/rowset/row'):
+            alliance_id = int(row.attrib['allianceID'])
+            corporation_id = int(row.attrib['corporationID'])
+            system_id = int(row.attrib['solarSystemID'])
+
+            entry = System.objects.find(id=system_id).first()
+
+            if entry.alliance_id != alliance_id or entry.corporation_id != corporation_id:
+                entry.alliance_id = alliance_id
+                entry.corporation_id = corporation_id
+                entry.save()
+
+        return True

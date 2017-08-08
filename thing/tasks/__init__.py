@@ -35,6 +35,7 @@ from alliancelist import AllianceList
 from conquerablestationlist import ConquerableStationList
 from reftypes import RefTypes
 from serverstatus import ServerStatus
+from sovereignty import Sovereignty
 
 # Periodic tasks
 from fixnames import FixNames
