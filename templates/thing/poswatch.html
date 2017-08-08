@@ -75,7 +75,11 @@
                       <td>{{ tax.forum_handle }}</td>
                       <td>{{ tax.days_offline | commas }}</td>
                       <td>{{ tax.tower_count | commas }}</td>
-                      <td>{{ tax.tax_remaining | commas }} ({{ tax.tax_remaining | humanize }})</td>
+                      <td>
+                        <b class="{% if tax.tax_remaining > 0 %}neg{% else %}pos{% endif %}">
+                          {{ tax.tax_remaining | commas }} ({{ tax.tax_remaining | humanize }})
+                        </b>
+                      </td>
                       <td>{{ tax.tax_paid | commas }}</td>
                       <td>{{ tax.tax_total | commas }}</td>
                     </tr>
