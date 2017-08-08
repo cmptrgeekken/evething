@@ -24,7 +24,7 @@
 # ------------------------------------------------------------------------------
 
 from datetime import datetime
-from thing.models import PosWatchPosHistory
+from thing.models import PosWatchPosHistory, System
 from .apitask import APITask
 
 
@@ -44,12 +44,21 @@ class PosWatch(APITask):
 
         self.fetch_api(url, {})
 
-        pos_entries_query = PosWatchPosHistory.objects.filter(corp_id=corp.id, date=datetime.utcnow().date())
+        current_date = datetime.utcnow().date()
+
+        pos_entries_query = PosWatchPosHistory.objects.filter(corp_id=corp.id, date=current_date)
+
+        # TODO: Don't hard-code alliance?
+        hrf_systems_query = System.objects.filter(alliance_name='Horde Reactionary Force')
+
+        hrf_systems = set([s.id for s in hrf_systems_query])
 
         for row in self.root.findall('result/rowset/row'):
             stateTimestamp = self.parse_api_date(row.attrib['stateTimestamp'])
             onlineTimestamp = self.parse_api_date(row.attrib['onlineTimestamp'])
             standingOwnerId = int(row.attrib['standingOwnerID'])
+
+            location_id = int(row.attrib['locationID'])
 
             pos_entry = PosWatchPosHistory(
                 corp=corp,
@@ -58,7 +67,8 @@ class PosWatch(APITask):
                 location_id=int(row.attrib['locationID']),
                 moon_id=int(row.attrib['moonID']),
                 state=int(row.attrib['state']),
-                date=datetime.utcnow().date(),
+                date=current_date,
+                taxable=location_id in hrf_systems,
             )
 
             existing = pos_entries_query.filter(pos_id=pos_entry.pos_id).first()
