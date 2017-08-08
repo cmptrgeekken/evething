@@ -65,4 +65,7 @@ class PosWatch(APITask):
             if not existing:
                 pos_entry.save()
 
+        # owner2_id == The Parrot 277001029
+        # owner1_id == Corporation
+
         return True
