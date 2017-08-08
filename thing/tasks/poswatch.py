@@ -51,7 +51,7 @@ class PosWatch(APITask):
         # TODO: Don't hard-code alliance?
         hrf_systems_query = System.objects.filter(alliance__name='Horde Reactionary Force')
 
-        hrf_systems = set([s.id for s in hrf_systems_query])
+        hrf_systems = set([int(s.id) for s in hrf_systems_query])
 
         for row in self.root.findall('result/rowset/row'):
             stateTimestamp = self.parse_api_date(row.attrib['stateTimestamp'])
