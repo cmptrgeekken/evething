@@ -44,7 +44,7 @@ class Sovereignty(APITask):
             corporation_id = int(row.attrib['corporationID'])
             system_id = int(row.attrib['solarSystemID'])
 
-            entry = System.objects.find(id=system_id).first()
+            entry = System.objects.filter(id=system_id).first()
 
             if entry.alliance_id != alliance_id or entry.corporation_id != corporation_id:
                 entry.alliance_id = alliance_id
