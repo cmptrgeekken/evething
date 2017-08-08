@@ -24,7 +24,7 @@
                       <th>Corp</th>
                       <th>Contact</th>
                       <th>Days Offline</th>
-                      <th>Active Towers</th>
+                      <th>Towers</th>
                       <th>Tax Remaining</th>
                       <th>Tax Paid</th>
                       <th>Tax Total</th>
@@ -32,7 +32,6 @@
                   </thead>
                   <tbody>
                     {% for tax in outstanding_tax_info-%}
-
                     <tr>
                       <td>
                         {{ tax.corp_name }}
@@ -63,13 +62,28 @@
                       <th>Corp</th>
                       <th>Contact</th>
                       <th>Days Offline</th>
+                      <th>Towers</th>
+                      <th>Tax Remaining</th>
                       <th>Tax Paid</th>
+                      <th>Tax Total</th>
                     </tr>
                   </thead>
                   <tbody>
+                    {% for tax in all_tax_info-%}
                     <tr>
-                      <td colspan="13">Nope</td>
+                      <td>{{ tax.corp_name }}</td>
+                      <td>{{ tax.forum_handle }}</td>
+                      <td>{{ tax.days_offline | commas }}</td>
+                      <td>{{ tax.tower_count | commas }}</td>
+                      <td>{{ tax.tax_remaining | commas }} ({{ tax.tax_remaining | humanize }})</td>
+                      <td>{{ tax.tax_paid | commas }}</td>
+                      <td>{{ tax.tax_total | commas }}</td>
                     </tr>
+                    {%- else %}
+                    <tr>
+                      <td colspan="13">Nothing to see here.</td>
+                    </tr>
+                    {%- endfor %}
                   </tbody>
                 </table>
               </div>

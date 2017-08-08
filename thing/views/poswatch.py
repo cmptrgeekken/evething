@@ -45,11 +45,29 @@ def poswatch(request):
 
     cursor.close()
 
+    cursor = get_cursor()
+    cursor.execute(queries.poswatch_taxman_all)
+    desc = cursor.description
+    all_tax_info = [
+            dict(zip([col[0] for col in desc], row))
+            for row in cursor.fetchall()
+    ]
+
+    cursor.close()
+
+    total_outstanding = sum([t['tax_remaining'] for t in outstanding_tax_info])
+    total_paid = sum([t['tax_paid'] for t in all_tax_info])
+    total_towers = sum([t['tower_count'] for t in all_tax_info])
+
     # Render template
     out = render_page(
         'thing/poswatch.html',
         {
             'outstanding_tax_info': outstanding_tax_info,
+            'all_tax_info': all_tax_info,
+            'total_outstanding': total_outstanding,
+            'total_paid': total_paid,
+            'total_towers': total_towers,
         },
         request
     )
