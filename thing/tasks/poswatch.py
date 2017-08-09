@@ -56,9 +56,9 @@ class PosWatch(APITask):
         hrf_systems = set([int(s.id) for s in hrf_systems_query])
 
         for row in self.root.findall('result/rowset/row'):
-            stateTimestamp = self.parse_api_date(row.attrib['stateTimestamp'])
-            onlineTimestamp = self.parse_api_date(row.attrib['onlineTimestamp'])
-            standingOwnerId = int(row.attrib['standingOwnerID'])
+            state_timestamp = self.parse_api_date(row.attrib['stateTimestamp'])
+            online_timestamp = self.parse_api_date(row.attrib['onlineTimestamp'])
+            standing_owner_id = int(row.attrib['standingOwnerID'])
 
             location_id = int(row.attrib['locationID'])
 
@@ -71,6 +71,8 @@ class PosWatch(APITask):
                 state=int(row.attrib['state']),
                 date=current_date,
                 taxable=location_id in hrf_systems,
+                state_timestamp=state_timestamp,
+                online_timestamp=online_timestamp,
             )
 
             existing = pos_entries_query.filter(pos_id=pos_entry.pos_id).first()

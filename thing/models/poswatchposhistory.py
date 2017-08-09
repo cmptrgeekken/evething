@@ -37,6 +37,8 @@ class PosWatchPosHistory(models.Model):
     date = models.DateField()
     moon_id = models.IntegerField()
     taxable = models.BooleanField(default=False)
+    state_timestamp = models.DateTimeField(default=None)
+    online_timestamp = models.DateTimeField(default=None)
 
     class Meta:
         app_label = 'thing'
