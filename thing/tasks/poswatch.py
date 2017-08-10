@@ -23,8 +23,10 @@
 # OF SUCH DAMAGE.
 # ------------------------------------------------------------------------------
 
+from django.db import connections
 from datetime import datetime
 from thing.models import PosWatchPosHistory, System
+from thing import queries
 from .apitask import APITask
 
 
@@ -81,5 +83,10 @@ class PosWatch(APITask):
 
         # owner2_id == The Parrot 277001029
         # owner1_id == Corporation
+
+        # Run POS History Fixer
+        cursor = connections['default'].cursor()
+        cursor.execute(queries.poswatch_poshistory_fix % corp.id)
+        cursor.close()
 
         return True
