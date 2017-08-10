@@ -721,26 +721,28 @@ GROUP BY i.name
 """
 
 poswatch_taxman_subquery = """
-SELECT c.id as corp_id,
-             c.name AS corp_name,
-             c.forum_handle,
-             c.discord_handle,
-             SUM(cd.amount) AS tax_paid,
-             (SELECT COUNT(*)*2000000 from thing_poswatch_poshistory ph WHERE ph.corp_id=cd.corp_id) AS tax_total, 
-             (SELECT DATEDIFF(NOW(), MAX(date)) FROM thing_poswatch_poshistory where corp_id=cd.corp_id AND state in (3,4)) AS days_offline,
-             (SELECT COUNT(*) FROM thing_poswatch_poshistory WHERE date=UTC_DATE() AND corp_id=cd.corp_id) AS tower_count 
-      FROM thing_poswatch_corpdeposit cd 
-        INNER JOIN thing_corporation c ON cd.corp_id=c.id 
-      GROUP BY c.name
+SELECT
+    ph.corp_id,
+    c.name AS corp_name,
+    c.forum_handle,
+    c.discord_handle,
+    COUNT(*)*2000000 AS tax_total,
+    COALESCE((SELECT SUM(cd.amount) FROM thing_poswatch_corpdeposit cd WHERE cd.corp_id=ph.corp_id),0) AS tax_paid,
+    (SELECT DATEDIFF(NOW(), MAX(date)) FROM thing_poswatch_poshistory where corp_id=ph.corp_id AND state in (3,4)) AS days_offline,
+    (SELECT COUNT(*) FROM thing_poswatch_poshistory WHERE date=UTC_DATE() AND corp_id=ph.corp_id) AS tower_count
+FROM thing_poswatch_poshistory ph
+    INNER JOIN thing_corporation c ON ph.corp_id=c.id
+GROUP BY ph.corp_id
+ORDER BY c.name
 """
 
 poswatch_taxman = """
-SELECT corp_id, corp_name, forum_handle, discord_handle, days_offline, tax_paid, tax_total, (tax_total-tax_paid) AS tax_remaining, tower_count 
+SELECT taxes.*, (tax_total-tax_paid) AS tax_remaining 
 FROM (%s) taxes 
 WHERE tax_total > tax_paid;
 """ % poswatch_taxman_subquery
 
 poswatch_taxman_all = """
-SELECT corp_id, corp_name, forum_handle, discord_handle, days_offline, tax_paid, tax_total, (tax_total-tax_paid) AS tax_remaining, tower_count 
+SELECT taxes.*,(tax_total-tax_paid) AS tax_remaining 
 FROM (%s) taxes;
 """ % poswatch_taxman_subquery
