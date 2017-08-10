@@ -182,7 +182,7 @@ class WalletJournal(APITask):
 
                     # The Parrot!
                     # TODO: Don't hardcode!
-                    if je.owner2_id == 277001029:
+                    if int(je.owner2_id) == 277001029:
                         deposit = PosWatchCorpDeposit(
                             corp_id=je.owner1_id,
                             date=je.date,
