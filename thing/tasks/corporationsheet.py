@@ -74,7 +74,8 @@ class CorporationSheet(APITask):
                     # If the wallet doesn't exist just log an error - we can't create
                     # it without an accountID
                     if wallet is None:
-                        self.log_warn("No matching CorpWallet object for Corp %s Account %s", corporation.id, row.attrib['accountKey'])
+                        # self.log_warn("No matching CorpWallet object for Corp %s Account %s", corporation.id, row.attrib['accountKey'])
+                        continue
 
                     # If the wallet exists and the description has changed, update it
                     elif wallet.description != row.attrib['description']:
