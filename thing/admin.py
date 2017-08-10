@@ -2,7 +2,7 @@ from django.contrib import admin
 from thing.models import APIKey, BlueprintInstance, Campaign, Character, CharacterConfig, Corporation, \
     Alliance, APIKeyFailure, Asset, AssetSummary, BlueprintComponent, Blueprint, CorpWallet, \
     TaskState, CharacterDetails, Contract, UserProfile, Transaction, JournalEntry, Colony, Pin, BlueprintProduct, \
-    IndustryJob, SkillPlan, FreighterPriceModel, FreighterSystem, PriceWatch, PosWatchCorpDeposit
+    IndustryJob, SkillPlan, FreighterPriceModel, FreighterSystem, PriceWatch, PosWatchCorpDeposit, ItemStationSeed
 
 
 class APIKeyAdmin(admin.ModelAdmin):
@@ -112,9 +112,29 @@ class IndustryJobAdmin(admin.ModelAdmin):
     list_filter = ('activity', 'status')
     raw_id_fields = ('character', 'corporation')
 
+
 class SkillPlanAdmin(admin.ModelAdmin):
     list_display = ('name', 'user', 'visibility')
     list_filter = ('visibility',)
+
+
+class FreighterSystemAdmin(admin.ModelAdmin):
+    list_filter = ('price_model',)
+
+
+class PriceWatchAdmin(admin.ModelAdmin):
+    list_display = ('item', 'price_group', 'price_type')
+    list_filter = ('price_group','price_type')
+
+
+class PosWatchCorpDepositAdmin(admin.ModelAdmin):
+    list_display = ('corp', 'date', 'amount')
+    list_filter = ('date',)
+
+
+class ItemStationSeedAdmin(admin.ModelAdmin):
+    list_display = ('item', 'station', 'min_qty', 'active')
+
 
 admin.site.register(APIKey, APIKeyAdmin)
 admin.site.register(Character, CharacterAdmin)
@@ -143,5 +163,6 @@ admin.site.register(SkillPlan, SkillPlanAdmin)
 
 admin.site.register(FreighterPriceModel)
 admin.site.register(FreighterSystem)
-admin.site.register(PriceWatch)
-admin.site.register(PosWatchCorpDeposit)
+admin.site.register(PriceWatch, PriceWatchAdmin)
+admin.site.register(PosWatchCorpDeposit, PosWatchCorpDepositAdmin)
+admin.site.register(ItemStationSeed, ItemStationSeedAdmin)

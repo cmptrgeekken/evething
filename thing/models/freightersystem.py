@@ -35,7 +35,7 @@ class FreighterSystem(models.Model):
 
     class Meta:
         app_label = 'thing'
-        ordering = ('system__name'),
+        ordering = ('system__name',)
 
     def __unicode__(self):
         return self.system.name

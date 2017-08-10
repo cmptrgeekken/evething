@@ -40,7 +40,7 @@ class System(models.Model):
 
     class Meta:
         app_label = 'thing'
-        ordering = ('name'),
+        ordering = ('name',)
 
     def __unicode__(self):
         return self.name

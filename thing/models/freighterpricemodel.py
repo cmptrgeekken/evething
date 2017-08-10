@@ -53,6 +53,9 @@ class FreighterPriceModel(models.Model):
         app_label = 'thing'
         ordering = ('sort_order'),
 
+    def __unicode__(self):
+        return self.name
+
     def calc(self, start_system, end_system, collateral, m3):
         if start_system.id == end_system.id:
             return (self.calc_in_system(collateral, m3), 'In System')
