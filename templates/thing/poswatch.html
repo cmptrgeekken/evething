@@ -25,6 +25,7 @@
                       <th>Contact</th>
                       <th>Days Offline</th>
                       <th>Towers</th>
+                      <th>Evict In</th>
                       <th>Tax Remaining</th>
                       <th>Tax Paid</th>
                       <th>Tax Total</th>
@@ -39,6 +40,11 @@
                       <td>{{ tax.forum_handle }}</td>
                       <td>{{ tax.days_offline | commas }}</td>
                       <td>{{ tax.tower_count | commas }}</td>
+                      <td>
+                        <b class="{% if tax.tax_evict_days < 15 %}neg{% elif tax.tax_evict_days < 30 %}neut{% else %}pos{% endif %}">
+                        {{ tax.tax_evict_days }}
+                        </b>
+                      </td>
                       <td>{{ tax.tax_remaining | commas }} ({{ tax.tax_remaining | humanize }})</td>
                       <td>{{ tax.tax_paid | commas }}</td>
                       <td>{{ tax.tax_total | commas }}</td>
@@ -63,6 +69,7 @@
                       <th>Contact</th>
                       <th>Days Offline</th>
                       <th>Towers</th>
+                      <th>Evict In</th>
                       <th>Tax Remaining</th>
                       <th>Tax Paid</th>
                       <th>Tax Total</th>
@@ -75,6 +82,11 @@
                       <td>{{ tax.forum_handle }}</td>
                       <td>{{ tax.days_offline | commas }}</td>
                       <td>{{ tax.tower_count | commas }}</td>
+                      <td>
+                        <b class="{% if tax.tax_evict_days < 15 %}neg{% elif tax.tax_evict_days < 30 %}neut{% else %}pos{% endif %}">
+                        {{ tax.tax_evict_days }}
+                        </b>
+                      </td>
                       <td>
                         <b class="{% if tax.tax_remaining > 0 %}neg{% else %}pos{% endif %}">
                           {{ tax.tax_remaining | commas }} ({{ tax.tax_remaining | humanize }})

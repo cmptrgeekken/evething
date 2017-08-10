@@ -728,8 +728,11 @@ SELECT
     c.discord_handle,
     COUNT(*)*2000000 AS tax_total,
     COALESCE((SELECT SUM(cd.amount) FROM thing_poswatch_corpdeposit cd WHERE cd.corp_id=ph.corp_id),0) AS tax_paid,
+    MIN(online_timestamp) AS min_online,
+    MIN(state_timestamp) AS min_state,
     (SELECT DATEDIFF(NOW(), MAX(date)) FROM thing_poswatch_poshistory where corp_id=ph.corp_id AND state in (3,4)) AS days_offline,
-    (SELECT COUNT(*) FROM thing_poswatch_poshistory WHERE date=UTC_DATE() AND corp_id=ph.corp_id) AS tower_count
+    (SELECT COUNT(*) FROM thing_poswatch_poshistory WHERE date=UTC_DATE() AND corp_id=ph.corp_id) AS tower_count,
+    (SELECT COUNT(*) FROM thing_poswatch_poshistory WHERE corp_id=ph.corp_id AND COUNT(*) > 0 GROUP BY date ORDER BY date desc LIMIT 1) AS last_tower_count
 FROM thing_poswatch_poshistory ph
     INNER JOIN thing_corporation c ON ph.corp_id=c.id
 GROUP BY ph.corp_id
@@ -737,13 +740,13 @@ ORDER BY c.name
 """
 
 poswatch_taxman = """
-SELECT taxes.*, (tax_total-tax_paid) AS tax_remaining 
+SELECT taxes.*, (tax_total-tax_paid) AS tax_remaining, IF(last_tower_count = 0,'<Unknown>', CEILING(30 - ((tax_total - tax_paid) / last_tower_count / 2000000))) AS tax_evict_days 
 FROM (%s) taxes 
 WHERE tax_total > tax_paid;
 """ % poswatch_taxman_subquery
 
 poswatch_taxman_all = """
-SELECT taxes.*,(tax_total-tax_paid) AS tax_remaining 
+SELECT taxes.*,(tax_total-tax_paid) AS tax_remaining, IF(last_tower_count = 0,'<Unknown>', CEILING(30 - ((tax_total - tax_paid) / last_tower_count / 2000000))) AS tax_evict_days 
 FROM (%s) taxes;
 """ % poswatch_taxman_subquery
 
