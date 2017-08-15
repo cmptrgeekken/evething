@@ -41,6 +41,7 @@ CHAR_URLS = {
         ('thing.asset_list', '/char/AssetList.xml.aspx', 'et_medium'),
         ('thing.planetary_colonies', '/char/PlanetaryColonies.xml.aspx', 'et_medium')
     ],
+    APIKey.CHAR_BOOKMARKS_MASK: [('thing.bookmarks', '/char/Bookmarks.xml.aspx', 'et_medium')],
     APIKey.CHAR_CHARACTER_INFO_MASK: [('thing.character_info', '/eve/CharacterInfo.xml.aspx', 'et_medium')],
     APIKey.CHAR_CHARACTER_SHEET_MASK: [('thing.character_sheet', '/char/CharacterSheet.xml.aspx', 'et_medium')],
     APIKey.CHAR_CONTRACTS_MASK: [('thing.contracts', '/char/Contracts.xml.aspx', 'et_medium')],

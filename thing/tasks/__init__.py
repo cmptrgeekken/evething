@@ -46,3 +46,4 @@ from avgcalculator import AvgCalculator
 from periodicqueryrunner import PeriodicQueryRunner
 
 from poswatch import PosWatch
+from bookmarks import Bookmarks
