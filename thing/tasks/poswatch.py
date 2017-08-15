@@ -24,6 +24,7 @@
 # ------------------------------------------------------------------------------
 
 from django.db import connections
+from django.db.models import Q
 from datetime import datetime
 from thing.models import PosWatchPosHistory, System
 from thing import queries
@@ -53,7 +54,7 @@ class PosWatch(APITask):
         pos_entries_query = PosWatchPosHistory.objects.filter(corp_id=corp.id, date=current_date)
 
         # TODO: Don't hard-code alliance?
-        hrf_systems_query = System.objects.filter(alliance__name='Horde Reactionary Force')
+        hrf_systems_query = System.objects.filter(Q(alliance__name='Horde Reactionary Force') | Q(name='FIO1-8'))
 
         hrf_systems = set([int(s.id) for s in hrf_systems_query])
 
