@@ -77,11 +77,13 @@ class Bookmarks(APITask):
                         station.name = memo
                         station.system_id = location_id
                         station.is_unknown = False
+                        station.type_id = type_id
                     else:
                         station = Station(
                             id=item_id,
                             name=memo,
                             system_id=location_id,
+                            type_id=type_id,
                             is_unknown=False,
                             is_citadel=True
                         )

@@ -26,6 +26,7 @@
 from django.db import models
 
 from thing.models.system import System
+from thing.models.item import Item
 from thing.models.userprofile import UserProfile
 
 numeral_map = zip(
@@ -56,6 +57,7 @@ class Station(models.Model):
     market_profile = models.ForeignKey(UserProfile, null=True, default=None, on_delete=models.DO_NOTHING)
 
     system = models.ForeignKey(System, blank=True, null=True, default=None, on_delete=models.DO_NOTHING)
+    type = models.ForeignKey(Item, null=True, default=None, on_delete=models.DO_NOTHING)
 
     class Meta:
         app_label = 'thing'
