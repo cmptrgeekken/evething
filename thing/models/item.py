@@ -83,31 +83,63 @@ class Item(models.Model):
 
         return items
 
-    def get_current_orders(self, quantity, buy=False, station_ids=None):
+    def get_max_order_volume(self, buy=False, item_ids=None, station_ids=None):
+        from thing.models.stationorder import StationOrder
+
+        if item_ids is None:
+            item_ids = [self.id]
+
+        orders = StationOrder.objects.filter(item_id__in=item_ids, buy_order=buy)
+
+        if station_ids is not None:
+            orders = orders.filter(station_id__in=station_ids)
+
+        return orders.aggregate(total_volume=Sum('volume_remaining'))['total_volume']
+
+    def get_current_orders(self, quantity, buy=False, ignore_seed_items=True, station_ids=None, item_ids=None, scale_by_repro=True):
         from thing.models.itemstationseed import ItemStationSeed
         from thing.models.stationorder import StationOrder
 
-        orders = StationOrder.objects.filter(item_id=self.id)
+        if item_ids is None:
+            item_ids = [self.id]
 
-        seed_items = ItemStationSeed.objects.all()
+        orders = StationOrder.objects.filter(item_id__in=item_ids)
 
-        for seed_item in seed_items:
-            orders = orders.exclude(item_id=seed_item.item_id, station_id=seed_item.station_id)
+        if ignore_seed_items:
+            seed_items = ItemStationSeed.objects.all()
+
+            for seed_item in seed_items:
+                orders = orders.exclude(item_id=seed_item.item_id, station_id=seed_item.station_id)
 
         if station_ids is not None:
             orders = orders.filter(station_id__in=station_ids)
 
         orders = orders.select_related('item')
 
+        item_id_lookup = ','.join([str(i) for i in item_ids])
+
         # TODO: Move Shipping Calculation to separate table
         orders = orders.extra(select={
             'price_with_shipping': 'CASE WHEN station_id = 60003760 THEN price*1.015 + volume*390 ELSE price END',
+            'scaled_price_with_shipping': '''
+SELECT price * SUM(im.quantity) / 
+    (SELECT SUM(im2.quantity)
+    FROM thing_itemmaterial im2  
+    WHERE im2.item_id IN(%s)
+    GROUP BY im2.id
+    ORDER BY SUM(im2.quantity)
+    LIMIT 1) + CASE WHEN station_id = 60003760 THEN price*0.015 + volume*390 ELSE price END
+    FROM thing_itemmaterial im WHERE im.item_id=thing_stationorder.item_id
+            ''' % item_id_lookup,
             'shipping': 'CASE WHEN station_id = 60003760 THEN price*0.015 + volume*390 ELSE 0 END'
         })
 
         orders = orders.filter(buy_order=buy)
 
-        orders = orders.order_by('price_with_shipping')
+        if scale_by_repro:
+            orders = orders.order_by('scaled_price_with_shipping')
+        else:
+            orders = orders.order_by('price_with_shipping')
 
         qty_remaining = quantity
 
@@ -125,7 +157,7 @@ class Item(models.Model):
             order_qty = min(qty_remaining, order.volume_remaining)
 
             qty_remaining = max(0, qty_remaining-order_qty)
-            ttl_price_best += order_qty * order.price
+            ttl_price_best += order_qty * float(order.price)
 
             order.z_order_qty = order_qty
             order.z_price_with_shipping = round(order.price_with_shipping*100)/100
@@ -143,7 +175,7 @@ class Item(models.Model):
                 ttl_shipping += order.z_shipping*order_qty
                 ttl_price_plus_shipping += order.z_price_with_shipping*order_qty
 
-                ttl_price_multibuy = (quantity - qty_remaining) * order.price
+                ttl_price_multibuy = (quantity - qty_remaining) * float(order.price)
 
         self.z_qty_remaining = qty_remaining
         self.z_qty = quantity - qty_remaining
@@ -151,7 +183,7 @@ class Item(models.Model):
         self.z_ttl_price_multibuy = ttl_price_multibuy
         self.z_orders = orders_list
         self.z_last_updated = last_updated
-        self.z_ttl_volume = self.volume * self.z_qty
+        self.z_ttl_volume = float(self.volume) * self.z_qty
         self.z_ttl_shipping = ttl_shipping
         self.z_ttl_price_plus_shipping = ttl_price_plus_shipping
         self.z_multibuy_test = float(ttl_price_best) < float(ttl_price_multibuy) * 0.98

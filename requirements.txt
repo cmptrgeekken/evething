@@ -8,3 +8,4 @@ pyyaml
 evepaste
 requests-oauth2
 mysql-python
+numpy
