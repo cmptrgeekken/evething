@@ -731,7 +731,7 @@ SELECT
     MIN(online_timestamp) AS min_online,
     MIN(state_timestamp) AS min_state,
     (SELECT DATEDIFF(NOW(), MAX(date)) FROM thing_poswatch_poshistory where corp_id=ph.corp_id AND state in (3,4)) AS days_offline,
-    (SELECT COUNT(*) FROM thing_poswatch_poshistory WHERE date=UTC_DATE() AND corp_id=ph.corp_id) AS tower_count,
+    (SELECT COUNT(*) FROM thing_poswatch_poshistory WHERE date=(SELECT MAX(date) FROM thing_poswatch_poshistory) AND corp_id=ph.corp_id) AS tower_count,
     (SELECT COUNT(*) FROM thing_poswatch_poshistory WHERE corp_id=ph.corp_id AND COUNT(*) > 0 GROUP BY date ORDER BY date desc LIMIT 1) AS last_tower_count
 FROM thing_poswatch_poshistory ph
     INNER JOIN thing_corporation c ON ph.corp_id=c.id
