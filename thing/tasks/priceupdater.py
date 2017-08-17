@@ -45,11 +45,14 @@ class PriceUpdater(APITask):
 
         page_number = 1
 
-        stations = Station.objects.filter(
-            Q(system__constellation__region_id=station_or_region_id) |
-            Q(Q(id=station_or_region_id) & Q(is_citadel=False) & Q(load_market_orders=True)))
+        stations_query = Station.objects.filter(load_market_orders=True)
+
+        stations = stations_query.filter(id=station_or_region_id, is_citadel=True)
         if len(stations) == 0:
-            self.log_warn('No stations found for task!')
+            stations = stations_query.filter(system__constellation__region_id=station_or_region_id, is_citadel=False)
+
+        if len(stations) == 0:
+            self.log_warn('No stations found for task: %d!', station_or_region_id)
             return
 
         primary_station = stations[0]
