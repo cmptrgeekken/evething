@@ -9,6 +9,7 @@
     <link rel="stylesheet/less" href="{{ STATIC_URL }}less/theme-{{ user.profile.theme }}/bootstrap.less">
 {% else %}
     <link rel="stylesheet" href="{{ static('css/theme-' + user.profile.theme + '.min.css') }}">
+    <link href="{{ STATIC_URL }}pgsus/css/select2.css" rel="stylesheet" />
 {% endif %}{# debug #}
 {% else %}
 {% if debug %}
@@ -162,6 +163,9 @@
     <script src="{{ STATIC_URL}}js/evething/transactions.js"></script>
     <script src="{{ STATIC_URL}}js/evething/wallet_journal.js"></script>
     <script src="{{ STATIC_URL}}js/evething/pi.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/1.6.0/clipboard.min.js"></script>
+    <script src="{{ STATIC_URL }}pgsus/js/select2.js"></script>
+    <script src="{{ STATIC_URL }}pgsus/js/scripts.js"></script>
 {% else %}
     <script src="{{ static('js/evething-combined.min.js') }}"></script>
 {% endif %}{# if debug #}

@@ -31,7 +31,9 @@ $(document).ready(function() {
         return false;
     });
 
-    $('.timeago').timeago();
+    if ($.timeago) {
+        $('.timeago').timeago();
+    }
 
     /*
      * ===================================
@@ -263,359 +265,374 @@ $(document).ready(function() {
 
 
     /*=== WOW - Loading animations ===*/
-    new WOW({
-        boxClass: 'wow',
-        animateClass: 'animated',
-        offset: 0,
-        mobile: false
-    }).init();
+    if (window.WOW) {
+        new WOW({
+            boxClass: 'wow',
+            animateClass: 'animated',
+            offset: 0,
+            mobile: false
+        }).init();
+    }
+
 
 
     /*=== Mixitup - Filterable portfolio ===*/
-    $('#Grid').mixitup();
+    if ($().mixitup) {
+        $('#Grid').mixitup();
+    }
+
 
 
     /*=== Slippry Slideshow in frame of Macbook Pro - using on Services III ===*/
-    var thumbs = $('#mb-slideshow').slippry({
-        // general elements & wrapper
-        slideWrapper: '<div class="frame sy-slides-wrap" />',
-        slippryWrapper: '<div class="slippry_box thumbnails" />',
-        // options
-        transition: 'horizontal',
-        pager: false,
-        auto: true,
-        onSlideBefore: function(el, index_old, index_new) {
-            $('.thumbs a img').removeClass('active');
-            $('img', $('.thumbs a')[index_new]).addClass('active');
-        }
-    });
+    if ($().slippry) {
+        var thumbs = $('#mb-slideshow').slippry({
+            // general elements & wrapper
+            slideWrapper: '<div class="frame sy-slides-wrap" />',
+            slippryWrapper: '<div class="slippry_box thumbnails" />',
+            // options
+            transition: 'horizontal',
+            pager: false,
+            auto: true,
+            onSlideBefore: function(el, index_old, index_new) {
+                $('.thumbs a img').removeClass('active');
+                $('img', $('.thumbs a')[index_new]).addClass('active');
+            }
+        });
 
-    $('.thumbs a').click(function() {
-        thumbs.goToSlide($(this).data('slide'));
-        return false;
-    });
+        $('.thumbs a').click(function() {
+            thumbs.goToSlide($(this).data('slide'));
+            return false;
+        });
 
-
-    /*=== Slippry Slideshow - using on the page About us I ===*/
-    $('#slider-aboutUs').slippry({
-        slideWrapper: '<div class="normal sy-slides-wrap" />',
-        transition: 'fade',
-        auto: true,
-        useCSS: true,
-        pause: 5000
-    });
+        /*=== Slippry Slideshow - using on the page About us I ===*/
+        $('#slider-aboutUs').slippry({
+            slideWrapper: '<div class="normal sy-slides-wrap" />',
+            transition: 'fade',
+            auto: true,
+            useCSS: true,
+            pause: 5000
+        });
+    }
 
 
     /*=== Sticky - Make every elements sticky, just set a class or ID ===*/
-    $(".sticker").sticky({
-        topSpacing: 0
-    });
+    if ($().sticky) {
+        $(".sticker").sticky({
+            topSpacing: 0
+        });
+    }
 
 
     /*=== Knobs - our skills ===*/
 
     // Light Blue Knob
-    $(".lbKnob").knob({
-        fgColor: "#1eb9c1",
-        min: 0,
-        max: 100,
-        step: 5,
-        angleOffset: 0,
-        angleArc: 360,
-        stopper: true,
-        readOnly: true,
-        cursor: false,
-        lineCap: 'none',
-        thickness: '0.03',
-        width: 150,
-        displayInput: true,
-        displayPrevious: true,
-        inputColor: '#999999',
-        font: 'Lato',
-        fontWeight: 'normal',
-        bgColor: '#EEEEEE',
-        draw: function() {
-            if (this.$.data('skin') == 'tron') {
-                var a = this.angle(this.cv), // Angle
+    if ($().knob) {
+        $(".lbKnob").knob({
+            fgColor: "#1eb9c1",
+            min: 0,
+            max: 100,
+            step: 5,
+            angleOffset: 0,
+            angleArc: 360,
+            stopper: true,
+            readOnly: true,
+            cursor: false,
+            lineCap: 'none',
+            thickness: '0.03',
+            width: 150,
+            displayInput: true,
+            displayPrevious: true,
+            inputColor: '#999999',
+            font: 'Lato',
+            fontWeight: 'normal',
+            bgColor: '#EEEEEE',
+            draw: function() {
+                if (this.$.data('skin') == 'tron') {
+                    var a = this.angle(this.cv), // Angle
 
-                    sa = this.startAngle, // Previous start angle
+                        sa = this.startAngle, // Previous start angle
 
-                    sat = this.startAngle, // Start angle
+                        sat = this.startAngle, // Start angle
 
-                    ea, // Previous end angle
-                    eat = sat + a, // End angle
+                        ea, // Previous end angle
+                        eat = sat + a, // End angle
 
-                    r = 1;
-                this.g.lineWidth = this.lineWidth;
-                this.o.cursor && (sat = eat - 0.3) && (eat = eat + 0.3);
-                if (this.o.displayPrevious) {
-                    ea = this.startAngle + this.angle(this.v);
-                    this.o.cursor && (sa = ea - 0.3) && (ea = ea + 0.3);
+                        r = 1;
+                    this.g.lineWidth = this.lineWidth;
+                    this.o.cursor && (sat = eat - 0.3) && (eat = eat + 0.3);
+                    if (this.o.displayPrevious) {
+                        ea = this.startAngle + this.angle(this.v);
+                        this.o.cursor && (sa = ea - 0.3) && (ea = ea + 0.3);
+                        this.g.beginPath();
+                        this.g.strokeStyle = this.pColor;
+                        this.g.arc(this.xy, this.xy, this.radius - this.lineWidth, sa, ea, false);
+                        this.g.stroke();
+                    }
                     this.g.beginPath();
-                    this.g.strokeStyle = this.pColor;
-                    this.g.arc(this.xy, this.xy, this.radius - this.lineWidth, sa, ea, false);
+                    this.g.strokeStyle = r ? this.o.fgColor : this.fgColor;
+                    this.g.arc(this.xy, this.xy, this.radius - this.lineWidth, sat, eat, false);
                     this.g.stroke();
-                }
-                this.g.beginPath();
-                this.g.strokeStyle = r ? this.o.fgColor : this.fgColor;
-                this.g.arc(this.xy, this.xy, this.radius - this.lineWidth, sat, eat, false);
-                this.g.stroke();
-                this.g.lineWidth = 2;
-                this.g.beginPath();
-                this.g.strokeStyle = this.o.fgColor;
-                this.g.arc(this.xy, this.xy, this.radius - this.lineWidth + 1 + this.lineWidth * 2 / 3, 0, 2 * Math.PI, false);
-                this.g.stroke();
-                return false;
-            }
-
-        }
-    });
-
-    //Blue Knob
-    $(".bKnob").knob({
-        fgColor: "#1a99aa",
-        min: 0,
-        max: 100,
-        step: 5,
-        angleOffset: 0,
-        angleArc: 360,
-        stopper: true,
-        readOnly: true,
-        cursor: false,
-        lineCap: 'none',
-        thickness: '0.03',
-        width: 150,
-        displayInput: true,
-        displayPrevious: true,
-        inputColor: '#999999',
-        font: 'Lato',
-        fontWeight: 'normal',
-        bgColor: '#EEEEEE',
-        draw: function() {
-            if (this.$.data('skin') == 'tron') {
-                var a = this.angle(this.cv), // Angle
-
-                    sa = this.startAngle, // Previous start angle
-
-                    sat = this.startAngle, // Start angle
-
-                    ea, // Previous end angle
-                    eat = sat + a, // End angle
-
-                    r = 1;
-                this.g.lineWidth = this.lineWidth;
-                this.o.cursor && (sat = eat - 0.3) && (eat = eat + 0.3);
-                if (this.o.displayPrevious) {
-                    ea = this.startAngle + this.angle(this.v);
-                    this.o.cursor && (sa = ea - 0.3) && (ea = ea + 0.3);
+                    this.g.lineWidth = 2;
                     this.g.beginPath();
-                    this.g.strokeStyle = this.pColor;
-                    this.g.arc(this.xy, this.xy, this.radius - this.lineWidth, sa, ea, false);
+                    this.g.strokeStyle = this.o.fgColor;
+                    this.g.arc(this.xy, this.xy, this.radius - this.lineWidth + 1 + this.lineWidth * 2 / 3, 0, 2 * Math.PI, false);
                     this.g.stroke();
+                    return false;
                 }
-                this.g.beginPath();
-                this.g.strokeStyle = r ? this.o.fgColor : this.fgColor;
-                this.g.arc(this.xy, this.xy, this.radius - this.lineWidth, sat, eat, false);
-                this.g.stroke();
-                this.g.lineWidth = 2;
-                this.g.beginPath();
-                this.g.strokeStyle = this.o.fgColor;
-                this.g.arc(this.xy, this.xy, this.radius - this.lineWidth + 1 + this.lineWidth * 2 / 3, 0, 2 * Math.PI, false);
-                this.g.stroke();
-                return false;
+
             }
-
-        }
-    });
-
-    // Green Knob
-    $(".gKnob").knob({
-        fgColor: "#3c948b",
-        min: 0,
-        max: 100,
-        step: 5,
-        angleOffset: 0,
-        angleArc: 360,
-        stopper: true,
-        readOnly: true,
-        cursor: false,
-        lineCap: 'none',
-        thickness: '0.03',
-        width: 150,
-        displayInput: true,
-        displayPrevious: true,
-        inputColor: '#999999',
-        font: 'Lato',
-        fontWeight: 'normal',
-        bgColor: '#EEEEEE',
-        draw: function() {
-            if (this.$.data('skin') == 'tron') {
-                var a = this.angle(this.cv), // Angle
-
-                    sa = this.startAngle, // Previous start angle
-
-                    sat = this.startAngle, // Start angle
-
-                    ea, // Previous end angle
-                    eat = sat + a, // End angle
-
-                    r = 1;
-                this.g.lineWidth = this.lineWidth;
-                this.o.cursor && (sat = eat - 0.3) && (eat = eat + 0.3);
-                if (this.o.displayPrevious) {
-                    ea = this.startAngle + this.angle(this.v);
-                    this.o.cursor && (sa = ea - 0.3) && (ea = ea + 0.3);
-                    this.g.beginPath();
-                    this.g.strokeStyle = this.pColor;
-                    this.g.arc(this.xy, this.xy, this.radius - this.lineWidth, sa, ea, false);
-                    this.g.stroke();
-                }
-                this.g.beginPath();
-                this.g.strokeStyle = r ? this.o.fgColor : this.fgColor;
-                this.g.arc(this.xy, this.xy, this.radius - this.lineWidth, sat, eat, false);
-                this.g.stroke();
-                this.g.lineWidth = 2;
-                this.g.beginPath();
-                this.g.strokeStyle = this.o.fgColor;
-                this.g.arc(this.xy, this.xy, this.radius - this.lineWidth + 1 + this.lineWidth * 2 / 3, 0, 2 * Math.PI, false);
-                this.g.stroke();
-                return false;
-            }
-
-        }
-    });
-
-    // Red Knob
-    $(".rKnob").knob({
-        fgColor: "#df6c4f",
-        min: 0,
-        max: 100,
-        step: 5,
-        angleOffset: 0,
-        angleArc: 360,
-        stopper: true,
-        readOnly: true,
-        cursor: false,
-        lineCap: 'none',
-        thickness: '0.03',
-        width: 150,
-        displayInput: true,
-        displayPrevious: true,
-        inputColor: '#999999',
-        font: 'Lato',
-        fontWeight: 'normal',
-        bgColor: '#EEEEEE',
-        draw: function() {
-            if (this.$.data('skin') == 'tron') {
-                var a = this.angle(this.cv), // Angle
-
-                    sa = this.startAngle, // Previous start angle
-
-                    sat = this.startAngle, // Start angle
-
-                    ea, // Previous end angle
-                    eat = sat + a, // End angle
-
-                    r = 1;
-                this.g.lineWidth = this.lineWidth;
-                this.o.cursor && (sat = eat - 0.3) && (eat = eat + 0.3);
-                if (this.o.displayPrevious) {
-                    ea = this.startAngle + this.angle(this.v);
-                    this.o.cursor && (sa = ea - 0.3) && (ea = ea + 0.3);
-                    this.g.beginPath();
-                    this.g.strokeStyle = this.pColor;
-                    this.g.arc(this.xy, this.xy, this.radius - this.lineWidth, sa, ea, false);
-                    this.g.stroke();
-                }
-                this.g.beginPath();
-                this.g.strokeStyle = r ? this.o.fgColor : this.fgColor;
-                this.g.arc(this.xy, this.xy, this.radius - this.lineWidth, sat, eat, false);
-                this.g.stroke();
-                this.g.lineWidth = 2;
-                this.g.beginPath();
-                this.g.strokeStyle = this.o.fgColor;
-                this.g.arc(this.xy, this.xy, this.radius - this.lineWidth + 1 + this.lineWidth * 2 / 3, 0, 2 * Math.PI, false);
-                this.g.stroke();
-                return false;
-            }
-
-        }
-    });
-
-    // Yellow Knob
-    $(".yKnob").knob({
-        fgColor: "#ecd06f",
-        min: 0,
-        max: 100,
-        step: 5,
-        angleOffset: 0,
-        angleArc: 360,
-        stopper: true,
-        readOnly: true,
-        cursor: false,
-        lineCap: 'none',
-        thickness: '0.03',
-        width: 150,
-        displayInput: true,
-        displayPrevious: true,
-        inputColor: '#999999',
-        font: 'Lato',
-        fontWeight: 'normal',
-        bgColor: '#EEEEEE',
-        draw: function() {
-            if (this.$.data('skin') == 'tron') {
-                var a = this.angle(this.cv), // Angle
-
-                    sa = this.startAngle, // Previous start angle
-
-                    sat = this.startAngle, // Start angle
-
-                    ea, // Previous end angle
-                    eat = sat + a, // End angle
-
-                    r = 1;
-                this.g.lineWidth = this.lineWidth;
-                this.o.cursor && (sat = eat - 0.3) && (eat = eat + 0.3);
-                if (this.o.displayPrevious) {
-                    ea = this.startAngle + this.angle(this.v);
-                    this.o.cursor && (sa = ea - 0.3) && (ea = ea + 0.3);
-                    this.g.beginPath();
-                    this.g.strokeStyle = this.pColor;
-                    this.g.arc(this.xy, this.xy, this.radius - this.lineWidth, sa, ea, false);
-                    this.g.stroke();
-                }
-                this.g.beginPath();
-                this.g.strokeStyle = r ? this.o.fgColor : this.fgColor;
-                this.g.arc(this.xy, this.xy, this.radius - this.lineWidth, sat, eat, false);
-                this.g.stroke();
-                this.g.lineWidth = 2;
-                this.g.beginPath();
-                this.g.strokeStyle = this.o.fgColor;
-                this.g.arc(this.xy, this.xy, this.radius - this.lineWidth + 1 + this.lineWidth * 2 / 3, 0, 2 * Math.PI, false);
-                this.g.stroke();
-                return false;
-            }
-
-        }
-    });
-
-    // Clipboard Copying
-    var cb = new Clipboard('.btn');
-    cb.on('success', function(e){
-        console.log('here');
-        $(e.trigger).tooltip({
-            title: 'Copied!',
-            container: 'body'
         });
-        $(e.trigger).tooltip('show');
 
-        setTimeout(function() {
-            $(e.trigger).tooltip('destroy');
-        }, 3000)
-    });
+        //Blue Knob
+        $(".bKnob").knob({
+            fgColor: "#1a99aa",
+            min: 0,
+            max: 100,
+            step: 5,
+            angleOffset: 0,
+            angleArc: 360,
+            stopper: true,
+            readOnly: true,
+            cursor: false,
+            lineCap: 'none',
+            thickness: '0.03',
+            width: 150,
+            displayInput: true,
+            displayPrevious: true,
+            inputColor: '#999999',
+            font: 'Lato',
+            fontWeight: 'normal',
+            bgColor: '#EEEEEE',
+            draw: function() {
+                if (this.$.data('skin') == 'tron') {
+                    var a = this.angle(this.cv), // Angle
+
+                        sa = this.startAngle, // Previous start angle
+
+                        sat = this.startAngle, // Start angle
+
+                        ea, // Previous end angle
+                        eat = sat + a, // End angle
+
+                        r = 1;
+                    this.g.lineWidth = this.lineWidth;
+                    this.o.cursor && (sat = eat - 0.3) && (eat = eat + 0.3);
+                    if (this.o.displayPrevious) {
+                        ea = this.startAngle + this.angle(this.v);
+                        this.o.cursor && (sa = ea - 0.3) && (ea = ea + 0.3);
+                        this.g.beginPath();
+                        this.g.strokeStyle = this.pColor;
+                        this.g.arc(this.xy, this.xy, this.radius - this.lineWidth, sa, ea, false);
+                        this.g.stroke();
+                    }
+                    this.g.beginPath();
+                    this.g.strokeStyle = r ? this.o.fgColor : this.fgColor;
+                    this.g.arc(this.xy, this.xy, this.radius - this.lineWidth, sat, eat, false);
+                    this.g.stroke();
+                    this.g.lineWidth = 2;
+                    this.g.beginPath();
+                    this.g.strokeStyle = this.o.fgColor;
+                    this.g.arc(this.xy, this.xy, this.radius - this.lineWidth + 1 + this.lineWidth * 2 / 3, 0, 2 * Math.PI, false);
+                    this.g.stroke();
+                    return false;
+                }
+
+            }
+        });
+
+        // Green Knob
+        $(".gKnob").knob({
+            fgColor: "#3c948b",
+            min: 0,
+            max: 100,
+            step: 5,
+            angleOffset: 0,
+            angleArc: 360,
+            stopper: true,
+            readOnly: true,
+            cursor: false,
+            lineCap: 'none',
+            thickness: '0.03',
+            width: 150,
+            displayInput: true,
+            displayPrevious: true,
+            inputColor: '#999999',
+            font: 'Lato',
+            fontWeight: 'normal',
+            bgColor: '#EEEEEE',
+            draw: function() {
+                if (this.$.data('skin') == 'tron') {
+                    var a = this.angle(this.cv), // Angle
+
+                        sa = this.startAngle, // Previous start angle
+
+                        sat = this.startAngle, // Start angle
+
+                        ea, // Previous end angle
+                        eat = sat + a, // End angle
+
+                        r = 1;
+                    this.g.lineWidth = this.lineWidth;
+                    this.o.cursor && (sat = eat - 0.3) && (eat = eat + 0.3);
+                    if (this.o.displayPrevious) {
+                        ea = this.startAngle + this.angle(this.v);
+                        this.o.cursor && (sa = ea - 0.3) && (ea = ea + 0.3);
+                        this.g.beginPath();
+                        this.g.strokeStyle = this.pColor;
+                        this.g.arc(this.xy, this.xy, this.radius - this.lineWidth, sa, ea, false);
+                        this.g.stroke();
+                    }
+                    this.g.beginPath();
+                    this.g.strokeStyle = r ? this.o.fgColor : this.fgColor;
+                    this.g.arc(this.xy, this.xy, this.radius - this.lineWidth, sat, eat, false);
+                    this.g.stroke();
+                    this.g.lineWidth = 2;
+                    this.g.beginPath();
+                    this.g.strokeStyle = this.o.fgColor;
+                    this.g.arc(this.xy, this.xy, this.radius - this.lineWidth + 1 + this.lineWidth * 2 / 3, 0, 2 * Math.PI, false);
+                    this.g.stroke();
+                    return false;
+                }
+
+            }
+        });
+
+        // Red Knob
+        $(".rKnob").knob({
+            fgColor: "#df6c4f",
+            min: 0,
+            max: 100,
+            step: 5,
+            angleOffset: 0,
+            angleArc: 360,
+            stopper: true,
+            readOnly: true,
+            cursor: false,
+            lineCap: 'none',
+            thickness: '0.03',
+            width: 150,
+            displayInput: true,
+            displayPrevious: true,
+            inputColor: '#999999',
+            font: 'Lato',
+            fontWeight: 'normal',
+            bgColor: '#EEEEEE',
+            draw: function() {
+                if (this.$.data('skin') == 'tron') {
+                    var a = this.angle(this.cv), // Angle
+
+                        sa = this.startAngle, // Previous start angle
+
+                        sat = this.startAngle, // Start angle
+
+                        ea, // Previous end angle
+                        eat = sat + a, // End angle
+
+                        r = 1;
+                    this.g.lineWidth = this.lineWidth;
+                    this.o.cursor && (sat = eat - 0.3) && (eat = eat + 0.3);
+                    if (this.o.displayPrevious) {
+                        ea = this.startAngle + this.angle(this.v);
+                        this.o.cursor && (sa = ea - 0.3) && (ea = ea + 0.3);
+                        this.g.beginPath();
+                        this.g.strokeStyle = this.pColor;
+                        this.g.arc(this.xy, this.xy, this.radius - this.lineWidth, sa, ea, false);
+                        this.g.stroke();
+                    }
+                    this.g.beginPath();
+                    this.g.strokeStyle = r ? this.o.fgColor : this.fgColor;
+                    this.g.arc(this.xy, this.xy, this.radius - this.lineWidth, sat, eat, false);
+                    this.g.stroke();
+                    this.g.lineWidth = 2;
+                    this.g.beginPath();
+                    this.g.strokeStyle = this.o.fgColor;
+                    this.g.arc(this.xy, this.xy, this.radius - this.lineWidth + 1 + this.lineWidth * 2 / 3, 0, 2 * Math.PI, false);
+                    this.g.stroke();
+                    return false;
+                }
+
+            }
+        });
+
+        // Yellow Knob
+        $(".yKnob").knob({
+            fgColor: "#ecd06f",
+            min: 0,
+            max: 100,
+            step: 5,
+            angleOffset: 0,
+            angleArc: 360,
+            stopper: true,
+            readOnly: true,
+            cursor: false,
+            lineCap: 'none',
+            thickness: '0.03',
+            width: 150,
+            displayInput: true,
+            displayPrevious: true,
+            inputColor: '#999999',
+            font: 'Lato',
+            fontWeight: 'normal',
+            bgColor: '#EEEEEE',
+            draw: function() {
+                if (this.$.data('skin') == 'tron') {
+                    var a = this.angle(this.cv), // Angle
+
+                        sa = this.startAngle, // Previous start angle
+
+                        sat = this.startAngle, // Start angle
+
+                        ea, // Previous end angle
+                        eat = sat + a, // End angle
+
+                        r = 1;
+                    this.g.lineWidth = this.lineWidth;
+                    this.o.cursor && (sat = eat - 0.3) && (eat = eat + 0.3);
+                    if (this.o.displayPrevious) {
+                        ea = this.startAngle + this.angle(this.v);
+                        this.o.cursor && (sa = ea - 0.3) && (ea = ea + 0.3);
+                        this.g.beginPath();
+                        this.g.strokeStyle = this.pColor;
+                        this.g.arc(this.xy, this.xy, this.radius - this.lineWidth, sa, ea, false);
+                        this.g.stroke();
+                    }
+                    this.g.beginPath();
+                    this.g.strokeStyle = r ? this.o.fgColor : this.fgColor;
+                    this.g.arc(this.xy, this.xy, this.radius - this.lineWidth, sat, eat, false);
+                    this.g.stroke();
+                    this.g.lineWidth = 2;
+                    this.g.beginPath();
+                    this.g.strokeStyle = this.o.fgColor;
+                    this.g.arc(this.xy, this.xy, this.radius - this.lineWidth + 1 + this.lineWidth * 2 / 3, 0, 2 * Math.PI, false);
+                    this.g.stroke();
+                    return false;
+                }
+
+            }
+        });
+    }
+
+    if (Clipboard) {
+        // Clipboard Copying
+        var cb = new Clipboard('.btn');
+        cb.on('success', function(e){
+            $(e.trigger).tooltip({
+                title: 'Copied!',
+                container: 'body'
+            });
+            $(e.trigger).tooltip('show');
+
+            setTimeout(function() {
+                $(e.trigger).tooltip('destroy');
+            }, 3000)
+        });
+    }
 
     // Select2
-    $('.js-select2').select2();
+    if ($().select2) {
+        $('.js-select2').select2();
+    }
+
 
     $('.js-formatNumber').on('blur', function(){
         var elem = $(this);

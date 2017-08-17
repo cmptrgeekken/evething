@@ -53,6 +53,29 @@ class MarketOrder(models.Model):
     issued = models.DateTimeField(db_index=True)
     expires = models.DateTimeField(db_index=True)
 
+    def check_undercut(self):
+        from thing.models.stationorder import StationOrder
+
+        orders_query = StationOrder.objects.filter(
+            item_id=self.item.id,
+            buy_order=self.buy_order,
+            price__lte=self.price).exclude(order_id=self.order_id)
+
+        if self.buy_order:
+            next_order_price = orders_query.filter(station__system__constellation_region_id=self.station.system.constellation.region_id).aggregate(max=models.Max('price'))['max']
+        else:
+            next_order_price = orders_query.filter(station_id=self.station.id).aggregate(min=models.Min('price'))['min']
+
+        if next_order_price is not None\
+                and next_order_price > 0:
+            outbid = True
+            outbid_price = next_order_price
+        else:
+            outbid = False
+            outbid_price = 0
+
+        return outbid, outbid_price
+
     class Meta:
         app_label = 'thing'
         ordering = ('buy_order', 'item__name')

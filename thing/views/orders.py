@@ -32,6 +32,8 @@ from thing import queries
 from thing.models import *  # NOPEP8
 from thing.stuff import *   # NOPEP8
 
+from decimal import Decimal
+
 
 ORDER_SLOT_SKILLS = {
     3443: 4,    # Trade
@@ -101,6 +103,13 @@ def orders(request):
     orders = orders.prefetch_related('item', 'station', 'character', 'corp_wallet__corporation')
     orders = orders.order_by('station__name', '-buy_order', 'item__name')
 
+    show_outbid = 'outbid' in request.GET and request.GET['outbid'] == '1'
+    bid_adjust = 'bid_adjust' in request.GET and Decimal(request.GET['bid_adjust']) or Decimal('0.01')
+
+    selected_stations_qry = 'stations' in request.GET and request.GET.getlist('stations') or []
+
+    selected_stations = set([int(id) for id in selected_stations_qry])
+
     # Fetch creator characters as they're not a FK relation
     creator_ids = set()
     utcnow = datetime.datetime.utcnow()
@@ -111,16 +120,35 @@ def orders(request):
     # Bulk query
     char_map = Character.objects.in_bulk(creator_ids)
 
+    orders_to_show = []
+
+    stations = set([o.station for o in orders])
+
     # Sort out possible chars
     for order in orders:
         order.z_creator_character = char_map.get(order.creator_character_id)
+        undercut, undercut_price = order.check_undercut()
+
+        order.z_undercut_price = undercut_price
+
+        if show_outbid and order.z_undercut_price == 0:
+            continue
+
+        if len(selected_stations) > 0 and order.station_id not in selected_stations:
+            continue
+
+        orders_to_show.append(order)
 
     # Render template
     return render_page(
         'thing/orders.html',
         {
             'char_orders': char_orders,
-            'orders': orders,
+            'show_outbid': show_outbid,
+            'stations': stations,
+            'selected_stations': selected_stations,
+            'bid_adjust': bid_adjust,
+            'orders': orders_to_show,
             'total_row': total_row,
         },
         request,
