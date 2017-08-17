@@ -33,18 +33,21 @@ from thing.models import Station, StationOrder, StationOrderUpdater
 from thing import queries
 
 from django.db import transaction
+from django.db.models import Q
 
 
 class PriceUpdater(APITask):
     name = 'thing.price_updater'
 
-    def run(self, api_url, taskstate_id, apikey_id, station_ids):
+    def run(self, api_url, taskstate_id, apikey_id, station_or_region_id):
         if self.init(taskstate_id) is False:
             return
 
         page_number = 1
 
-        stations = Station.objects.filter(id__in=station_ids)
+        stations = Station.objects.filter(
+            Q(system__constellation__region_id=station_or_region_id) |
+            Q(Q(id=station_or_region_id) & Q(is_citadel=False) & Q(load_market_orders=True)))
         if len(stations) == 0:
             self.log_warn('No stations found for task!')
             return
