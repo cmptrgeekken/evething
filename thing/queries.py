@@ -702,19 +702,13 @@ CREATE TABLE `thing_cache_localprice` (
 
 
 bulk_stationorders_insert_update = """
-SET autocommit=0;
-SET unique_checks=0;
-SET foreign_key_checks=0;
 INSERT INTO thing_stationorder (`order_id`,`item_id`,`station_id`,`volume_entered`,`volume_remaining`,`minimum_volume`,`price`,`buy_order`,`issued`,`expires`,`range`,`last_updated`,`times_updated`)
     VALUES %s 
 ON DUPLICATE KEY UPDATE 
     last_updated=NOW(),
     times_updated=IF(price!=VALUES(price),times_updated+1,times_updated), 
     price=VALUES(price),
-    volume_remaining=VALUES(volume_remaining);
-SET foreign_key_checks=1;
-SET unique_checks=1;
-COMMIT; """
+    volume_remaining=VALUES(volume_remaining)"""
 
 industryjob_active_items_summary = """
 SELECT i.name,
