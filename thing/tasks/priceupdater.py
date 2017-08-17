@@ -32,6 +32,8 @@ import json
 from thing.models import Station, StationOrder, StationOrderUpdater
 from thing import queries
 
+from django.db import transaction
+
 
 class PriceUpdater(APITask):
     name = 'thing.price_updater'
@@ -101,6 +103,7 @@ class PriceUpdater(APITask):
                 station_orders.append(station_order)
 
             sql = ""
+            self.log_error('Updating %d orders for station %s...' % (len(station_orders), station_id))
             for o in station_orders:
                 new_sql = "('%s', '%s', '%s', '%s', '%s', '%s', %0.2f, '%d', '%s', '%s', '%s', '%s', '%s'), " \
                        % (str(o.order_id),
@@ -118,16 +121,14 @@ class PriceUpdater(APITask):
                           str(o.times_updated))
 
                 if len(''.join([sql, new_sql])) > 16777216:
-                    cursor = self.get_cursor()
-                    cursor.execute(queries.bulk_stationorders_insert_update % sql)
+                    self.execute_query(queries.bulk_stationorders_insert_update % sql)
                     sql = new_sql
                 else:
                     sql += new_sql
 
             sql = sql.rstrip(', ')
 
-            cursor = self.get_cursor()
-            cursor.execute(queries.bulk_stationorders_insert_update % sql)
+            self.execute_query(queries.bulk_stationorders_insert_update % sql)
 
             page_number += 1
 
@@ -137,3 +138,10 @@ class PriceUpdater(APITask):
         ).delete()
 
         return True
+
+    @transaction.atomic
+    def execute_query(self, sql):
+        cursor = self.get_cursor()
+
+        cursor.execute(queries.bulk_stationorders_insert_update % sql)
+        transaction.set_dirty()
