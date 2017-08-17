@@ -146,7 +146,7 @@ class PriceUpdater(APITask):
             page_number += 1
 
         # Delete non-existent orders:
-        StationOrder.objects.filter(station_id__in=station_ids).exclude(
+        StationOrder.objects.filter(station_id__in=list(station_lookup)).exclude(
             last_updated__gte=start_time
         ).delete()
 
@@ -164,5 +164,4 @@ class PriceUpdater(APITask):
         cursor.execute('SET unique_checks=1')
         cursor.execute('SET autocommit=1')
         transaction.set_dirty()
-        self.log_error('Update complete!')
 
