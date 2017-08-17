@@ -209,6 +209,8 @@ def account_apikey_add(request):
     vcode = request.POST.get('vcode', '').strip()
     name = request.POST.get('name', '')
     group_name = request.POST.get('group_name', '')
+    override_mask = request.POST.get('override_mask', 0)
+    char_name = request.POST.get('char_name', '')
 
     if not keyid.isdigit():
         request.session['message_type'] = 'error'
@@ -222,6 +224,9 @@ def account_apikey_add(request):
     elif int(keyid) < get_minimum_keyid():
         request.session['message_type'] = 'error'
         request.session['message'] = 'This key was created more than 30 minutes ago, make a new one for each app!'
+    elif not override_mask.isdigit():
+        request.session['message_type'] = 'error'
+        request.session['message'] = 'The override mask is invalid!'
     else:
         if request.user.profile.can_add_keys is False:
             request.session['message_type'] = 'error'
@@ -238,6 +243,7 @@ def account_apikey_add(request):
                 vcode=vcode,
                 name=name,
                 group_name=group_name,
+                override_mask=override_mask,
             )
             apikey.save()
 
