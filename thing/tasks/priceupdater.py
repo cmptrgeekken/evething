@@ -38,16 +38,24 @@ from django.db import transaction
 class PriceUpdater(APITask):
     name = 'thing.price_updater'
 
-    def run(self, api_url, taskstate_id, apikey_id, station_id):
+    def run(self, api_url, taskstate_id, apikey_id, station_ids):
         if self.init(taskstate_id) is False:
             return
 
         page_number = 1
 
-        station = Station.objects.filter(id=station_id).first()
+        stations = Station.objects.filter(id__in=station_ids)
+        if len(stations) == 0:
+            self.log_warn('No stations found for task!')
+            return
 
-        if station is None or station.market_profile is None or station.market_profile.sso_refresh_token is None:
-            self.log_warn('No refresh token found for station %d!' % station.id)
+        primary_station = stations[0]
+
+        station_lookup = set(s.id for s in stations)
+
+        if primary_station is None or primary_station.market_profile is None \
+                or primary_station.market_profile.sso_refresh_token is None:
+            self.log_warn('No refresh token found for station %d!' % primary_station.id)
             return
 
         access_token = None
@@ -57,7 +65,7 @@ class PriceUpdater(APITask):
 
         while True:
             if access_token is None or token_expires < datetime.now():
-                access_token, token_expires = self.get_access_token(station.market_profile.sso_refresh_token)
+                access_token, token_expires = self.get_access_token(primary_station.market_profile.sso_refresh_token)
 
             # Retrieve market data and parse the JSON
             url = api_url + str(page_number)
@@ -75,6 +83,10 @@ class PriceUpdater(APITask):
 
             station_orders = []
             for order in orders:
+                # Ignore stations we're not tracking
+                if int(order['location_id']) not in station_lookup:
+                    continue
+
                 # Create the new order object
                 remaining = int(order['volume_remain'])
                 price = Decimal(order['price'])
@@ -96,14 +108,9 @@ class PriceUpdater(APITask):
                     last_updated=start_time,
                 )
 
-                # Ignore stations we're not tracking
-                if int(order['location_id']) != int(station_id):
-                    continue
-
                 station_orders.append(station_order)
 
             sql = ""
-            self.log_error('Updating %d orders for station %s...' % (len(station_orders), station_id))
             for o in station_orders:
                 new_sql = "('%s', '%s', '%s', '%s', '%s', '%s', %0.2f, '%d', '%s', '%s', '%s', '%s', '%s'), " \
                        % (str(o.order_id),
@@ -121,19 +128,19 @@ class PriceUpdater(APITask):
                           str(o.times_updated))
 
                 if len(''.join([sql, new_sql])) > 16777216:
-                    self.execute_query(queries.bulk_stationorders_insert_update % sql)
+                    self.execute_query(sql)
                     sql = new_sql
                 else:
                     sql += new_sql
 
             sql = sql.rstrip(', ')
 
-            self.execute_query(queries.bulk_stationorders_insert_update % sql)
+            self.execute_query(sql)
 
             page_number += 1
 
         # Delete non-existent orders:
-        StationOrder.objects.filter(station_id=station_id).exclude(
+        StationOrder.objects.filter(station_id__in=station_ids).exclude(
             last_updated__gte=start_time
         ).delete()
 
@@ -143,5 +150,13 @@ class PriceUpdater(APITask):
     def execute_query(self, sql):
         cursor = self.get_cursor()
 
+        cursor.execute('SET autocommit=0')
+        cursor.execute('SET unique_checks=0')
+        cursor.execute('SET foreign_key_checks=0')
         cursor.execute(queries.bulk_stationorders_insert_update % sql)
+        cursor.execute('SET foreign_key_checks=1')
+        cursor.execute('SET unique_checks=1')
+        cursor.execute('SET autocommit=1')
         transaction.set_dirty()
+        self.log_error('Update complete!')
+

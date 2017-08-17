@@ -202,6 +202,7 @@ CELERY_QUEUES = (
     Queue('et_medium', Exchange('et_medium'), routing_key='et_medium'),
     Queue('et_high', Exchange('et_high'), routing_key='et_high'),
     Queue('et_low', Exchange('et_low'), routing_key='et_low'),
+    Queue('et_prices', Exchange('et_prices'), routing_key='et_prices'),
 )
 
 # Periodic tasks

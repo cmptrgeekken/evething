@@ -102,16 +102,28 @@ def task_spawner():
 
     stations = Station.objects.filter(load_market_orders=True).select_related('market_profile')
 
+    region_stations = dict()
     for station in stations:
         if station.is_citadel:
             url = 'https://esi.tech.ccp.is/latest/markets/structures/%d?datasource=tranquility&page=' \
                   % station.id
         else:
-            url = 'https://esi.tech.ccp.is/latest/markets/%d/orders?datasource=tranquility&order_type=all&page=' \
-                  % station.system.constellation.region.id
+            region_id = station.system.constellation.region.id
+            if region_id not in region_stations:
+                region_stations[region_id] = []
+            region_stations[region_id].append(station.id)
+
+            continue
 
         taskstate = g_tasks.get(url)
-        _init_taskstate(taskdata, now, taskstate, -1, None, 'thing.price_updater', url, 'et_prices', station.id)
+        _init_taskstate(taskdata, now, taskstate, -1, None, 'thing.price_updater', url, 'et_prices', [station.id])
+
+    for region in region_stations:
+        url = 'https://esi.tech.ccp.is/latest/markets/%d/orders?datasource=tranquility&order_type=all&page=' \
+              % region
+
+        taskstate = g_tasks.get(url)
+        _init_taskstate(taskdata, now, taskstate, -1, None, 'thing.price_updater', url, 'et_prices', region_stations[region])
 
     # Build a magical QuerySet for APIKey objects
     apikeys = APIKey.objects.select_related('corporation')
