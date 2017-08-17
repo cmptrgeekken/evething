@@ -111,7 +111,7 @@ def task_spawner():
                   % station.system.constellation.region.id
 
         taskstate = g_tasks.get(url)
-        _init_taskstate(taskdata, now, taskstate, -1, None, 'thing.price_updater', url, 'et_medium', station.id)
+        _init_taskstate(taskdata, now, taskstate, -1, None, 'thing.price_updater', url, 'et_prices', station.id)
 
     # Build a magical QuerySet for APIKey objects
     apikeys = APIKey.objects.select_related('corporation')
