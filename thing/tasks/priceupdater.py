@@ -53,7 +53,7 @@ class PriceUpdater(APITask):
 
         if len(stations) == 0:
             self.log_error('No stations found for task: %d!', station_or_region_id)
-            return True
+            return False
 
         primary_station = stations[0]
 
@@ -62,7 +62,7 @@ class PriceUpdater(APITask):
         if primary_station is None or primary_station.market_profile is None \
                 or primary_station.market_profile.sso_refresh_token is None:
             self.log_error('No refresh token found for station %d!' % primary_station.id)
-            return True
+            return False
 
         access_token = None
         token_expires = None
@@ -80,8 +80,8 @@ class PriceUpdater(APITask):
             self.log_debug('Page %d retrieved!' % page_number)
 
             if data is False:
-                self.log_error('API returned an error for url %s' % url)
-                break
+                # self.log_error('API returned an error for url %s' % url)
+                return False
 
             self.log_debug('Parsing JSON for page %d' % page_number)
             try:

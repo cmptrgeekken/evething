@@ -142,6 +142,19 @@ class Contracts(APITask):
             Corporation.objects.bulk_create(new)
 
         # Fetch station data
+        new = []
+        for new_id in station_ids.difference(station_map):
+            station = Station(
+                    id=new_id,
+                    name="[Unknown Station: %d]" % new_id,
+                    short_name="[Unknown Station: %d]" % new_id,
+                    is_unknown=True,
+            )
+            new.append(station)
+            station_map[new_id] = station
+
+        if new:
+            Station.objects.bulk_create(new)
 
         # Fetch all existing contracts
         c_map = {}

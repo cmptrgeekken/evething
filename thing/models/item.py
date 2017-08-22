@@ -30,7 +30,7 @@ from django.db.models import Sum, F
 
 from thing.models.itemgroup import ItemGroup
 from thing.models.marketgroup import MarketGroup
-
+from thing import queries
 
 class Item(models.Model):
     id = models.IntegerField(primary_key=True)
@@ -96,7 +96,7 @@ class Item(models.Model):
 
         return orders.aggregate(total_volume=Sum('volume_remaining'))['total_volume']
 
-    def get_current_orders(self, quantity, buy=False, ignore_seed_items=True, station_ids=None, item_ids=None, scale_by_repro=True):
+    def get_current_orders(self, quantity, buy=False, ignore_seed_items=True, station_ids=None, dest_station_id=1021577519493, item_ids=None, scale_by_repro=True):
         from thing.models.itemstationseed import ItemStationSeed
         from thing.models.stationorder import StationOrder
 
@@ -118,9 +118,12 @@ class Item(models.Model):
 
         item_id_lookup = ','.join([str(i) for i in item_ids])
 
+        shipping_query = queries.order_calculateshipping % ('price', 'item_id', 'thing_stationorder.station_id', str(dest_station_id))
+
+
         # TODO: Move Shipping Calculation to separate table
         orders = orders.extra(select={
-            'price_with_shipping': 'CASE WHEN station_id = 60003760 THEN price*1.015 + volume*390 ELSE price END',
+            'price_with_shipping': 'price + (%s)' % shipping_query,
             'scaled_price_with_shipping': '''
 SELECT price * SUM(im.quantity) / 
     (SELECT SUM(im2.quantity)
@@ -128,15 +131,15 @@ SELECT price * SUM(im.quantity) /
     WHERE im2.item_id IN(%s)
     GROUP BY im2.id
     ORDER BY SUM(im2.quantity)
-    LIMIT 1) + CASE WHEN station_id = 60003760 THEN price*0.015 + volume*390 ELSE price END
+    LIMIT 1) + (%s)
     FROM thing_itemmaterial im WHERE im.item_id=thing_stationorder.item_id
-            ''' % item_id_lookup,
-            'shipping': 'CASE WHEN station_id = 60003760 THEN price*0.015 + volume*390 ELSE 0 END'
+            ''' % (item_id_lookup, shipping_query),
+            'shipping': shipping_query
         })
 
         orders = orders.filter(buy_order=buy)
 
-        if scale_by_repro:
+        if scale_by_repro and len(item_ids) > 1:
             orders = orders.order_by('scaled_price_with_shipping')
         else:
             orders = orders.order_by('price_with_shipping')

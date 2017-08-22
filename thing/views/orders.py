@@ -104,6 +104,7 @@ def orders(request):
     orders = orders.order_by('station__name', '-buy_order', 'item__name')
 
     show_outbid = 'outbid' in request.GET and request.GET['outbid'] == '1'
+    order_type = 'order_type' in request.GET and request.GET['order_type'] or 'all'
     bid_adjust = 'bid_adjust' in request.GET and Decimal(request.GET['bid_adjust']) or Decimal('0.01')
 
     selected_stations_qry = 'stations' in request.GET and request.GET.getlist('stations') or []
@@ -134,6 +135,13 @@ def orders(request):
         if show_outbid and order.z_undercut_price == 0:
             continue
 
+        if order_type == 'buy' and not order.buy_order:
+            continue
+        
+        if order_type == 'sell' and order.buy_order:
+            continue;
+
+
         if len(selected_stations) > 0 and order.station_id not in selected_stations:
             continue
 
@@ -146,6 +154,7 @@ def orders(request):
             'char_orders': char_orders,
             'show_outbid': show_outbid,
             'stations': stations,
+            'order_type': order_type,
             'selected_stations': selected_stations,
             'bid_adjust': bid_adjust,
             'orders': orders_to_show,

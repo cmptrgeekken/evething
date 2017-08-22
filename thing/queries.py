@@ -710,6 +710,36 @@ ON DUPLICATE KEY UPDATE
     price=VALUES(price),
     volume_remaining=VALUES(volume_remaining)"""
 
+
+order_calculateshipping = """
+    SELECT i.volume * CASE WHEN stdest.id=storig.id THEN 0
+                     WHEN sydest.id=syorig.id THEN in_system_m3
+                     WHEN cdest.region_id=corig.region_id THEN in_region_m3
+                     ELSE cross_region_m3 END
+           + %s * CASE WHEN stdest.id=storig.id THEN 0
+                       WHEN sydest.id=syorig.id THEN in_system_collateral
+                       WHEN cdest.region_id=corig.region_id THEN in_region_collateral
+                       ELSE cross_region_collateral END
+           + CASE WHEN stdest.id=storig.id THEN 0
+                  WHEN sydest.id=syorig.id THEN in_system_base
+                  WHEN cdest.region_id=corig.region_id THEN in_region_base
+                  ELSE cross_region_base END AS shipping_cost
+    FROM thing_freighterpricemodel pm
+        INNER JOIN thing_freightersystem fsdest ON pm.id=fsdest.price_model_id
+        INNER JOIN thing_freightersystem fsorig ON pm.id=fsorig.price_model_id
+        INNER JOIN thing_system sydest ON fsdest.system_id=sydest.id
+        INNER JOIN thing_system syorig ON fsorig.system_id=syorig.id
+        INNER JOIN thing_constellation cdest ON sydest.constellation_id=cdest.id
+        INNER JOIN thing_constellation corig ON syorig.constellation_id=corig.id
+        INNER JOIN thing_station stdest ON fsdest.system_id=stdest.system_id
+        INNER JOIN thing_station storig ON fsorig.system_id=storig.system_id
+        JOIN thing_item i
+    WHERE i.id=%s
+          AND stdest.id=%s
+          AND storig.id=%s
+LIMIT 1
+"""
+
 industryjob_active_items_summary = """
 SELECT i.name,
        SUM(ij.runs)*bp.count 
@@ -740,9 +770,12 @@ ORDER BY c.name
 """
 
 poswatch_taxman = """
-SELECT taxes.*, (tax_total-tax_paid) AS tax_remaining, IF(last_tower_count = 0,'<Unknown>', CEILING(30 - ((tax_total - tax_paid) / last_tower_count / 2000000))) AS tax_evict_days 
-FROM (%s) taxes 
-WHERE tax_total > tax_paid;
+SELECT * FROM (
+    SELECT taxes.*, (tax_total-tax_paid) AS tax_remaining, IF(last_tower_count = 0,'<Unknown>', CEILING(30 - ((tax_total - tax_paid) / last_tower_count / 2000000))) AS tax_evict_days 
+    FROM (%s) taxes
+) taxes
+WHERE tax_evict_days <= 15
+ORDER BY CAST(tax_evict_days AS SIGNED);
 """ % poswatch_taxman_subquery
 
 poswatch_taxman_all = """

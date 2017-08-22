@@ -30,15 +30,15 @@ from collections import defaultdict
 class FreighterPriceModel(models.Model):
     name = models.CharField(max_length=32)
 
-    in_system_collateral = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    in_system_collateral = models.DecimalField(max_digits=10, decimal_places=4, default=0)
     in_system_m3 = models.DecimalField(max_digits=15, decimal_places=2, default=0)
     in_system_base = models.DecimalField(max_digits=15, decimal_places=2, default=0)
 
-    in_region_collateral = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    in_region_collateral = models.DecimalField(max_digits=10, decimal_places=4, default=0)
     in_region_m3 = models.DecimalField(max_digits=15, decimal_places=2, default=0)
     in_region_base = models.DecimalField(max_digits=15, decimal_places=2, default=0)
 
-    cross_region_collateral = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    cross_region_collateral = models.DecimalField(max_digits=10, decimal_places=4, default=0)
     cross_region_m3 = models.DecimalField(max_digits=15, decimal_places=2, default=0)
     cross_region_base = models.DecimalField(max_digits=15, decimal_places=2, default=0)
 

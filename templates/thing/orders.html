@@ -86,6 +86,16 @@
                   </div>
               </div>
               <div class="form-group">
+                  <label class="col-sm-4 col-form-label" for="order_type">Order Type:</label>
+                  <div class="col-sm-4">
+                    <select name="order_type" id="order_type">
+                        <option value="">All</option>
+                        <option value="sell"{% if order_type=='sell' %} selected {% endif %}>Sell</option>
+                        <option value="buy"{% if order_type=='buy' %} selected {% endif %}>Buy</option>
+                    </select>
+                  </div>
+              </div>
+              <div class="form-group">
                   <div class="col-sm-6">
                       <button type="submit" class="btn btn-primary">
                           Submit
@@ -143,8 +153,8 @@
                 <td class="r">{{ order.volume_entered|humanize }}</td>
                 {% if order.buy_order %}
                 <td class="r"><span class="neg">{{ order.price|commas }}</span></td>
-                <td>
-                  {% if order.z_undercut_price > 0: %}
+                <td class="neg">
+                    {% if order.z_undercut_price > 0: %}
                        <button class="btn btn-xs" type="button" data-clipboard-text="{{ order.z_undercut_price + bid_adjust}}">
                          <img src="{{ STATIC_URL }}pgsus/img/clippy.svg" width="13" title="Copy Next Price">
                      </button>

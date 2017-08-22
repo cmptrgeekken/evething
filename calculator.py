@@ -26,6 +26,7 @@
 import os
 # Set up our environment and import settings
 os.environ['DJANGO_SETTINGS_MODULE'] = 'evething.settings'
+
 import django
 django.setup()
 
@@ -40,7 +41,7 @@ from django.db.models import Min
 def calculator():
     # minerals = ['trit', 'pye', 'mex', 'iso', 'nocx', 'zyd', 'mega', 'morp']#, 'hw', 'stront', 'lo', 'hel', 'hyd', 'nit', 'oxy']
     mineralids = [34, 35, 36, 37, 38, 39, 40, 11399] #, 16272, 16275, 16273, 16274, 17889, 17888, 17887]
-    requirements = [282310765, 69412900, 25902055, 4050955, 1144765, 410270, 176730, 0] #, 0, 0, 0, 0, 0, 0, 0]
+    requirements = [112254380, 27580450, 7008270, 1777650, 441840, 208280, 58110, 0] #, 0, 0, 0, 0, 0, 0, 0]
     overage = [0, 0, 0, 0, 0, 0, 0, 0]#, 0, 0, 0, 0, 0, 0, 0]
 
     minidlookup = dict()
@@ -112,7 +113,26 @@ def calculator():
             if not fulfilled_all:
                 print("Not all results could be fulfilled!")
             else:
+                minerals = dict()
+                mineral_value = 0
+                for o in all_orders:
+                    print('%s %d (%s)' % (o.item.name, o.z_order_qty, o.station.name))
+ 
+                    for m in o.item.get_reprocessed_items():
+                        if m.name not in minerals:
+                            minerals[m.name] = 0
+                        minerals[m.name] += o.z_order_qty * m.z_qty * .875
+                        mineral_value += o.z_order_qty * m.z_qty * .875 * float(m.sell_fivepct_price)
+
+                for m in minerals:
+                    print("%s %d" % (m, minerals[m]))
+
                 print "Best: %d, Multi: %d" % (full_price_best, full_price_multibuy)
+                print("Mineral Value: %d" % mineral_value)
+                print("Mineral Ratio: %f" % (round(full_price_best / mineral_value*100,2)))
+
+
+
             break
 
 

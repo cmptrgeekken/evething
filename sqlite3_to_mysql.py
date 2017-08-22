@@ -51,6 +51,7 @@ for line in fileinput.input():
     if searching_for_end:
         if re.search(r"integer(?:\s+\w+)*\s*PRIMARY KEY(?:\s+\w+)*\s*,", line):
             line = line.replace("PRIMARY KEY", "PRIMARY KEY AUTO_INCREMENT")
+            line = line.replace(" AUTOINCREMENT", "")
         # replace " and ' with ` because mysql doesn't like quotes in CREATE commands
         if line.find('DEFAULT') == -1:
             line = line.replace(r'"', r'`').replace(r"'", r'`')
@@ -62,6 +63,10 @@ for line in fileinput.input():
     # And now we convert it back (see above)
     if re.match(r".*, ``\);", line):
         line = re.sub(r'``\);', r"'');", line)
+
+    if re.match(r'^INSERT INTO.*', line):
+        line = re.sub(r'`', r"'", line)
+
 
     if searching_for_end and re.match(r'.*\);', line):
         searching_for_end = False

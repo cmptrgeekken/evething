@@ -31,7 +31,7 @@ $(document).ready(function() {
         return false;
     });
 
-    if ($.timeago) {
+    if ($().timeago) {
         $('.timeago').timeago();
     }
 

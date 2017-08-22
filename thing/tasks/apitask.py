@@ -379,22 +379,27 @@ class APITask(Task):
         cache_key = self._get_cache_key(url, {})
         cached_data = cache.get(cache_key)
 
+        retry = 3
+
         if cached_data is None:
             sleep_for = self._get_backoff()
             if sleep_for > 0:
                 time.sleep(sleep_for)
 
             start = time.time()
-            try:
-                r = self._session.get(url + '&token=' + access_token)
-                data = r.text
-                current = self.parse_esi_date(r.headers['date'])
-                until = self.parse_esi_date(r.headers['expires'])
+            while retry > 0:
+                try:
+                    r = self._session.get(url + '&token=' + access_token)
+                    data = r.text
+                    current = self.parse_esi_date(r.headers['date'])
+                    until = self.parse_esi_date(r.headers['expires'])
 
-                self._cache_delta = until - current
-            except Exception, e:
-                # self._increment_backoff(e)
-                return False
+                    self._cache_delta = until - current
+                    break
+                except Exception, e:
+                    # self._increment_backoff(e)
+                    retry -= 1
+                    return False
 
             self._api_log.append((url, time.time() - start))
 
