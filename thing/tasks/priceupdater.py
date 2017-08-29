@@ -149,6 +149,13 @@ class PriceUpdater(APITask):
             last_updated__gte=start_time
         ).delete()
 
+        # Update market orders
+        cursor = self.get_cursor()
+        cursor.execute(queries.order_updatemarketorders)
+        cursor.close()
+
+
+
         return True
 
     @transaction.atomic

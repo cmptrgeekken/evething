@@ -56,25 +56,37 @@ class MarketOrder(models.Model):
     def check_undercut(self):
         from thing.models.stationorder import StationOrder
 
+        owned_orders_query = MarketOrder.objects.filter(creator_character_id=self.creator_character_id)
+        owned_order_ids = [o.order_id for o in owned_orders_query]
+
         orders_query = StationOrder.objects.filter(
             item_id=self.item.id,
             buy_order=self.buy_order,
-            ).exclude(order_id=self.order_id)
+            ).exclude(order_id__in=owned_order_ids)
 
         if self.buy_order:
-            next_order_price = orders_query.filter(price__gte=self.price, station__system__constellation__region_id=self.station.system.constellation.region_id).aggregate(max=models.Max('price'))['max']
+            next_order_info = orders_query.filter(price__gte=self.price, station__system__constellation__region_id=self.station.system.constellation.region_id).aggregate(price=models.Max('price'), volume=models.Sum('volume_remaining'))
+            next_order_price = next_order_info['price']
+            next_order_volume = next_order_info['volume']
+
         else:
-            next_order_price = orders_query.filter(price__lte=self.price, station_id=self.station.id).aggregate(min=models.Min('price'))['min']
+            next_order_info = orders_query.filter(price__lte=self.price, station_id=self.station.id).aggregate(price=models.Min('price'), volume=models.Sum('volume_remaining'))
+            next_order_price = next_order_info['price']
+            next_order_volume = next_order_info['volume']
+
+
 
         if next_order_price is not None\
                 and next_order_price > 0:
             outbid = True
             outbid_price = next_order_price
+            outbid_volume = next_order_volume
         else:
             outbid = False
             outbid_price = 0
+            outbid_volume = 0
 
-        return outbid, outbid_price
+        return outbid, outbid_price, outbid_volume
 
     class Meta:
         app_label = 'thing'

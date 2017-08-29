@@ -128,9 +128,11 @@ def orders(request):
     # Sort out possible chars
     for order in orders:
         order.z_creator_character = char_map.get(order.creator_character_id)
-        undercut, undercut_price = order.check_undercut()
+        undercut, undercut_price, undercut_volume = order.check_undercut()
 
         order.z_undercut_price = undercut_price
+
+        order.z_undercut_volume = undercut_volume
 
         if show_outbid and order.z_undercut_price == 0:
             continue

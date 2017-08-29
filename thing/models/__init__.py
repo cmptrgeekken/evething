@@ -5,6 +5,7 @@ from thing.models.region import Region
 from thing.models.constellation import Constellation
 from thing.models.system import System
 from thing.models.station import Station
+from thing.models.mapdenormalize import MapDenormalize
 
 # Entities
 from thing.models.faction import Faction

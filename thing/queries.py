@@ -536,7 +536,7 @@ WHERE so.volume_remaining > sou.volume_remaining OR so.price != sou.price
 """
 
 stationorder_seeding_qty = """
-select i.name AS item_name,
+select i.id, i.name AS item_name,
 	   s.name AS station_name,
        iss.seeder_name,
        iss.min_qty,SUM(so.volume_remaining) AS volume_remaining,
@@ -544,8 +544,7 @@ select i.name AS item_name,
     FROM thing_itemstationseed iss 
     INNER JOIN thing_item i ON iss.item_id=i.id
     INNER JOIN thing_station s ON iss.station_id=s.id
-    LEFT JOIN thing_stationorder so ON iss.station_id=so.station_id and iss.item_id=so.item_id 
-    WHERE so.buy_order IS NULL or so.buy_order=0
+    LEFT JOIN thing_stationorder so ON iss.station_id=so.station_id and iss.item_id=so.item_id and so.buy_order=0
     GROUP BY iss.item_id,s.id
     ORDER BY i.name, s.name
 """
@@ -710,6 +709,9 @@ ON DUPLICATE KEY UPDATE
     price=VALUES(price),
     volume_remaining=VALUES(volume_remaining)"""
 
+order_updatemarketorders = """
+update thing_marketorder mo INNER JOIN thing_stationorder so ON mo.order_id=so.order_id SET mo.price=so.price, mo.volume_remaining=so.volume_remaining
+"""
 
 order_calculateshipping = """
     SELECT i.volume * CASE WHEN stdest.id=storig.id THEN 0
@@ -756,15 +758,18 @@ SELECT
     c.name AS corp_name,
     c.forum_handle,
     c.discord_handle,
+    md.item_name AS moon_name,
+    COALESCE(ak.apikeyinfo_errors, 'No API') AS api_errors,
     COUNT(*)*2000000 AS tax_total,
     COALESCE((SELECT SUM(cd.amount) FROM thing_poswatch_corpdeposit cd WHERE cd.corp_id=ph.corp_id),0) AS tax_paid,
     MIN(online_timestamp) AS min_online,
     MIN(state_timestamp) AS min_state,
     (SELECT DATEDIFF(NOW(), MAX(date)) FROM thing_poswatch_poshistory where corp_id=ph.corp_id AND state in (3,4)) AS days_offline,
-    (SELECT COUNT(*) FROM thing_poswatch_poshistory WHERE date=(SELECT MAX(date) FROM thing_poswatch_poshistory WHERE corp_id=ph.corp_id AND date >= DATE_ADD(UTC_DATE(), INTERVAL -1 DAY)) AND corp_id=ph.corp_id) AS tower_count,
     (SELECT COUNT(*) FROM thing_poswatch_poshistory WHERE corp_id=ph.corp_id AND COUNT(*) > 0 GROUP BY date ORDER BY date desc LIMIT 1) AS last_tower_count
 FROM thing_poswatch_poshistory ph
     INNER JOIN thing_corporation c ON ph.corp_id=c.id
+    INNER JOIN thing_mapdenormalize md ON md.item_id=ph.moon_id
+    LEFT JOIN thing_apikey ak ON ak.corporation_id=ph.corp_id
 GROUP BY ph.corp_id
 ORDER BY c.name
 """

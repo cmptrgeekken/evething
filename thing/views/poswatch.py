@@ -57,7 +57,7 @@ def poswatch(request):
 
     total_outstanding = sum([t['tax_remaining'] for t in outstanding_tax_info])
     total_paid = sum([t['tax_paid'] for t in all_tax_info])
-    total_towers = sum([t['tower_count'] for t in all_tax_info])
+    total_towers = sum([t['last_tower_count'] for t in all_tax_info])
 
     # Render template
     out = render_page(
@@ -77,3 +77,19 @@ def poswatch(request):
         tt.finished()
 
     return out
+
+def poses(request):
+    corp_id = request.GET['id']
+
+    poses = PosWatchPosHistory.objects.filter(corp_id=corp_id)
+
+    out = render_page(
+        'thing/poses.html',
+        {
+            poses,
+        },
+        request
+    )
+
+    return out
+

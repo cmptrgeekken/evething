@@ -35,7 +35,7 @@ from decimal import Decimal, InvalidOperation
 os.environ['DJANGO_SETTINGS_MODULE'] = 'evething.settings'
 import django
 django.setup()
-from django.db import connections
+from django.db import connections, transaction
 
 from thing.models import *  # NOPEP8
 
@@ -110,6 +110,7 @@ class Importer:
         connections['import'].connection.text_factory = lambda x: unicode(x, "utf-8", "ignore")
 
     def import_all(self):
+        #time_func('MapDenormalize', self.import_map_denormalize)
         time_func('Region', self.import_region)
         time_func('Constellation', self.import_constellation)
         time_func('System', self.import_system)
@@ -155,6 +156,50 @@ class Importer:
             Region.objects.bulk_create(new)
 
         return added
+
+    def import_map_denormalize(self):
+        self.cursor.execute("SELECT * from mapDenormalize")
+
+        added = 0
+
+        new = []
+
+        existing = set(l[0] for l in MapDenormalize.objects.all().values_list('item_id'))
+
+        for row in self.cursor:
+            if int(row[0]) in existing:
+                continue
+
+            entry = MapDenormalize(
+                item_id=int(row[0]),
+                type_id=int(row[1]),
+                group_id=int(row[2]),
+                solar_system_id=int(row[3]) if row[3] else None,
+                constellation_id=int(row[4]) if row[4] else None,
+                region_id=int(row[5]) if row[5] else None,
+                orbit_id=int(row[6]) if row[6] else None,
+                x=float(row[7]),
+                y=float(row[8]),
+                z=float(row[9]),
+                radius=float(row[10]) if row[10] else None,
+                item_name=str(row[11]),
+                security=float(row[12]) if row[12] else None,
+                celestial_index=int(row[13]) if row[13] else None,
+                orbit_index=int(row[14]) if row[14] else None,
+            )
+
+            new.append(entry)
+
+            added += 1
+
+            if len(new) > 10000:
+                MapDenormalize.objects.bulk_create(new)
+                new = []
+
+        MapDenormalize.objects.bulk_create(new)
+
+        return added
+
 
     # -----------------------------------------------------------------------
     # Constellations

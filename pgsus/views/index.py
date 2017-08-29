@@ -301,13 +301,23 @@ def freighter(request):
             )
             for price_model in price_models:
                 rate, method = price_model.calc(start_system, end_system, shipping_collateral, shipping_m3)
-                if rate > 0 and (shipping_info['rate'] is None or shipping_info['rate'] > rate):
+                trips = ceil(shipping_m3 / price_model.max_m3)
+
+                rate = rate * int(trips)
+
+                if rate > 0 and ((shipping_info['rate'] is None or shipping_info['rate'] > rate)\
+                        or (price_model.max_m3 > shipping_m3 and shipping_info['max_m3'] > price_model.max_m3)):
                     shipping_info['max_m3_exceeded'] = price_model.max_m3 < shipping_m3
                     shipping_info['max_collateral_exceeded'] = price_model.max_collateral < shipping_collateral
                     shipping_info['max_collateral'] = price_model.max_collateral
                     shipping_info['max_m3'] = price_model.max_m3
                     shipping_info['rate'] = rate
                     shipping_info['method'] = '<b>%s</b> (%s)' % (price_model.name, method)
+                    shipping_info['trips'] = trips
+
+
+            if shipping_info['trips'] > 1:
+                errors.append('You need at least %d contracts to use this shipping method.' % shipping_info['trips'])
 
             if shipping_info['rate'] is None:
                 errors.append('Cannot ship between the selected systems.')

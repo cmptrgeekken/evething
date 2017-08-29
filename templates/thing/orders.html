@@ -159,6 +159,7 @@
                          <img src="{{ STATIC_URL }}pgsus/img/clippy.svg" width="13" title="Copy Next Price">
                      </button>
                     {{ order.z_undercut_price|commas }}
+                    <br/>{{ order.z_undercut_volume|commas }} units (vs. {{order.volume_remaining|commas }})
                   {% endif %}
                 </td>
                 <td class="r">
@@ -176,6 +177,7 @@
                          <img src="{{ STATIC_URL }}pgsus/img/clippy.svg" width="13" title="Copy Next Price">
                      </button>
                      {{ order.z_undercut_price|commas }}
+                     <br/>{{ order.z_undercut_volume|commas }} units (vs. {{order.volume_remaining|commas }})
                   {% endif %}
                 </td>
                 <td class="r">
