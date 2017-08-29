@@ -363,13 +363,15 @@ def pricer(request):
         except evepaste.Unparsable:
             parse_results = None
 
-    selected_stations = None
+    source_stations = None
+    destination_station = None
 
     total_volume = 0
 
     stations = dict()
 
     station_list = Station.objects.filter(load_market_orders=True)
+
     for station in station_list:
         stations[station.id] = station
 
@@ -381,13 +383,21 @@ def pricer(request):
     total_shipping = 0
     total_price = 0
     multiplier = 1
+    buy_all_tolerance = .02
 
     if request.method == 'POST':
-        selected_stations = [int(i) for i in request.POST.getlist('stations')]
+        destination_station = int(request.POST.get('destination_station'))
+        source_stations = [int(i) for i in request.POST.getlist('source_stations')]
         multiplier = int(request.POST['multiplier'])
+        buy_all_tolerance = float(request.POST['buy_all_tolerance'])
 
-        for id in selected_stations:
-            stations[id].z_selected = True
+        for id in source_stations:
+            stations[id].z_source_selected = True
+
+        stations[destination_station].z_destination_station_selected = True
+    else:
+        for id in stations:
+            stations[id].z_source_selected = True
 
     if parse_results is not None:
         for kind, results in parse_results['results']:
@@ -403,7 +413,7 @@ def pricer(request):
             items = Item.objects.filter(name__iregex=r'(^' + '$|^'.join([re.escape(n) for n in pricer_items.keys()]) + '$)')
             for item in items:
                 pricer_item = pricer_items[item.name.lower()]
-                item.get_current_orders(pricer_item['qty'], station_ids=selected_stations)
+                item.get_current_orders(pricer_item['qty'], source_station_ids=source_stations, dest_station_id=destination_station)
 
                 total_volume += item.z_ttl_volume
                 total_shipping += item.z_ttl_shipping
@@ -433,6 +443,7 @@ def pricer(request):
             price_last_updated=price_last_updated,
             stations=stations,
             multiplier=multiplier,
+            buy_all_tolerance=buy_all_tolerance,
         ),
         request,
     )

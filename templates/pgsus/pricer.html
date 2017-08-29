@@ -45,11 +45,27 @@
                     </div>
                 </div>
                 <div class="form-group">
-                      <label class="col-sm-2 col-form-label" for="stations">Stations:</label>
+                    <label class="col-sm-7 col-form-label" for="buy_all_tolerance">Buy-All Tolerance:</label>
+                    <div class="col-sm-1">
+                        <input id="buy_all_tolerance" type="number" min="0" max="1" step=".01" name="buy_all_tolerance" value="{{ buy_all_tolerance }}"/>
+                    </div>
+                </div>
+                <div class="form-group">
+                      <label class="col-sm-2 col-form-label" for="destination_station">Build station:</label>
                       <div class="col-sm-8">
-                          <select name="stations" id="stations" class="js-select2 input-lg" multiple="multiple">
+                          <select name="destination_station" id="destination_station" class="js-select2 input-lg">
                               {% for sta in stations %}
-                              <option value="{{sta}}"{%if stations[sta].z_selected %} selected{% endif %}>{{ stations[sta].short_name or stations[sta].name }}</option>
+                              <option value="{{sta}}"{%if stations[sta].z_destination_selected %} selected{% endif %}>{{ stations[sta].name }}</option>
+                              {% endfor %}
+                          </select>
+                      </div>
+                  </div>
+                <div class="form-group">
+                      <label class="col-sm-2 col-form-label" for="source_stations">Purchase Stations:</label>
+                      <div class="col-sm-8">
+                          <select name="source_stations" id="source_stations" class="js-select2 input-lg" multiple="multiple">
+                              {% for sta in stations %}
+                              <option value="{{sta}}"{%if stations[sta].z_source_selected %} selected{% endif %}>{{ stations[sta].name }}</option>
                               {% endfor %}
                           </select>
                       </div>

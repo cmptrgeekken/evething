@@ -714,7 +714,7 @@ update thing_marketorder mo INNER JOIN thing_stationorder so ON mo.order_id=so.o
 """
 
 order_calculateshipping = """
-    SELECT i.volume * CASE WHEN stdest.id=storig.id THEN 0
+    SELECT COALESCE(i.volume * CASE WHEN stdest.id=storig.id THEN 0
                      WHEN sydest.id=syorig.id THEN in_system_m3
                      WHEN cdest.region_id=corig.region_id THEN in_region_m3
                      ELSE cross_region_m3 END
@@ -725,7 +725,8 @@ order_calculateshipping = """
            + CASE WHEN stdest.id=storig.id THEN 0
                   WHEN sydest.id=syorig.id THEN in_system_base
                   WHEN cdest.region_id=corig.region_id THEN in_region_base
-                  ELSE cross_region_base END AS shipping_cost
+                  ELSE cross_region_base END 
+           , 0) AS shipping_cost
     FROM thing_freighterpricemodel pm
         INNER JOIN thing_freightersystem fsdest ON pm.id=fsdest.price_model_id
         INNER JOIN thing_freightersystem fsorig ON pm.id=fsorig.price_model_id
@@ -739,7 +740,7 @@ order_calculateshipping = """
     WHERE i.id=%s
           AND stdest.id=%s
           AND storig.id=%s
-LIMIT 1
+    LIMIT 1
 """
 
 industryjob_active_items_summary = """

@@ -96,7 +96,7 @@ class Item(models.Model):
 
         return orders.aggregate(total_volume=Sum('volume_remaining'))['total_volume']
 
-    def get_current_orders(self, quantity, buy=False, ignore_seed_items=True, station_ids=None, dest_station_id=1021577519493, item_ids=None, scale_by_repro=True):
+    def get_current_orders(self, quantity, buy=False, ignore_seed_items=True, source_station_ids=None, dest_station_id=1021577519493, item_ids=None, scale_by_repro=True):
         from thing.models.itemstationseed import ItemStationSeed
         from thing.models.stationorder import StationOrder
 
@@ -111,15 +111,14 @@ class Item(models.Model):
             for seed_item in seed_items:
                 orders = orders.exclude(item_id=seed_item.item_id, station_id=seed_item.station_id)
 
-        if station_ids is not None:
-            orders = orders.filter(station_id__in=station_ids)
+        if source_station_ids is not None:
+            orders = orders.filter(station_id__in=source_station_ids)
 
         orders = orders.select_related('item')
 
         item_id_lookup = ','.join([str(i) for i in item_ids])
 
         shipping_query = queries.order_calculateshipping % ('price', 'item_id', 'thing_stationorder.station_id', str(dest_station_id))
-
 
         # TODO: Move Shipping Calculation to separate table
         orders = orders.extra(select={
@@ -155,8 +154,14 @@ SELECT price * SUM(im.quantity) /
 
         last_updated = None
 
+        print(orders.query)
+
+
         stations = {}
         for order in orders:
+            if order.price_with_shipping is None:
+                continue
+
             order_qty = min(qty_remaining, order.volume_remaining)
 
             qty_remaining = max(0, qty_remaining-order_qty)
@@ -164,6 +169,7 @@ SELECT price * SUM(im.quantity) /
 
             order.z_order_qty = order_qty
             order.z_price_with_shipping = round(order.price_with_shipping*100)/100
+
             order.z_shipping = round(order.shipping*100)/100
 
             orders_list.append(order)
