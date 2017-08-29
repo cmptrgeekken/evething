@@ -37,7 +37,7 @@ from math import ceil
 
 import re
 
-from pgsus.parser import parse
+from pgsus.parser import parse, iter_types
 import evepaste
 
 from pprint import pprint,pformat
@@ -118,13 +118,11 @@ def buyback(request):
     total_reward = 0
     total_volume = 0
 
-    pprinted = ''
-
     buyback_qty = dict()
 
     if parse_results is not None:
         for kind, results in parse_results['results']:
-            for entry in results:
+            for entry in iter_types(kind, results):
                 buyback_item = buyback_items.filter(
                     item__name__iexact=entry['name']
                 ).first()
@@ -148,8 +146,7 @@ def buyback(request):
             parse_results=parse_results,
             total_reward=total_reward,
             total_volume=total_volume,
-            price_last_updated=price_last_updated,
-            pprinted=pprinted,
+            price_last_updated=price_last_updated
         ),
         request,
     )
@@ -399,41 +396,55 @@ def pricer(request):
         for id in stations:
             stations[id].z_source_selected = True
 
+    bad_lines = dict()
     if parse_results is not None:
-        for kind, results in parse_results['results']:
-            for entry in results:
+        for kind, parsed in parse_results['results']:
+
+            for entry in iter_types(kind, parsed):
+
                 name = entry['name'].lower()
                 if name not in pricer_items:
                     pricer_items[name] = {
                         'qty': 0,
                         'item': None,
                     }
-                pricer_items[name]['qty'] += entry['quantity']*multiplier
+                pricer_items[name]['qty'] += entry.get('quantity', 1)*multiplier
+                bad_lines[name] = True
 
-            items = Item.objects.filter(name__iregex=r'(^' + '$|^'.join([re.escape(n) for n in pricer_items.keys()]) + '$)')
-            for item in items:
-                pricer_item = pricer_items[item.name.lower()]
-                item.get_current_orders(pricer_item['qty'], source_station_ids=source_stations, dest_station_id=destination_station)
+        items = Item.objects.filter(name__iregex=r'(^' + '$|^'.join([re.escape(n) for n in pricer_items.keys()]) + '$)')
+        for item in items:
+            bad_lines[item.name.lower()] = False
+            pricer_item = pricer_items[item.name.lower()]
+            item.get_current_orders(pricer_item['qty'],
+                                    buy=False,
+                                    source_station_ids=source_stations,
+                                    dest_station_id=destination_station,
+                                    buy_tolerance=buy_all_tolerance)
 
-                total_volume += item.z_ttl_volume
-                total_shipping += item.z_ttl_shipping
-                total_price += item.z_ttl_price_plus_shipping
+            total_volume += item.z_ttl_volume
+            total_shipping += item.z_ttl_shipping
+            total_price += item.z_ttl_price_plus_shipping
 
-                total_best += item.z_ttl_price_best
-                total_worst += item.z_ttl_price_multibuy
+            total_best += item.z_ttl_price_best
+            total_worst += item.z_ttl_price_multibuy
 
-                if price_last_updated is None:
-                    price_last_updated = item.z_last_updated
-                elif item.z_last_updated is not None:
-                    price_last_updated = max(price_last_updated, item.z_last_updated)
+            if price_last_updated is None:
+                price_last_updated = item.z_last_updated
+            elif item.z_last_updated is not None:
+                price_last_updated = max(price_last_updated, item.z_last_updated)
 
-                item_list.append(item)
+            item_list.append(item)
+
+        item_list.sort(key=lambda i: i.name)
+
+    bad_lines = [k for k, v in bad_lines.items() if v]
 
     out = render_page(
         'pgsus/pricer.html',
         dict(
             items=item_list,
             text_input=text_input,
+            bad_lines=bad_lines,
             parse_results=parse_results,
             total_best=total_best,
             total_worst=total_worst,

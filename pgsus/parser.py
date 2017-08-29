@@ -203,10 +203,12 @@ def iter_types(kind, result):
             item['quantity'] = item.get('quantity', 1)
             yield item
 
+
 def get_item_by_name(name):
     return Item.objects.filter(
         name__iexact=name
     ).first()
+
 
 def int_convert(s):
     try:

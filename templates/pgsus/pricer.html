@@ -18,19 +18,19 @@
 <section class="container section-md">
     <div class="row">
         <div class="col-md-4">
+            {% if bad_lines|length > 0 %}
+                <div class="alert alert-danger" role="alert">
+                    <h4 class="alert-heading">The following lines could not be parsed:</h4>
+                    <ul>
+                        {% for line in bad_lines %}
+                            <li>{{ line }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
             <h2><a data-toggle="collapse" href="#formEntry" aria-expanded="False"><i class="fa fa-chevron-right"></i>Desired Items</a></h2>
             <form id="formEntry" class="collapse form-horizontal{% if items|length == 0 %} in{% endif %}" method="post" action="{{ url('pgsus.views.pricer') }}">
                 {{ csrf() }}
-                {% if invalid_lines %}
-                    <div class="alert alert-danger" role="alert">
-                        <h4 class="alert-heading">The following lines could not be parsed:</h4>
-                        <ul>
-                            {% for line in invalid_lines %}
-                                <li>{{ line }}</li>
-                            {% endfor %}
-                        </ul>
-                    </div>
-                {% endif %}
                 <textarea name="text_input" rows="10" style="width: 100%;" placeholder="Paste desired items here (e.g., 1000 Tritanium)">{{ text_input }}</textarea>
                 <div class="form-group">
                     <label class="col-sm-7 col-form-label" for="compress_ores">Compress Mineral Imports:</label>

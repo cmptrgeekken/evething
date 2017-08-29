@@ -96,7 +96,14 @@ class Item(models.Model):
 
         return orders.aggregate(total_volume=Sum('volume_remaining'))['total_volume']
 
-    def get_current_orders(self, quantity, buy=False, ignore_seed_items=True, source_station_ids=None, dest_station_id=1021577519493, item_ids=None, scale_by_repro=True):
+    def get_current_orders(self, quantity,
+                           buy=False,
+                           ignore_seed_items=True,
+                           source_station_ids=None,
+                           dest_station_id=1021577519493,
+                           item_ids=None,
+                           scale_by_repro=True,
+                           buy_tolerance=.02):
         from thing.models.itemstationseed import ItemStationSeed
         from thing.models.stationorder import StationOrder
 
@@ -154,9 +161,6 @@ SELECT price * SUM(im.quantity) /
 
         last_updated = None
 
-        print(orders.query)
-
-
         stations = {}
         for order in orders:
             if order.price_with_shipping is None:
@@ -195,7 +199,7 @@ SELECT price * SUM(im.quantity) /
         self.z_ttl_volume = float(self.volume) * self.z_qty
         self.z_ttl_shipping = ttl_shipping
         self.z_ttl_price_plus_shipping = ttl_price_plus_shipping
-        self.z_multibuy_test = float(ttl_price_best) < float(ttl_price_multibuy) * 0.98
+        self.z_multibuy_test = float(ttl_price_best) < float(ttl_price_multibuy) * (1-buy_tolerance)
         self.z_station_count = len(stations)
         self.z_last_updated = last_updated
 
