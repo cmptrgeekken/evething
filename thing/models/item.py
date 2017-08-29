@@ -30,7 +30,9 @@ from django.db.models import Sum, F
 
 from thing.models.itemgroup import ItemGroup
 from thing.models.marketgroup import MarketGroup
+from thing.models.orderlist import OrderList
 from thing import queries
+
 
 class Item(models.Model):
     id = models.IntegerField(primary_key=True)
@@ -113,10 +115,10 @@ class Item(models.Model):
         orders = StationOrder.objects.filter(item_id__in=item_ids)
 
         if ignore_seed_items:
-            seed_items = ItemStationSeed.objects.all()
+            seed_items = ItemStationSeed.objects.filter(item_id__in=item_ids)
 
             for seed_item in seed_items:
-                orders = orders.exclude(item_id=seed_item.item_id, station_id=seed_item.station_id)
+                orders = orders.exclude(station_id=seed_item.station_id)
 
         if source_station_ids is not None:
             orders = orders.filter(station_id__in=source_station_ids)
@@ -152,58 +154,53 @@ SELECT price * SUM(im.quantity) /
 
         qty_remaining = quantity
 
-        orders_list = []
+        station_orders = {}
 
-        ttl_price_best = 0
-        ttl_price_multibuy = 0
-        ttl_shipping = 0
-        ttl_price_plus_shipping = 0
-
-        last_updated = None
-
-        stations = {}
         for order in orders:
             if order.price_with_shipping is None:
                 continue
 
             order_qty = min(qty_remaining, order.volume_remaining)
 
-            qty_remaining = max(0, qty_remaining-order_qty)
-            ttl_price_best += order_qty * float(order.price)
+            qty_remaining = max(0, qty_remaining - order_qty)
 
             order.z_order_qty = order_qty
             order.z_price_with_shipping = round(order.price_with_shipping*100)/100
 
             order.z_shipping = round(order.shipping*100)/100
 
-            orders_list.append(order)
-
-            last_updated = order.last_updated if last_updated is None else max(last_updated, order.last_updated)
-
             if order_qty > 0:
-                if order.station_id not in stations:
-                    stations[order.station_id] = 0
-                stations[order.station_id] += 1
+                if order.station_id not in station_orders:
+                    station_orders[order.station_id] = OrderList(order.item_id,
+                                                                 order.item.name,
+                                                                 order.station_id,
+                                                                 order.station.name,
+                                                                 buy_tolerance)
 
-                ttl_shipping += order.z_shipping*order_qty
-                ttl_price_plus_shipping += order.z_price_with_shipping*order_qty
-
-                ttl_price_multibuy = (quantity - qty_remaining) * float(order.price)
+                station_orders[order.station_id].add_order(order)
+            else:
+                # Do not display orders beyond what is needed
+                break
 
         self.z_qty_remaining = qty_remaining
         self.z_qty = quantity - qty_remaining
-        self.z_ttl_price_best = ttl_price_best
-        self.z_ttl_price_multibuy = ttl_price_multibuy
-        self.z_orders = orders_list
-        self.z_last_updated = last_updated
-        self.z_ttl_volume = float(self.volume) * self.z_qty
-        self.z_ttl_shipping = ttl_shipping
-        self.z_ttl_price_plus_shipping = ttl_price_plus_shipping
-        self.z_multibuy_test = float(ttl_price_best) < float(ttl_price_multibuy) * (1-buy_tolerance)
-        self.z_station_count = len(stations)
-        self.z_last_updated = last_updated
+        self.z_qty_needed = quantity
+        self.z_orders = station_orders
 
-        return orders_list, ttl_price_best, ttl_price_multibuy, last_updated, qty_remaining, len(stations)
+        self.z_ttl_price_best = 0
+        self.z_ttl_price_multibuy = 0
+        self.z_ttl_volume = 0
+        self.z_ttl_shipping = 0
+        self.z_ttl_price_with_shipping = 0
+
+        for sid in station_orders:
+            order_list = station_orders[sid]
+
+            self.z_ttl_price_best += order_list.total_price_best
+            self.z_ttl_price_multibuy += order_list.total_price_multibuy
+            self.z_ttl_volume += order_list.total_volume
+            self.z_ttl_shipping += order_list.total_shipping
+            self.z_ttl_price_with_shipping += order_list.total_price_with_shipping
 
     def get_history_avg(self, days=5, region_id=10000002, issued=None, pct=1.0, reprocess=False):
         from thing.models.pricehistory import PriceHistory

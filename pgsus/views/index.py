@@ -372,15 +372,15 @@ def pricer(request):
     for station in station_list:
         stations[station.id] = station
 
-    item_list = []
     pricer_items = {}
     price_last_updated = None
     total_best = 0
     total_worst = 0
     total_shipping = 0
-    total_price = 0
+    total_price_with_shipping = 0
     multiplier = 1
     buy_all_tolerance = .02
+    has_unfulfilled = False
 
     if request.method == 'POST':
         destination_station = int(request.POST.get('destination_station'))
@@ -391,11 +391,13 @@ def pricer(request):
         for id in source_stations:
             stations[id].z_source_selected = True
 
-        stations[destination_station].z_destination_station_selected = True
+        stations[destination_station].z_destination_selected = True
     else:
         for id in stations:
             stations[id].z_source_selected = True
 
+    station_orders = dict()
+    items_list = []
     bad_lines = dict()
     if parse_results is not None:
         for kind, parsed in parse_results['results']:
@@ -412,6 +414,9 @@ def pricer(request):
                 bad_lines[name] = True
 
         items = Item.objects.filter(name__iregex=r'(^' + '$|^'.join([re.escape(n) for n in pricer_items.keys()]) + '$)')
+
+        items = items.order_by('name')
+
         for item in items:
             bad_lines[item.name.lower()] = False
             pricer_item = pricer_items[item.name.lower()]
@@ -423,34 +428,63 @@ def pricer(request):
 
             total_volume += item.z_ttl_volume
             total_shipping += item.z_ttl_shipping
-            total_price += item.z_ttl_price_plus_shipping
 
             total_best += item.z_ttl_price_best
             total_worst += item.z_ttl_price_multibuy
+            total_price_with_shipping += item.z_ttl_price_with_shipping
 
-            if price_last_updated is None:
-                price_last_updated = item.z_last_updated
-            elif item.z_last_updated is not None:
-                price_last_updated = max(price_last_updated, item.z_last_updated)
+            items_list.append(item)
 
-            item_list.append(item)
+            if item.z_qty_remaining > 0:
+                has_unfulfilled = True
 
-        item_list.sort(key=lambda i: i.name)
+            for sid in item.z_orders:
+                order_list = item.z_orders[sid]
+                if order_list.station_name not in station_orders:
+                    station_orders[order_list.station_name] = dict(
+                        orders=[],
+                        total_volume=0,
+                        total_price_multibuy=0,
+                        total_price_best=0,
+                        total_shipping=0,
+                        total_price_with_shipping=0,
+                        last_updated=None,
+                        multibuy_all='',
+                        multibuy_best='',
+                    )
+
+                entry = station_orders[order_list.station_name]
+                entry['total_volume'] += order_list.total_volume
+                entry['total_price_multibuy'] += order_list.total_price_multibuy
+                entry['total_price_best'] += order_list.total_price_best
+                entry['total_shipping'] += order_list.total_shipping
+                entry['total_price_with_shipping'] += order_list.total_price_with_shipping
+                entry['last_updated'] = order_list.last_updated if entry['last_updated'] is None else max(entry['last_updated'], order_list.last_updated)
+                print(len(order_list.orders))
+
+                entry['multibuy_all'] += '%s x%d\n' % (order_list.item_name, order_list.total_quantity)
+
+                if order_list.multibuy_ok:
+                    entry['multibuy_best'] += '%s x%d\n' % (order_list.item_name, order_list.total_quantity)
+
+                entry['orders'].append(order_list)
 
     bad_lines = [k for k, v in bad_lines.items() if v]
 
     out = render_page(
         'pgsus/pricer.html',
         dict(
-            items=item_list,
+            items_list=items_list,
+            station_orders=station_orders,
             text_input=text_input,
             bad_lines=bad_lines,
+            has_unfulfilled=has_unfulfilled,
             parse_results=parse_results,
             total_best=total_best,
             total_worst=total_worst,
             total_volume=total_volume,
             total_shipping=total_shipping,
-            total_price=total_price,
+            total_price_with_shipping=total_price_with_shipping,
             price_last_updated=price_last_updated,
             stations=stations,
             multiplier=multiplier,
@@ -660,6 +694,7 @@ def seeding(request):
     )
 
     return out
+
 
 def get_cursor(db='default'):
     return connections[db].cursor()
