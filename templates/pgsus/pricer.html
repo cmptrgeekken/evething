@@ -53,9 +53,10 @@
                 <div class="form-group">
                       <label class="col-sm-2 col-form-label" for="destination_station">Build station:</label>
                       <div class="col-sm-8">
-                          <select name="destination_station" id="destination_station" class="js-select2 input-lg">
+                          <select name="destination_station" id="destination_station" class="js-select2 input-lg" required="required">
+                              <option value=""></option>
                               {% for sta in stations %}
-                              <option value="{{sta}}"{%if stations[sta].z_destination_selected %} selected{% endif %}>{{ stations[sta].name }}</option>
+                              <option value="{{sta.id}}"{% if sta.z_destination_selected %} selected{% endif %}>{{ sta.name }}</option>
                               {% endfor %}
                           </select>
                       </div>
@@ -65,7 +66,7 @@
                       <div class="col-sm-8">
                           <select name="source_stations" id="source_stations" class="js-select2 input-lg" multiple="multiple">
                               {% for sta in stations %}
-                              <option value="{{sta}}"{%if stations[sta].z_source_selected %} selected{% endif %}>{{ stations[sta].name }}</option>
+                              <option value="{{sta.id}}"{% if sta.z_source_selected %} selected{% endif %}>{{ sta.name }}</option>
                               {% endfor %}
                           </select>
                       </div>
@@ -78,14 +79,32 @@
         {% if items_list|length > 0 %}
         <div class="row">
             <div class="col-md-12">
-                <h2>
-                    Items to Purchase
-                </h2>
                 <div class="form-group">
-                    {% if has_unfulfilled %}
-                    <h3>Could Not Fulfill!</h3>
                     <div class="row">
                         <div class="col-md-6">
+                            <h3>Cost Summary</h3>
+                            <table class="table table-bordered">
+                                <tr>
+                                    <th class="align-right hidden-xs">Volume</th>
+                                    <td class="align-right hidden-xs">{{ total_volume|commas(2) }} m<sup>3</sup></td>
+                                </tr>
+                                <tr>
+                                    <th class="align-right">Shipping</th>
+                                    <td class="align-right">{{ total_shipping|commas(2) }}</td>
+                                </tr>
+                                <tr>
+                                    <th class="align-right hidden-xs">Grand Total (Buy All)</th>
+                                    <td class="align-right">{{ (total_shipping+total_worst)|commas(2) }}</td>
+                                </tr>
+                                <tr>
+                                    <th class="align-right">Grand Total (Optimal)</th>
+                                    <td class="align-right">{{ total_price_with_shipping|commas(2) }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        {% if has_unfulfilled %}
+                        <div class="col-md-6">
+                            <h3>Could Not Fulfill</h3>
                             <table class="table table-bordered">
                                 <tr>
                                     <th>Item</th>
@@ -101,10 +120,10 @@
                                 {% endfor %}
                             </table>
                         </div>
+                        {% endif %}
                     </div>
-
-                    {% endif %}
                 </div>
+
 
                 {% for sname, orders in station_orders.items() %}
                 <div class="form-group">
@@ -205,7 +224,6 @@
                         <th class="align-right">Shipping</th>
                         <th class="align-right">{{ total_shipping|commas }}</th>
                         <th class="align-right">{{ total_shipping|commas }}</th>
-                        <td></td>
                     </tr>
                     <tr>
                         <td></td>
@@ -234,6 +252,28 @@
                             <h4 class="modal-title">Market for {{ o.item_name }} in {{ sname }} (Need {{ o.total_quantity|commas }} Items)</h4>
                         </div>
                         <div class="modal-body modal-body-scroll">
+                            <h3>Buy-All Points</h3>
+                            <table class="table table-striped">
+                                <tr>
+                                    <th class="align-right">Quantity</th>
+                                    <th class="align-right">Price</th>
+                                    <th class="align-right">Total</th>
+                                    <th>Copy</th>
+                                </tr>
+                                {% for buy_all in o.get_buy_points() %}
+                                <tr>
+                                    <td class="align-right">{{ buy_all['qty']|commas }}</td>
+                                    <td class="align-right">{{ buy_all['price']|commas }} ISK</td>
+                                    <td class="align-right">{{ buy_all['total']|commas }} ISK</td>
+                                    <td>
+                                        <button class="btn btn-xs" type="button" data-clipboard-text="{{ o.item_name }} x{{ buy_all['qty'] }}">
+                                            <img src="{{ STATIC_URL }}pgsus/img/clippy.svg" width="13" title="Copy to clipboard">
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </table>
+                            <h3>Orders</h3>
                             <table class="table table-striped">
                                 <tr>
                                     <th>Quantity</th>
@@ -242,7 +282,7 @@
                                     <th>Total</th>
                                 </tr>
                                 {% for order in o.orders %}
-                                <tr class="{% if order.z_order_qty > 0 %}market-order-buy{% endif %}">
+                                <tr>
                                     <td class="align-right">
                                         <div>{{ order.volume_remaining|commas }}</div>
                                         {% if order.z_order_qty > 0 %}

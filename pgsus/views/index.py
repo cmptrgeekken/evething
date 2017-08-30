@@ -396,6 +396,10 @@ def pricer(request):
         for id in stations:
             stations[id].z_source_selected = True
 
+    stations = [stations[id] for id in stations]
+
+    stations.sort(key=lambda s: s.name)
+
     station_orders = dict()
     items_list = []
     bad_lines = dict()

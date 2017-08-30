@@ -58,16 +58,15 @@ def tablecols(data, cols):
 re_digits_nondigits = re.compile(r'\d+|\D+')
 
 
+
 @register.filter
 @stringfilter
-def commas(value):
-    parts = re_digits_nondigits.findall(value)
-    for i in xrange(len(parts)):
-        s = parts[i]
-        if s.isdigit():
-            parts[i] = _commafy(s)
-            break
-    return ''.join(parts)
+def commas(value, round_to=0):
+    value = float(value)
+    if round_to is not None:
+        value = round(value, round_to)
+
+    return ('{0:,.%df}' % round_to).format(value)
 
 @register.filter
 def round_price(value):

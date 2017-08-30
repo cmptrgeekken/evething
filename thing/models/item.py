@@ -178,6 +178,7 @@ SELECT price * SUM(im.quantity) /
                                                                  buy_tolerance)
 
                 station_orders[order.station_id].add_order(order)
+
             else:
                 # Do not display orders beyond what is needed
                 break
