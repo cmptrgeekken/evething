@@ -152,7 +152,10 @@ def item_contracts(request):
             contract.z_reward_low = True
 
         contract.z_diff = float(contract.z_reward) - contract.z_calculated_reward
-        contract.z_diff_pct = round(contract.z_diff / contract.z_calculated_reward, 4)*100
+        if contract.z_calculated_reward > 0:
+            contract.z_diff_pct = round(contract.z_diff / contract.z_calculated_reward, 4)*100
+        else:
+            contract.z_diff_pct = 'N/A'
 
     # Render template
     return render_page(

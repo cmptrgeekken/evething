@@ -152,42 +152,42 @@
                 <td class="r">{{ order.volume_remaining|humanize }}</td>
                 <td class="r">{{ order.volume_entered|humanize }}</td>
                 {% if order.buy_order %}
-                <td class="r"><span class="neg">{{ order.price|commas }}</span></td>
+                <td class="r"><span class="neg">{{ order.price|commas(2) }}</span></td>
                 <td class="neg">
                     {% if order.z_undercut_price > 0: %}
                        <button class="btn btn-xs" type="button" data-clipboard-text="{{ order.z_undercut_price + bid_adjust}}">
                          <img src="{{ STATIC_URL }}pgsus/img/clippy.svg" width="13" title="Copy Next Price">
                      </button>
-                    {{ order.z_undercut_price|commas }}
+                    {{ order.z_undercut_price|commas(2) }}
                     <br/>{{ order.z_undercut_volume|commas }} units (vs. {{order.volume_remaining|commas }})
                   {% endif %}
                 </td>
                 <td class="r">
-                  <span class="neg">{{ order.total_price|commas }}</span>
+                  <span class="neg">{{ order.total_price|commas(2) }}</span>
                   {% if order.z_undercut_price > 0: %}
                   <p class="neg">Diff: {{ ((order.z_undercut_price - order.price) * order.volume_remaining)|commas }}</p>
                   {% endif %}
                 </td>
                 {% else %}
-                <td class="r"><span class="pos">{{ order.price|commas }}</span></td>
+                <td class="r"><span class="pos">{{ order.price|commas(2) }}</span></td>
                 <td class="neg">
                   {% if order.z_undercut_price > 0: %}
                      <!-- Trigger -->
                      <button class="btn btn-xs" type="button" data-clipboard-text="{{ order.z_undercut_price - bid_adjust }}">
                          <img src="{{ STATIC_URL }}pgsus/img/clippy.svg" width="13" title="Copy Next Price">
                      </button>
-                     {{ order.z_undercut_price|commas }}
+                     {{ order.z_undercut_price|commas(2) }}
                      <br/>{{ order.z_undercut_volume|commas }} units (vs. {{order.volume_remaining|commas }})
                   {% endif %}
                 </td>
                 <td class="r">
-                  <span class="pos">{{ order.total_price|commas }}</span>
+                  <span class="pos">{{ order.total_price|commas(2) }}</span>
                   {% if order.z_undercut_price > 0: %}
-                  <p class="neg">Diff: {{ ((order.z_undercut_price - order.price) * order.volume_remaining)|commas }}</p>
+                  <p class="neg">Diff: {{ ((order.z_undercut_price - order.price) * order.volume_remaining)|commas(2) }}</p>
                   {% endif %}
                 </td>
                 {% endif %}
-                <td class="r">{{ order.escrow|commas }}</td>
+                <td class="r">{{ order.escrow|commas(2) }}</td>
                 <td class="r">{{ order.z_remaining|shortduration }}</td>
               </tr>
               {% else %}

@@ -62,8 +62,9 @@ class Bookmarks(APITask):
                 is_valid_name = False
 
                 for g in item_groups:
-                    if memo.endswith(r'\( %s \)' % g):
+                    if memo.endswith('( %s )' % g):
                         is_valid_name = True
+                        break
 
                 if not is_valid_name:
                     continue
