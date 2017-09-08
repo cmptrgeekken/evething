@@ -164,6 +164,9 @@ class PriceUpdater(APITask):
 
         order_ct = len(sql_inserts)
 
+        if order_ct == 0:
+            return
+
         sql = ','.join(sql_inserts)
         self.log_debug('Writing %d orders to DB' % order_ct)
 
