@@ -29,8 +29,6 @@ urlpatterns += patterns(
     url(r'^pricer$', 'pricer', name='pricer'),
     url(r'^overpriced$', 'overpriced', name='overpriced'),
     url(r'^seeding', 'seeding', name='seeding'),
-    url(r'^calculator$', 'calculator', name='calculator')
-
 )
 
 urlpatterns += patterns(

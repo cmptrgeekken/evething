@@ -33,6 +33,8 @@ from thing.models import *  # NOPEP8
 from thing.stuff import *  # NOPEP8
 from thing.helpers import humanize
 
+from pgsus import Calculator
+
 from math import ceil
 
 import re
@@ -381,12 +383,16 @@ def pricer(request):
     multiplier = 1
     buy_all_tolerance = .02
     has_unfulfilled = False
+    compress_ores = False
+    compressed_minerals = None
+    mineral_value_ratio = None
 
     if request.method == 'POST':
         destination_station = int(request.POST.get('destination_station'))
         source_stations = [int(i) for i in request.POST.getlist('source_stations')]
         multiplier = int(request.POST['multiplier'])
         buy_all_tolerance = float(request.POST['buy_all_tolerance'])
+        compress_ores = 'compress_ores' in request.POST
 
         for id in source_stations:
             stations[id].z_source_selected = True
@@ -419,16 +425,60 @@ def pricer(request):
 
         items = Item.objects.filter(name__iregex=r'(^' + '$|^'.join([re.escape(n) for n in pricer_items.keys()]) + '$)')
 
-        items = items.order_by('name')
+        items = list(items.order_by('name'))
+
+        minerals_to_compress = dict()
+
+        mineral_items = []
+
+        for item in items[:]:
+            item.z_orders_loaded = False
+
+            if compress_ores:
+                if item.item_group.name in ['Mineral', 'Ice Product']:
+                    bad_lines[item.name.lower()] = False
+                    pricer_item = pricer_items[item.name.lower()]
+                    minerals_to_compress[item.id] = int(pricer_item['qty'])
+                    mineral_items.append(item)
+                    items.remove(item)
+
+        if len(minerals_to_compress.values()) > 0:
+            calculator = Calculator()
+            results =\
+                calculator.calculate_optimal_ores(minerals_to_compress,
+                                                  source_station_ids=source_stations,
+                                                  dest_station_id=destination_station,
+                                                  allow_mineral_purchase=False)
+            fulfilled_all = True
+            all_items = None
+
+            if not results:
+                for i in mineral_items:
+                    items.append(i)
+            else:
+                all_items, fulfilled_all, mineral_value_ratio, compressed_minerals = results
+
+            if not fulfilled_all:
+                for mineral in compressed_minerals:
+                    if mineral.z_desired_qty > mineral.z_fulfilled_qty:
+                        pricer_items[mineral.name.lower()] = dict(qty=mineral.z_desired_qty - mineral.z_fulfilled_qty)
+                        items.append(mineral)
+
+            if all_items is not None:
+                for item in all_items:
+                    item.z_orders_loaded = True
+                    items.append(item)
 
         for item in items:
             bad_lines[item.name.lower()] = False
-            pricer_item = pricer_items[item.name.lower()]
-            item.get_current_orders(pricer_item['qty'],
-                                    buy=False,
-                                    source_station_ids=source_stations,
-                                    dest_station_id=destination_station,
-                                    buy_tolerance=buy_all_tolerance)
+
+            if not item.z_orders_loaded:
+                pricer_item = pricer_items[item.name.lower()]
+                item.get_current_orders(pricer_item['qty'],
+                                        buy=False,
+                                        source_station_ids=source_stations,
+                                        dest_station_id=destination_station,
+                                        buy_tolerance=buy_all_tolerance)
 
             total_volume += item.z_ttl_volume
             total_shipping += item.z_ttl_shipping
@@ -481,6 +531,7 @@ def pricer(request):
             items_list=items_list,
             station_orders=station_orders,
             text_input=text_input,
+            compress_ores=compress_ores,
             bad_lines=bad_lines,
             has_unfulfilled=has_unfulfilled,
             parse_results=parse_results,
@@ -493,11 +544,14 @@ def pricer(request):
             stations=stations,
             multiplier=multiplier,
             buy_all_tolerance=buy_all_tolerance,
+            compressed_minerals=compressed_minerals.values() if compressed_minerals is not None else None,
+            mineral_value_ratio=mineral_value_ratio,
         ),
         request,
     )
 
     return out
+
 
 def couriers(request):
     out = render_page(

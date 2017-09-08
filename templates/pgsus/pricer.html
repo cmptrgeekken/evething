@@ -17,7 +17,7 @@
 
 <section class="container section-md">
     <div class="row">
-        <div class="col-md-4">
+        <div class="col-md-6">
             {% if bad_lines|length > 0 %}
                 <div class="alert alert-danger" role="alert">
                     <h4 class="alert-heading">The following lines could not be parsed:</h4>
@@ -76,6 +76,38 @@
                 </button>
             </form>
         </div>
+            {% if compressed_minerals %}
+            <div class="col-md-4">
+                <h3>Mineral Breakdown</h3>
+                <table class="table table-bordered">
+                    <tr>
+                        <th>Mineral</th>
+                        <th>Desired</th>
+                        <th>Fulfilled</th>
+                        <th>Price</th>
+                        <th>Compressed Price</th>
+                    </tr>
+                    {% for m in compressed_minerals: %}
+                    <tr>
+                        <th>{{ m.name }}</th>
+                        <td>{{ m.z_desired_qty|commas }}</td>
+                        <td>
+                            <span class="{% if m.z_desired_qty > m.z_fulfilled_qty %}neg{% else %}pos{% endif %}">
+                                {{ m.z_fulfilled_qty|commas }}
+                            </span>
+                        </td>
+                        <td>{{ m.sell_fivepct_price|commas(2) }}</td>
+                        <td>
+                            <span class="{% if mineral_value_ratio > 1 %}neg{% else %}pos{% endif %}">
+                                {{ (m.sell_fivepct_price * mineral_value_ratio)|commas(2) }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            </div>
+            {% endif %}
+
         {% if items_list|length > 0 %}
         <div class="row">
             <div class="col-md-12">
@@ -307,9 +339,9 @@
                                         {% endif %}
                                     </td>
                                     <td>
-                                        <div>{{ (order.price|float+order.z_shipping)|commas }} ISK</div>
+                                        <div>{{ (order.price+order.z_shipping)|commas }} ISK</div>
                                         {% if order.z_order_qty > 0 %}
-                                            <div><abbr title="Purchase Cost">{{ ((order.price|float+order.z_shipping)*order.z_order_qty)|commas }} ISK</abbr></div>
+                                            <div><abbr title="Purchase Cost">{{ ((order.price+order.z_shipping)*order.z_order_qty)|commas }} ISK</abbr></div>
                                         {% endif %}
                                     </td>
                                 </tr>

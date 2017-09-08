@@ -55,3 +55,6 @@ tr:nth-child(odd).market-order-buy>td, .table-striped>tbody>tr:nth-child(odd).ma
 input[type="date"] {
     line-height: 100%;
 }
+
+span.pos { color: #009800; }
+span.neg { color: #FF0000; }

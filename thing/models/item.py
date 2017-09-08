@@ -164,10 +164,10 @@ SELECT price * SUM(im.quantity) /
 
             qty_remaining = max(0, qty_remaining - order_qty)
 
-            order.z_order_qty = order_qty
+            order.z_order_qty = Decimal(order_qty)
             order.z_price_with_shipping = round(order.price_with_shipping*100)/100
 
-            order.z_shipping = round(order.shipping*100)/100
+            order.z_shipping = Decimal(round(order.shipping*100)/100)
 
             if order_qty > 0:
                 if order.station_id not in station_orders:
