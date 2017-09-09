@@ -107,7 +107,7 @@ class Calculator:
                         continue
 
                     idx = minidlookup[mineral.id]
-                    repro_qty = float(mineral.z_qty) * .875
+                    repro_qty = math.ceil(float(mineral.z_qty) * .875)
                     mineral_value += float(mineral.sell_fivepct_price) * repro_qty
                     max_qty = max(max_qty, int(requirements[idx]) / int(repro_qty))
 
