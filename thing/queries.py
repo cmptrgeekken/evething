@@ -790,19 +790,18 @@ FROM (%s) taxes;
 """ % poswatch_taxman_subquery
 
 poswatch_poshistory_fix = """
-INSERT INTO thing_poswatch_poshistory(corp_id,type_id,pos_id,state,location_id,date,moon_id,taxable)
-SELECT corp_id,type_id,pos_id,state,location_id,DATE_ADD(ph.min_date, INTERVAL n DAY) AS date,moon_id,CAST(taxable AS UNSIGNED) 
-FROM (SELECT corp_id,type_id,pos_id,state,location_id,DATE(LEAST(MIN(state_timestamp), MIN(online_timestamp))) AS min_date,moon_id,taxable 
+SELECT corp_id,type_id,pos_id,state,location_id,DATE_ADD(ph.min_date, INTERVAL n DAY) AS date,moon_id,CAST(taxable AS UNSIGNED)
+FROM (SELECT corp_id,type_id,pos_id,state,location_id,DATE(GREATEST(MAX(state_timestamp), MAX(online_timestamp))) AS max_date, DATE(LEAST(MIN(state_timestamp), MIN(online_timestamp))) AS min_date,moon_id,taxable
       FROM thing_poswatch_poshistory
-      WHERE taxable=1 
+      WHERE taxable=1
             AND state_timestamp IS NOT NULL
             AND (state_timestamp IS NULL OR state_timestamp >= '2016-12-19')  -- Alliance foundation date
             AND (online_timestamp IS NULL OR online_timestamp >= '2016-12-19')
       GROUP BY corp_id,pos_id) ph
-    INNER JOIN thing_numbers 
+    INNER JOIN thing_numbers
 WHERE ph.min_date IS NOT NULL
-    AND n > 0 
-    AND n < DATEDIFF(NOW(), ph.min_date)
+    AND n > 0
+    AND n < DATEDIFF(ph.max_date, ph.min_date)
     AND NOT EXISTS (SELECT 1 FROM thing_poswatch_poshistory p WHERE p.corp_id=ph.corp_id and p.pos_id=ph.pos_id AND p.date=DATE_ADD(ph.min_date, INTERVAL n DAY))
     AND corp_id=%d
 """

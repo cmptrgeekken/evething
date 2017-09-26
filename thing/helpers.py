@@ -62,7 +62,10 @@ re_digits_nondigits = re.compile(r'\d+|\D+')
 @register.filter
 @stringfilter
 def commas(value, round_to=0):
-    value = float(value)
+    try:
+        value = float(value)
+    except ValueError:
+        return None
     if round_to is not None:
         value = round(value, round_to)
 
