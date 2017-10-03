@@ -388,7 +388,7 @@ def pricer(request):
     total_shipping = 0
     total_price_with_shipping = 0
     multiplier = 1
-    buy_all_tolerance = .02
+    buy_all_tolerance = 2
     has_unfulfilled = False
     compress_ores = False
 
@@ -489,7 +489,7 @@ def pricer(request):
                                         buy=False,
                                         source_station_ids=source_stations,
                                         dest_station_id=destination_station,
-                                        buy_tolerance=buy_all_tolerance)
+                                        buy_tolerance=buy_all_tolerance/100)
 
             total_volume += item.z_ttl_volume
             total_shipping += item.z_ttl_shipping

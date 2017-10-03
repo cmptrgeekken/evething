@@ -743,6 +743,34 @@ order_calculateshipping = """
     LIMIT 1
 """
 
+order_calculateshipping_breakdown = """
+    SELECT COALESCE(CASE WHEN stdest.id=storig.id THEN 0
+                     WHEN sydest.id=syorig.id THEN in_system_m3
+                     WHEN cdest.region_id=corig.region_id THEN in_region_m3
+                     ELSE cross_region_m3 END, 0) AS shipping_m3,
+           COALESCE(CASE WHEN stdest.id=storig.id THEN 0
+                       WHEN sydest.id=syorig.id THEN in_system_collateral
+                       WHEN cdest.region_id=corig.region_id THEN in_region_collateral
+                       ELSE cross_region_collateral END, 0) AS shipping_collateral,
+           COALESCE(CASE WHEN stdest.id=storig.id THEN 0
+                  WHEN sydest.id=syorig.id THEN in_system_base
+                  WHEN cdest.region_id=corig.region_id THEN in_region_base
+                  ELSE cross_region_base END 
+           , 0) AS shipping_base
+    FROM thing_freighterpricemodel pm
+        INNER JOIN thing_freightersystem fsdest ON pm.id=fsdest.price_model_id
+        INNER JOIN thing_freightersystem fsorig ON pm.id=fsorig.price_model_id
+        INNER JOIN thing_system sydest ON fsdest.system_id=sydest.id
+        INNER JOIN thing_system syorig ON fsorig.system_id=syorig.id
+        INNER JOIN thing_constellation cdest ON sydest.constellation_id=cdest.id
+        INNER JOIN thing_constellation corig ON syorig.constellation_id=corig.id
+        INNER JOIN thing_station stdest ON fsdest.system_id=stdest.system_id
+        INNER JOIN thing_station storig ON fsorig.system_id=storig.system_id
+    WHERE stdest.id=%s
+          AND storig.id=%s
+    LIMIT 1
+"""
+
 industryjob_active_items_summary = """
 SELECT i.name,
        SUM(ij.runs)*bp.count 
