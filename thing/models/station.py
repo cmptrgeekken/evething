@@ -68,6 +68,9 @@ class Station(models.Model):
     def get_system_name(self):
         return self.system.name if self.system is not None else "[Unknown]"
 
+    def get_display_name(self):
+        return self.short_name if self.short_name else self.name
+
     # Build the short name when this object is saved
     def save(self, *args, **kwargs):
         self._make_shorter_name()

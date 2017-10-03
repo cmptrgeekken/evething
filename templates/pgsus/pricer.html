@@ -62,7 +62,7 @@
                           <select name="destination_station" id="destination_station" class="js-select2 input-lg" required="required">
                               <option value=""></option>
                               {% for sta in stations %}
-                              <option value="{{sta.id}}"{% if sta.z_destination_selected %} selected{% endif %}>{{ sta.name }}</option>
+                              <option value="{{sta.id}}"{% if sta.z_destination_selected %} selected{% endif %}>{{ sta.get_display_name() }}</option>
                               {% endfor %}
                           </select>
                       </div>
@@ -72,7 +72,7 @@
                       <div class="col-sm-8">
                           <select name="source_stations" id="source_stations" class="js-select2 input-lg" multiple="multiple">
                               {% for sta in stations %}
-                              <option value="{{sta.id}}"{% if sta.z_source_selected %} selected{% endif %}>{{ sta.name }}</option>
+                              <option value="{{sta.id}}"{% if sta.z_source_selected %} selected{% endif %}>{{ sta.get_display_name() }}</option>
                               {% endfor %}
                           </select>
                       </div>
