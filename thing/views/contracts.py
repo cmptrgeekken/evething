@@ -184,7 +184,7 @@ def courier_contracts(request):
 
     contracts_to_display = Contract.objects.select_related('issuer_char', 'issuer_corp', 'start_station', 'end_station').filter(
         contract_id__in=contract_ids,
-    ).exclude(status__in=['Completed', 'Deleted'])
+    ).exclude(status__in=['Rejected', 'Failed', 'Completed', 'Deleted'])
 
     contract_list, char_map, corp_map, alliance_map = populate_contracts(contracts_to_display)
 
