@@ -384,8 +384,10 @@ def pricer(request):
     buy_all_tolerance = .02
     has_unfulfilled = False
     compress_ores = False
+
     compressed_minerals = None
     mineral_value_ratio = None
+    total_mineral_price = None
 
     if request.method == 'POST':
         destination_station = int(request.POST.get('destination_station'))
@@ -456,7 +458,7 @@ def pricer(request):
                 for i in mineral_items:
                     items.append(i)
             else:
-                all_items, fulfilled_all, mineral_value_ratio, compressed_minerals = results
+                all_items, fulfilled_all, mineral_value_ratio, compressed_minerals, total_mineral_price = results
 
             if not fulfilled_all:
                 for mineral in compressed_minerals:
@@ -514,7 +516,6 @@ def pricer(request):
                 entry['total_shipping'] += order_list.total_shipping
                 entry['total_price_with_shipping'] += order_list.total_price_with_shipping
                 entry['last_updated'] = order_list.last_updated if entry['last_updated'] is None else max(entry['last_updated'], order_list.last_updated)
-                print(len(order_list.orders))
 
                 entry['multibuy_all'] += '%s x%d\n' % (order_list.item_name, order_list.total_quantity)
 
@@ -544,8 +545,9 @@ def pricer(request):
             stations=stations,
             multiplier=multiplier,
             buy_all_tolerance=buy_all_tolerance,
-            compressed_minerals=compressed_minerals.values() if compressed_minerals is not None else None,
+            compressed_minerals=compressed_minerals,
             mineral_value_ratio=mineral_value_ratio,
+            total_mineral_price=total_mineral_price,
         ),
         request,
     )

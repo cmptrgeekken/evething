@@ -199,7 +199,7 @@ class Calculator:
 
                 mineral_value_ratio = total_price / full_mineral_value
 
-                return all_items, fulfilled_all, mineral_value_ratio, minerals
+                return all_items, fulfilled_all, mineral_value_ratio, minerals.values(), total_price
             else:
                 print("No solution found...")
 
