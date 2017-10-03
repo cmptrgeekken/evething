@@ -73,7 +73,7 @@ class Calculator:
         dest_station_id: station_id
             - ID of the station where the minerals / ores are required
     """
-    def calculate_optimal_ores(self, target_minerals, max_mineral_overages=None, allow_mineral_purchase=True, optimization_strategy=OPTIMIZATION_PRICE, source_station_ids=None, dest_station_id=None):
+    def calculate_optimal_ores(self, target_minerals, max_mineral_overages=None, allow_mineral_purchase=True, optimization_strategy=OPTIMIZATION_PRICE, source_station_ids=None, dest_station_id=None, reprocess_pct=0.875):
         mineralids = target_minerals.keys()
         requirements = target_minerals.values()
         overage = [max_mineral_overages[key]
@@ -107,7 +107,7 @@ class Calculator:
                         continue
 
                     idx = minidlookup[mineral.id]
-                    repro_qty = math.ceil(float(mineral.z_qty) * .875)
+                    repro_qty = math.ceil(float(mineral.z_qty) * reprocess_pct)
                     mineral_value += float(mineral.sell_fivepct_price) * repro_qty
                     max_qty = max(max_qty, int(requirements[idx]) / int(repro_qty))
 
@@ -174,7 +174,7 @@ class Calculator:
             ]
 
         for obj_fn in obj_fns:
-            results = self.solve(obj_fn, mineralids, requirements, overage, items, item_maxes, source_station_ids=source_station_ids, dest_station_id=dest_station_id)
+            results = self.solve(obj_fn, mineralids, requirements, overage, items, item_maxes, source_station_ids=source_station_ids, dest_station_id=dest_station_id, reprocess_pct=reprocess_pct)
 
             if results is not None:
                 all_items, total_price, fulfilled_all = results
@@ -190,7 +190,7 @@ class Calculator:
                                     minerals[m.id] = m
                                     m.z_ttl_value = 0
                                     m.z_fulfilled_qty = 0
-                                mineral_qty = o.z_order_qty * Decimal(m.z_qty * .875)
+                                mineral_qty = o.z_order_qty * Decimal(m.z_qty * reprocess_pct)
                                 minerals[m.id].z_fulfilled_qty += mineral_qty
                                 minerals[m.id].z_desired_qty = target_minerals[m.id] if m.id in target_minerals else 0
                                 minerals[m.id].z_ttl_value += mineral_qty * m.sell_fivepct_price
@@ -205,7 +205,7 @@ class Calculator:
 
         return None
 
-    def solve(self, obj_fn, mineralids, requirements, overage, items, item_maxes, timeout=10, source_station_ids=None, dest_station_id=None):
+    def solve(self, obj_fn, mineralids, requirements, overage, items, item_maxes, timeout=10, source_station_ids=None, dest_station_id=None, reprocess_pct=0.875):
         lp = lpsolve('make_lp', 0, len(items))
 
         # Timeout after 10s
@@ -233,7 +233,7 @@ class Calculator:
                 found = False
                 for min in item.z_reprocessed:
                     if min.id == mineralids[minid]:
-                        qty = math.floor(min.z_qty * .875)  # Don't hard-code of course
+                        qty = math.floor(min.z_qty * reprocess_pct)  # Don't hard-code of course
                         numbers.append(qty)
                         found = True
                         break
@@ -266,7 +266,7 @@ class Calculator:
                     for sub in item.z_reprocessed:
                         for idx in range(0, len(mineralids)):
                             if sub.id == mineralids[idx]:
-                                min_qty[idx] += qty * sub.z_qty * .875
+                                min_qty[idx] += qty * sub.z_qty * reprocess_pct
 
             total_price = 0
 
