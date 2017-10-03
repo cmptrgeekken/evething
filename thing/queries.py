@@ -799,6 +799,7 @@ FROM thing_poswatch_poshistory ph
     INNER JOIN thing_corporation c ON ph.corp_id=c.id
     INNER JOIN thing_mapdenormalize md ON md.item_id=ph.moon_id
     LEFT JOIN thing_apikey ak ON ak.corporation_id=ph.corp_id
+WHERE taxable=1
 GROUP BY ph.corp_id
 ORDER BY c.name
 """
