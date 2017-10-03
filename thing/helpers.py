@@ -65,8 +65,7 @@ def commas(value, round_to=0, include_sign=False):
     try:
         value = float(value)
     except ValueError:
-        return ""
-
+        return None
     if round_to is not None:
         value = round(value, round_to)
 
