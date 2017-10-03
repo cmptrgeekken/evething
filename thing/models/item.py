@@ -203,7 +203,7 @@ SELECT price * SUM(im.quantity) /
             self.z_ttl_shipping += order_list.total_shipping
             self.z_ttl_price_with_shipping += order_list.total_price_with_shipping
 
-    def get_history_avg(self, days=5, region_id=10000002, issued=None, pct=1.0, reprocess=False):
+    def get_history_avg(self, days=5, region_id=10000002, issued=None, pct=1.0, reprocess=False, reprocess_pct=0.875):
         from thing.models.pricehistory import PriceHistory
 
         average = 0
@@ -212,7 +212,7 @@ SELECT price * SUM(im.quantity) /
             materials = self.get_reprocessed_items()
             for material in materials:
                 # TODO: Calculate reprocessing rate correctly
-                average += material.z_qty * .875 * material.get_history_avg(days=days, region_id=region_id, issued=issued, pct=pct, reprocess=False)
+                average += material.z_qty * reprocess_pct * material.get_history_avg(days=days, region_id=region_id, issued=issued, pct=pct, reprocess=False)
 
             return average
 

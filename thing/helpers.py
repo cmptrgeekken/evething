@@ -61,7 +61,7 @@ re_digits_nondigits = re.compile(r'\d+|\D+')
 
 @register.filter
 @stringfilter
-def commas(value, round_to=0):
+def commas(value, round_to=0, include_sign=False):
     try:
         value = float(value)
     except ValueError:
@@ -69,7 +69,12 @@ def commas(value, round_to=0):
     if round_to is not None:
         value = round(value, round_to)
 
-    return ('{0:,.%df}' % round_to).format(value)
+    if include_sign:
+        format_str = '{0:+,.%df}'
+    else:
+        format_str = '{0:,.%df}'
+
+    return (format_str % round_to).format(value)
 
 @register.filter
 def round_price(value):
@@ -222,29 +227,41 @@ def pct_over(value):
 
 
 @register.filter
-def humanize(value):
+def humanize(value, include_sign=False):
     if value is None or value == '':
         return '0'
 
+    ret = ""
+
     if value >= BILLION or value <= -BILLION:
         v = Decimal(value) / BILLION
-        return '%sB' % (v.quantize(Decimal('.01'), rounding=ROUND_UP))
+        ret = '%sB' % (v.quantize(Decimal('.01'), rounding=ROUND_UP))
     elif value >= MILLION or value <= -MILLION:
         v = Decimal(value) / MILLION
         if v >= 10:
-            return '%sM' % (v.quantize(Decimal('.1'), rounding=ROUND_UP))
+            ret = '%sM' % (v.quantize(Decimal('.1'), rounding=ROUND_UP))
         else:
-            return '%sM' % (v.quantize(Decimal('.01'), rounding=ROUND_UP))
+            ret = '%sM' % (v.quantize(Decimal('.01'), rounding=ROUND_UP))
     elif value >= TEN_THOUSAND or value <= -TEN_THOUSAND:
         v = Decimal(value) / THOUSAND
-        return '%sK' % (v.quantize(Decimal('.1'), rounding=ROUND_UP))
+        ret = '%sK' % (v.quantize(Decimal('.1'), rounding=ROUND_UP))
     elif value >= THOUSAND or value <= -THOUSAND:
-        return '%s' % (commas(Decimal(value).quantize(Decimal('1.'), rounding=ROUND_UP)))
+        ret = '%s' % (commas(Decimal(value).quantize(Decimal('1.'), rounding=ROUND_UP)))
     else:
         if isinstance(value, Decimal):
-            return value.quantize(Decimal('.1'), rounding=ROUND_UP)
+            ret = value.quantize(Decimal('.1'), rounding=ROUND_UP)
         else:
-            return value
+            ret = value
+
+    if include_sign:
+        if value > 0:
+            ret = "+" + ret
+        elif value < 0:
+            ret = "-" + ret
+
+    return ret
+
+
 
 
 @register.filter
