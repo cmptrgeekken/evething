@@ -108,7 +108,7 @@ class Calculator:
 
                     idx = minidlookup[mineral.id]
                     repro_qty = math.ceil(float(mineral.z_qty) * reprocess_pct)
-                    mineral_value += float(mineral.sell_fivepct_price) * repro_qty
+                    mineral_value += float(mineral.get_history_avg()) * repro_qty
                     max_qty = max(max_qty, int(requirements[idx]) / int(repro_qty))
 
                     if requirements[idx] > 0:
@@ -123,7 +123,7 @@ class Calculator:
                 idx = idx + 1
 
                 item.z_mineral_value = mineral_value
-                item.z_mineral_ratio = float(item.sell_fivepct_price) / mineral_value
+                item.z_mineral_ratio = float(item.get_history_avg()) / mineral_value
 
                 if item.item_group.name != 'Ice':
                     related_items = Item.objects.filter(item_group_id=item.item_group.id, name__iregex='^Compressed')
@@ -131,7 +131,7 @@ class Calculator:
                 else:
                     item.z_related_ids = self.COMPRESSED_ICES[item.id]
 
-                max_order_qty = item.get_max_order_volume(item_ids=item.z_related_ids)
+                max_order_qty = item.get_max_order_volume(item_ids=item.z_related_ids, station_ids=source_station_ids)
 
                 item.z_max_qty = min(max_qty, max_order_qty)
 

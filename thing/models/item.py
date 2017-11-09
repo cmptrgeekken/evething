@@ -59,6 +59,8 @@ class Item(models.Model):
     buy_avg_price = models.DecimalField(max_digits=20, decimal_places=2, default=0)
     buy_total_volume = models.IntegerField(default=0)
 
+    z_orders_loaded = False
+
     class Meta:
         app_label = 'thing'
 

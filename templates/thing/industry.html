@@ -34,6 +34,9 @@
                         <th colspan="3" class="c">
                           Research
                         </th>
+                        <th colspan="3" class="c">
+                            Reactions
+                        </th>
                       </tr>
                       <tr class="c">
                         <th></th>
@@ -42,6 +45,10 @@
                         <th><small><abbr title="Available">A</abbr></small></th>
                         <th><small><abbr title="Max">M</abbr></small></th>
 
+                        <th><small><abbr title="Deliverable">D</abbr></small></th>
+                        <th><small><abbr title="Available">A</abbr></small></th>
+                        <th><small><abbr title="Max">M</abbr></small></th>
+                        
                         <th><small><abbr title="Deliverable">D</abbr></small></th>
                         <th><small><abbr title="Available">A</abbr></small></th>
                         <th><small><abbr title="Max">M</abbr></small></th>
@@ -77,6 +84,19 @@
                             {% endif %}
                           </th>
                           <th>{{ group_stats[group].research_max }}</th>
+                          <th>
+                            {% if group_stats[group].reaction_deliver > 0 %}
+                              <span class="text-success">{{ group_stats[group].reaction_deliver }}</span>
+                            {% endif %}
+                          </th>
+                          <th>
+                            {% if group_stats[group].reaction_avail > 0 %}
+                              <span class="text-success">{{ group_stats[group].reaction_avail }}</span>
+                            {% else %}
+                              {{ group_stats[group].reaction_avail }}
+                            {% endif %}
+                          </th>
+                          <th>{{ group_stats[group].reaction_max }}</th>
                         </tr>
                         {% endfor %}
                       </thead>
@@ -120,6 +140,21 @@
                           {{ char.research_slots_max }}
                           {% endif %}
                         </td>
+                        <td>
+                          {% if char.reaction_slots_deliverable > 0 %}
+                          <span class="text-success"><b>{{ char.reaction_slots_deliverable }}</b></span>
+                          {% endif %}
+                        </td>
+                        <td>
+                          {% if char.reaction_slots_avail > 0 %}
+                            <span class="text-success"><b>{{ char.reaction_slots_avail }}</b></span>
+                          {% endif %}
+                        </td>
+                        <td>
+                            {% if char.reaction_slots_max > 0 %}
+                            {{ char.reaction_slots_max }}
+                            {% endif %}
+                        </td>
                       </tr>
                       {% endfor %}
                       </tbody>
@@ -154,6 +189,19 @@
                             {% endif %}
                           </th>
                           <th>{{ industry_info.research_max }}</th>
+                          <th>
+                            {% if industry_info.reaction_deliver > 0 %}
+                              <span class="text-success">{{ industry_info.reaction_deliver }}</span>
+                            {% endif %}
+                          </th>
+                          <th>
+                            {% if industry_info.reaction_avail > 0 %}
+                              <span class="text-success">{{ industry_info.reaction_avail }}</span>
+                            {% else %}
+                              {{ industry_info.reaction_avail }}
+                            {% endif %}
+                          </th>
+                          <th>{{ industry_info.reaction_max }} </th>
                         </tr>
                       </tfoot>
                     </table>

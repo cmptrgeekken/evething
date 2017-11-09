@@ -104,12 +104,12 @@
                                 ({{ (m.z_fulfilled_qty - m.z_desired_qty)|commas(0, True) }})
                             </span>
                         </td>
-                        <td>{{ m.sell_fivepct_price|commas(2) }}</td>
+                        <td>{{ m.get_history_avg()|commas(2) }}</td>
                         <td>
                             <span class="{% if mineral_value_ratio > 1 %}neg{% else %}pos{% endif %}">
-                                {{ (m.sell_fivepct_price * mineral_value_ratio)|commas(2) }}
+                                {{ (m.get_history_avg() * mineral_value_ratio|float)|commas(2) }}
                                 <br/>
-                                ({{ (m.sell_fivepct_price * (mineral_value_ratio - 1))|commas(2, True) }})
+                                ({{ (m.get_history_avg() * (mineral_value_ratio|float - 1))|commas(2, True) }})
                             </span>
                         </td>
                     </tr>
@@ -320,8 +320,8 @@
                                 {% for buy_all in o.get_buy_points() %}
                                 <tr>
                                     <td class="align-right">{{ buy_all['qty']|commas }}</td>
-                                    <td class="align-right">{{ buy_all['price']|commas }} ISK</td>
-                                    <td class="align-right">{{ buy_all['total']|commas }} ISK</td>
+                                    <td class="align-right">{{ buy_all['price']|commas(2) }} ISK</td>
+                                    <td class="align-right">{{ buy_all['total']|commas(2) }} ISK</td>
                                     <td>
                                         <button class="btn btn-xs" type="button" data-clipboard-text="{{ o.item_name }} x{{ buy_all['qty'] }}">
                                             <img src="{{ STATIC_URL }}pgsus/img/clippy.svg" width="13" title="Copy to clipboard">
@@ -340,24 +340,24 @@
                                 </tr>
                                 {% for order in o.orders %}
                                 <tr>
-                                    <td class="align-right">
+                                    <td>
                                         <div>{{ order.volume_remaining|commas }}</div>
                                         {% if order.z_order_qty > 0 %}
                                         <div><abbr title="Quantity to Purchase">{{ order.z_order_qty|commas }}</abbr></div>
                                         {% endif %}
                                     </td>
-                                    <td class="align-right">
-                                        <div>{{ order.price|commas }} ISK</div>
+                                    <td>
+                                        <div>{{ order.price|commas(2) }} ISK</div>
                                         {% if order.z_order_qty > 0 %}
-                                            <div><abbr title="Purchase Cost">{{ (order.price*order.z_order_qty)|commas }} ISK</abbr></div>
+                                            <div><abbr title="Purchase Cost">{{ (order.price*order.z_order_qty)|commas(2) }} ISK</abbr></div>
 
                                         {% endif %}
                                     </td>
                                     <td>
                                         {% if order.z_shipping > 0 %}
-                                            {{ order.z_shipping|commas }} ISK
+                                            {{ order.z_shipping|commas(2) }} ISK
                                             {% if order.z_order_qty > 0 %}
-                                            <div><abbr title="Total Shipping">{{ (order.z_order_qty*order.z_shipping)|commas }}</abbr></div>
+                                            <div><abbr title="Total Shipping">{{ (order.z_order_qty*order.z_shipping)|commas(2) }}</abbr></div>
                                             {% endif %}
                                         {% else %}
                                         <i>N/A</i>

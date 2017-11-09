@@ -58,6 +58,7 @@ class IndustryJob(models.Model):
     DUPLICATING_ACTIVITY = 6
     REVERSE_ENGINEERING_ACTIVITY = 7
     INVENTION_ACTIVITY = 8
+    REACTION_ACTIVITY = 9
     ACTIVITY_CHOICES = (
         (NONE_ACTIVITY, 'None'),
         (MANUFACTURING_ACTIVITY, 'Manufacturing'),
@@ -68,6 +69,7 @@ class IndustryJob(models.Model):
         (DUPLICATING_ACTIVITY, 'Duplicating'),
         (REVERSE_ENGINEERING_ACTIVITY, 'Reverse Engineering'),
         (INVENTION_ACTIVITY, 'Invention'),
+        (REACTION_ACTIVITY, 'Reaction')
     )
 
     character = models.ForeignKey(Character, on_delete=models.DO_NOTHING)

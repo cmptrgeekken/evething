@@ -161,7 +161,7 @@ def fuel(request):
     fuel_blocks = Item.objects.filter(
         name__endswith='Fuel Block',
         market_group_id__gt=0,
-    )
+    ).order_by('name')
 
     latest_price = PriceHistory.objects.order_by('-date').first()
     price_last_updated = latest_price.date
@@ -202,7 +202,7 @@ def fuel(request):
 
         # TODO: Move delivery configuration to database
         if delivery_system_name != 'B-9C24':
-            ttl_reward += ceil(ttl_blocks / 25000) * 5000000
+            ttl_reward += ceil(ttl_blocks / 25000) * 20000000
 
     min_date = datetime.datetime.utcnow() + datetime.timedelta(days=3)
     max_date = datetime.datetime.utcnow() + datetime.timedelta(days=28)
@@ -723,14 +723,15 @@ def seeding(request):
     if not request.GET.get('low_qty_only'):
         low_qty_only = False
 
-    station = request.GET.get('station')
+    selected_stations = [int(i) for i in request.GET.getlist('station')]
+
     seeder = request.GET.get('seeder')
 
     seed_items =[]
-    stations = set()
+    stations = dict()
     seeders = set()
     for data in seed_data:
-        stations.add(data['station_name'])
+        stations[data['station_id']] = data['station_name']
         seeders.add(data['seeder_name'])
 
         if data['volume_remaining'] is None or data['volume_remaining'] < data['min_qty']:
@@ -741,7 +742,7 @@ def seeding(request):
         if low_qty_only and 'state' not in data:
             continue
 
-        if len(station or '') > 0 and data['station_name'] != station:
+        if len(selected_stations) > 0 and data['station_id'] not in selected_stations:
             continue
 
         if len(seeder or '') > 0 and data['seeder_name'] != seeder:
@@ -754,8 +755,8 @@ def seeding(request):
         dict(
             seed_data=seed_items,
             low_qty_only=low_qty_only,
-            station=station,
-            stations=sorted(stations),
+            station=selected_stations,
+            stations=stations,
             seeder=seeder,
             seeders=seeders,
 

@@ -52,6 +52,9 @@ def industry(request):
         'research_avail': 0,
         'research_deliver': 0,
         'research_max': 0,
+        'reaction_avail': 0,
+        'reaction_deliver': 0,
+        'reaction_max': 0,
         'usage': current_job_stats,
     }
 
@@ -65,6 +68,9 @@ def industry(request):
         stats['research_avail'] += row['research_slots_avail']
         stats['research_deliver'] += row['research_slots_deliverable']
         stats['research_max'] += row['research_slots_max']
+        stats['reaction_avail'] += row['reaction_slots_avail']
+        stats['reaction_deliver'] += row['reaction_slots_deliverable']
+        stats['reaction_max'] += row['reaction_slots_max']
 
         if grp not in group_stats:
             row['show_group'] = True
@@ -75,6 +81,9 @@ def industry(request):
                 'research_avail': 0,
                 'research_deliver': 0,
                 'research_max': 0,
+                'reaction_avail': 0,
+                'reaction_deliver': 0,
+                'reaction_max': 0,
             }
 
         group_stats[grp]['mfg_avail'] += row['mfg_slots_avail']
@@ -83,9 +92,9 @@ def industry(request):
         group_stats[grp]['research_avail'] += row['research_slots_avail']
         group_stats[grp]['research_deliver'] += row['research_slots_deliverable']
         group_stats[grp]['research_max'] += row['research_slots_max']
-
-
-
+        group_stats[grp]['reaction_avail'] += row['reaction_slots_avail']
+        group_stats[grp]['reaction_deliver'] += row['reaction_slots_deliverable']
+        group_stats[grp]['reaction_max'] += row['reaction_slots_max']
 
 
     # Fetch valid characters/corporations for this user

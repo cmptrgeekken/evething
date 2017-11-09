@@ -19,22 +19,9 @@
             <div class="form-group">
                   <label class="col-sm-2 col-form-label" for="station">Stations:</label>
                   <div class="col-sm-8">
-                      <select name="station" id="station" class="js-select2 input-lg">
-                          <option value="">Select One</option>
-                          {% for sta in stations %}
-                          <option value="{{sta}}"{%if sta == station %} selected{% endif %}>{{ sta }}</option>
-                          {% endfor %}
-                      </select>
-                  </div>
-              </div>
-
-            <div class="form-group">
-                  <label class="col-sm-2 col-form-label" for="seeder">Seeder:</label>
-                  <div class="col-sm-8">
-                      <select name="seeder" id="seeder" class="js-select2 input-lg">
-                          <option value="">Select One</option>
-                          {% for seed in seeders%}
-                          <option value="{{seed}}"{%if seed == seeder %} selected{% endif %}>{{ seed }}</option>
+                      <select name="station" id="station" class="js-select2 input-lg" multiple="multiple">
+                          {% for sta in stations.keys() %}
+                          <option value="{{sta}}"{%if sta in station %} selected{% endif %}>{{ stations[sta] }}</option>
                           {% endfor %}
                       </select>
                   </div>
@@ -61,7 +48,6 @@
                       <tr class="c">
                           <th>Item</th>
                           <th>Station</th>
-                          <th>Seeder</th>
                           <th>Min</th>
                           <th>Current</th>
                           <th>Avg Price</th>
@@ -73,7 +59,6 @@
                       {%- if item.volume_remaining is none or item.volume_remaining < item.min_qty %}danger{% elif item.volume_remaining < item.min_qty*1.2 %}warning{% endif -%}">
                         <td>{{ item.item_name }}</td>
                         <td>{{ item.station_name }}</td>
-                        <td>{{ item.seeder_name }}</td>
                         <td>{{ item.min_qty|commas }}</td>
                         <td>
                             {{ item.volume_remaining|commas }}

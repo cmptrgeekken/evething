@@ -60,6 +60,8 @@ class OrderList:
         self.buy_all_max_price = None
         self.buy_all_qty = None
 
+        self.order_shipping = None
+
     def get_buy_points(self):
         for point in self.buy_all_points:
             if point['qty'] == self.buy_all_qty and point['price'] == self.buy_all_max_price:
@@ -68,6 +70,7 @@ class OrderList:
         self.buy_all_points.append(dict(
             price=self.buy_all_max_price,
             qty=self.buy_all_qty,
+            shipping=self.buy_all_qty*self.order_shipping,
             total=self.buy_all_max_price * self.buy_all_qty))
 
         return self.buy_all_points
@@ -83,10 +86,12 @@ class OrderList:
 
         self.last_updated = order.last_updated if self.last_updated is None else max(self.last_updated, order.last_updated)
 
+        self.order_shipping = order.shipping
+
         if self.max_price < order.price:
             self.max_price = order.price
 
-            self.total_price_multibuy = self.max_price * self.total_quantity
+        self.total_price_multibuy = self.max_price * self.total_quantity
 
         if self.total_price_multibuy * Decimal(1-self.buy_tolerance) > self.total_price_best:
             self.multibuy_ok = False
@@ -98,6 +103,7 @@ class OrderList:
             self.buy_all_points.append(dict(
                 price=self.buy_all_max_price,
                 qty=self.buy_all_qty,
+                shipping=self.buy_all_qty*order.shipping,
                 total=self.buy_all_max_price*self.buy_all_qty))
 
             self.buy_all_price = self.buy_all_max_price = order.price

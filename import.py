@@ -96,9 +96,10 @@ def time_func(text, f):
 
     try:
         added = f()
-    except:
+    except Exception as e:
         added = 0
         print '>> ERROR!'
+        print e
 
     print '%d (%0.2fs)' % (added, time.time() - start)
 

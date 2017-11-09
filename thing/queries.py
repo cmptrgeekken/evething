@@ -478,6 +478,8 @@ select name, group_name,
 	industry_level,adv_industry_level,me_time_level,te_time_level,copy_time_level,
 	mfg_time_implant,me_time_implant,te_time_implant,copy_time_implant,reprocessing_implant,
 	max_research_jumps, max_mfg_jumps,
+        reaction_slots_active,reaction_slots_max-reaction_slots_active AS reaction_slots_avail, reaction_slots_max,reaction_slots_max,reaction_slots_deliverable,
+        (1+reaction_level*.04)-1 AS reaction_time_bonus,
 	(1+industry_level*.04)*(1+adv_industry_level*.03)*(1+mfg_time_implant)-1 AS mfg_time_bonus,
 	(1+adv_industry_level*.03)*(1+me_time_level*.05)*(1+me_time_implant)-1 AS me_time_bonus,
 	(1+adv_industry_level*.03)*(1+te_time_level*.05)*(1+te_time_implant)-1 AS te_time_bonus,
@@ -491,6 +493,10 @@ FROM
 	   COALESCE(1+mp.level+amp.level,0) AS mfg_slots_max,
 	   (SELECT COUNT(*) FROM thing_industryjob ij WHERE ij.installer_id=c.id AND ij.activity=1 AND ij.status=1) AS mfg_slots_active,
 	   (SELECT COUNT(*) FROM thing_industryjob ij WHERE ij.installer_id=c.id AND ij.activity=1 AND ij.status=1 AND ij.end_date <= NOW()) AS mfg_slots_deliverable,
+           (SELECT COUNT(*) FROM thing_industryjob ij WHERE ij.installer_id=c.id AND ij.activity=9 AND ij.status=1) AS reaction_slots_active,
+           (SELECT COUNT(*) FROM thing_industryjob ij WHERE ij.installer_id=c.id AND ij.activity=9 AND ij.status=1 AND ij.end_date <= NOW()) AS reaction_slots_deliverable,
+           COALESCE(1+mr.level+amr.level,0) AS reaction_slots_max,
+           COALESCE(r.level, 0) AS reaction_level, -- *.04
 	   COALESCE(ind.level,0) AS industry_level, -- *.04
 	   COALESCE(ai.level,0) AS adv_industry_level, -- *.03
 	   COALESCE(my.level,0) AS me_time_level, -- *.05
@@ -524,7 +530,10 @@ FROM
 		LEFT JOIN thing_characterdetails_implants impr ON impr.characterdetails_id=c.id AND impr.implant_id in (27175, 27169, 27174) -- Reprocessing
 		LEFT JOIN thing_characterdetails_implants imprs ON imprs.characterdetails_id=c.id AND imprs.implant_id in (27180, 27177, 27179) -- Research
 		LEFT JOIN thing_characterdetails_implants impsc ON impsc.characterdetails_id=c.id AND impsc.implant_id in (27185, 27178, 27184) -- Science
-	WHERE lo.level > 0 OR mp.level > 0
+                LEFT JOIN thing_characterskill mr ON mr.character_id=c.id AND mr.skill_id=45748 -- Mass Reactions
+                LEFT JOIN thing_characterskill amr ON amr.character_id=c.id AND amr.skill_id=45749 -- Advanced Mass Reactions
+                LEFT JOIN thing_characterskill r ON r.character_id=c.id AND r.skill_id=45746 -- Reactions
+	WHERE lo.level > 0 OR mp.level > 0 OR mr.level > 0
     ORDER BY group_name, name) details
     ORDER BY details.group_name, details.name;
 """
@@ -536,8 +545,10 @@ WHERE so.volume_remaining > sou.volume_remaining OR so.price != sou.price
 """
 
 stationorder_seeding_qty = """
-select i.id, i.name AS item_name,
-	   s.name AS station_name,
+select i.id, 
+       s.id AS station_id,
+       i.name AS item_name,
+       COALESCE(NULLIF(s.short_name, ''), s.name) AS station_name,
        iss.seeder_name,
        iss.min_qty,SUM(so.volume_remaining) AS volume_remaining,
        SUM(so.price*so.volume_remaining)/SUM(so.volume_remaining) AS avg_price
