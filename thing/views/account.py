@@ -25,6 +25,7 @@
 
 import gzip
 from cStringIO import StringIO
+import json
 
 try:
     import xml.etree.cElementTree as ET
@@ -43,30 +44,57 @@ from core.util import get_minimum_keyid
 from thing.forms import UploadSkillPlanForm
 from thing.models import *  # NOPEP8
 from thing.stuff import *  # NOPEP8
+from thing.utils import ApiHelper, set_cookie
 
 from requests_oauth2 import OAuth2
 
 
-@login_required
 def account_oauth_callback(request):
     oauth_code = request.GET['code']
+    state = request.GET['state']
 
     oauth2_handler = oauth_handler()
 
     response = oauth2_handler.get_token(oauth_code, grant_type='authorization_code')
 
-    if response is not None:
-        profile = request.user.profile
-        profile.sso_refresh_token = response['refresh_token']
-        profile.save()
+    if state == 'authorize':
+        if response is not None:
+            profile = request.user.profile
+            profile.sso_refresh_token = response['refresh_token']
+            profile.save()
 
-        return redirect('%s?auth_success=true#apikeys' % (reverse(account)))
-    else:
-        return redirect('%s?auth_success=false#apikeys' % (reverse(account)))
+            return redirect('%s?auth_success=true#apikeys' % (reverse(account)))
+        else:
+            return redirect('%s?auth_success=false#apikeys' % (reverse(account)))
+    elif state == 'client_authorize':
+        access_token = response['access_token']
 
+        helper = ApiHelper()
+
+        results = helper.fetch_esi_url(settings.OAUTH_SERVER_URL + '/oauth/verify', access_token)
+
+        try:
+            user_info = json.loads(results)
+        except:
+            user_info = None
+
+        if not user_info:
+            return redirect('/')
+
+        if 'CharacterName' in user_info:
+            request.session['char'] = dict(
+                name=user_info['CharacterName'],
+                id=user_info['CharacterID']
+            )
+
+        return redirect('/')
 
 @login_required
 def account_sso_remove(request):
+    profile = request.user.profile
+    profile.sso_refresh_token = None
+    profile.save()
+
     return redirect('%s?auth_success=true#apikeys' % (reverse(account)))
 
 
@@ -558,5 +586,5 @@ def oauth_handler():
         settings.OAUTH_CLIENT_ID,
         settings.OAUTH_CLIENT_SECRET,
         settings.OAUTH_SERVER_URL,
-        'https://pgsus.space/thing/account/oauth_callback/'
+        settings.OAUTH_CALLBACK_URL,
     )

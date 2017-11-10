@@ -484,7 +484,7 @@ class APITask(Task):
             settings.OAUTH_CLIENT_ID,
             settings.OAUTH_CLIENT_SECRET,
             settings.OAUTH_SERVER_URL,
-            'https://pgsus.space/thing/account/oauth_callback/'
+            settings.OAUTH_CALLBACK_URL
         )
 
         response = oauth_handler.get_token("", grant_type='refresh_token', refresh_token=refresh_token)

@@ -34,7 +34,10 @@ from django.shortcuts import render_to_response
 from django.template import RequestContext
 from django.conf import settings
 
+from requests_oauth2 import OAuth2
+
 from thing import queries
+from thing.utils import ApiHelper
 
 
 def render_page(template, data, request, character_ids=None, corporation_ids=None):
@@ -46,6 +49,19 @@ def render_page(template, data, request, character_ids=None, corporation_ids=Non
     data['server_open'] = cache.get('server_open')
     data['online_players'] = cache.get('online_players')
     data['ga_tracking_code'] = getattr(settings, 'GA_TRACKING_CODE', None)
+
+    if 'char' in request.session:
+        data['charid'] = request.session['char']['id']
+        data['charname'] = request.session['char']['name']
+
+    api_helper = ApiHelper()
+
+    oauth2_handler = api_helper.oauth_handler()
+
+    data['oauth_authorize_url'] = oauth2_handler.authorize_url(
+        '',
+        response_type='code',
+        state='client_authorize')
 
     if request.user.is_authenticated():
         # Get nav counts data
