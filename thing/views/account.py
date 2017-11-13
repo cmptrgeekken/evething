@@ -89,14 +89,20 @@ def account_oauth_callback(request):
 
         return redirect('/')
 
-@login_required
+
 def account_sso_remove(request):
-    profile = request.user.profile
-    profile.sso_refresh_token = None
-    profile.save()
+    if request.GET.get('method') == 'client':
+        request.session.delete('char')
+        request.session.flush()
+        return redirect('/')
 
-    return redirect('%s?auth_success=true#apikeys' % (reverse(account)))
+    if request.user is not None\
+            and request.user.profile is not None:
+        profile = request.user.profile
+        profile.sso_refresh_token = None
+        profile.save()
 
+        return redirect('%s?auth_success=true#apikeys' % (reverse(account)))
 
 @login_required
 def account(request):
@@ -126,7 +132,7 @@ def account(request):
             'message': message,
             'message_type': message_type,
             'profile': profile,
-            'oauth_authorize_url': oauth_authorize_url,
+            'authorize_url': oauth_authorize_url,
             'home_chars_per_row': (2, 3, 4, 6),
             'home_sort_orders': UserProfile.HOME_SORT_ORDERS,
             'characters': characters,

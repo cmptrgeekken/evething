@@ -549,13 +549,13 @@ select i.id,
        s.id AS station_id,
        i.name AS item_name,
        COALESCE(NULLIF(s.short_name, ''), s.name) AS station_name,
-       iss.seeder_name,
        iss.min_qty,SUM(so.volume_remaining) AS volume_remaining,
        SUM(so.price*so.volume_remaining)/SUM(so.volume_remaining) AS avg_price
     FROM thing_itemstationseed iss 
     INNER JOIN thing_item i ON iss.item_id=i.id
     INNER JOIN thing_station s ON iss.station_id=s.id
     LEFT JOIN thing_stationorder so ON iss.station_id=so.station_id and iss.item_id=so.item_id and so.buy_order=0
+    WHERE iss.list_id=%s
     GROUP BY iss.item_id,s.id
     ORDER BY i.name, s.name
 """

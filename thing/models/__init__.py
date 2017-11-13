@@ -48,6 +48,7 @@ from thing.models.event import Event
 from thing.models.factionstanding import FactionStanding
 from thing.models.industryjob import IndustryJob
 from thing.models.itemstationseed import ItemStationSeed
+from thing.models.seedlist import SeedList
 from thing.models.journalentry import JournalEntry
 from thing.models.mailinglist import MailingList
 from thing.models.mailmessage import MailMessage

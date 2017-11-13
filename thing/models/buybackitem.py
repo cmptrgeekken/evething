@@ -26,21 +26,48 @@
 
 from django.db import models
 from thing.models.item import Item
-from thing.models.station import Station
-from thing.models.seedlist import SeedList
+from thing.models.itemcategory import ItemCategory
+from thing.models.itemgroup import ItemGroup
+from thing.models.buybackprogram import BuybackProgram
 
 
-class ItemStationSeed(models.Model):
-    id = models.AutoField(primary_key=True)
-    list = models.ForeignKey(SeedList, on_delete=models.DO_NOTHING)
-    item = models.ForeignKey(Item, on_delete=models.DO_NOTHING)
-    station = models.ForeignKey(Station, on_delete=models.DO_NOTHING)
-    min_qty = models.IntegerField(default=0, null=False)
+class BuybackItem(models.Model):
+    id = models.IntegerField(primary_key=True)
+    buyback = models.ForeignKey(BuybackProgram, on_delete=models.DO_NOTHING)
+    item = models.ForeignKey(Item, on_delete=models.DO_NOTHING, null=True)
+    group = models.ForeignKey(ItemGroup, on_delete=models.DO_NOTHING, null=True)
+    category = models.ForeignKey(ItemCategory, on_delete=models.DO_NOTHING, null=True)
+    price_type = models.CharField(max_length=8, default='5day')
+    price_pct = models.FloatField(default=1)
+    reprocess = models.BooleanField(default=False)
     active = models.BooleanField(default=False)
+
+    price_region_id = 10000002
+
+    def get_price(self, reprocess=None, issued=None, pct=None):
+        if reprocess is None:
+            reprocess = self.reprocess
+
+        if pct is None:
+            pct = self.price_pct
+
+        if self.price_type == '5day':
+            return self.item.get_history_avg(days=5, region_id=self.price_region_id, issued=issued,
+                                             pct=pct, reprocess=reprocess)
+        return 0
+
+    def get_buyback_type(self):
+        type_str = ''
+        if self.price_type == '5day':
+            type_str = '%0.0f%% of 5-day Jita Average' % (self.price_pct * 100.0)
+
+        if self.reprocess:
+            type_str += ' of max-reprocessed materials'
+
+        return type_str
 
     class Meta:
         app_label = 'thing'
 
     def __unicode__(self):
         return self.item.name
-

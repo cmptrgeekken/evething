@@ -25,17 +25,16 @@
 
 
 from django.db import models
-from thing.models.item import Item
-from thing.models.station import Station
-from thing.models.seedlist import SeedList
+from thing.models.userprofile import UserProfile
 
 
-class ItemStationSeed(models.Model):
-    id = models.AutoField(primary_key=True)
-    list = models.ForeignKey(SeedList, on_delete=models.DO_NOTHING)
-    item = models.ForeignKey(Item, on_delete=models.DO_NOTHING)
-    station = models.ForeignKey(Station, on_delete=models.DO_NOTHING)
-    min_qty = models.IntegerField(default=0, null=False)
+class BuybackProgram(models.Model):
+    id = models.IntegerField(primary_key=True)
+    user = models.ForeignKey(UserProfile, on_delete=models.DO_NOTHING)
+    name = models.CharField(max_length=4000, null=False)
+    description = models.CharField(max_length=4000, null=False)
+    logo = models.ImageField(null=True)
+
     active = models.BooleanField(default=False)
 
     class Meta:
@@ -43,4 +42,3 @@ class ItemStationSeed(models.Model):
 
     def __unicode__(self):
         return self.item.name
-

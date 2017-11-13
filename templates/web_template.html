@@ -96,7 +96,7 @@
                     </li>
                     <li>
                         <a href="{{ url('pgsus.views.freighter') }}">
-                            Freighter Service
+                            Freight
                         </a>
                     </li>
                     <li>
@@ -106,8 +106,15 @@
                     </li>
                     {% if charid %}
                     <li>
-                        <img src="https://image.eveonline.com/Character/{{charid}}_32.jpg" />
-                        {{ charname }}
+                        <a href="{{ url('pgsus.views.seedlist') }}">
+                            Seeding
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ url('thing.views.account_sso_remove') }}?method=client">
+                            <img src="https://image.eveonline.com/Character/{{charid}}_32.jpg" />
+                            Sign Out
+                        </a>
                     </li>
                     {% elif oauth_authorize_url %}
                     <li>

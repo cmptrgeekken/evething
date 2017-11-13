@@ -28,7 +28,9 @@ urlpatterns += patterns(
     url(r'^fuel$', 'fuel', name='fuel'),
     url(r'^pricer$', 'pricer', name='pricer'),
     url(r'^overpriced$', 'overpriced', name='overpriced'),
-    url(r'^seeding', 'seeding', name='seeding'),
+    url(r'^seeding$', 'seedlist', name='seedlist'),
+    url(r'^seeding/edit', 'seededit', name='seededit'),
+    url(r'^seeding/view', 'seedview', name='seedview'),
 )
 
 urlpatterns += patterns(

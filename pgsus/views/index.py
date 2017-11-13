@@ -29,8 +29,10 @@ from collections import defaultdict
 
 from thing import queries
 
+from thing.utils import dictfetchall
+
 from thing.models import *  # NOPEP8
-from thing.stuff import *  # NOPEP8
+from thing.stuff import render_page, datetime  # NOPEP8
 from thing.helpers import humanize
 
 from pgsus import Calculator
@@ -314,8 +316,7 @@ def freighter(request):
                     shipping_info['method'] = '<b>%s</b> (%s)' % (price_model.name, method)
                     shipping_info['trips'] = trips
 
-
-            if shipping_info['trips'] > 1:
+            if 'trips' in shipping_info and shipping_info['trips'] > 1:
                 errors.append('You need at least %d contracts to use this shipping method.' % shipping_info['trips'])
 
             if shipping_info['rate'] is None:
@@ -765,32 +766,3 @@ def seeding(request):
     )
 
     return out
-
-
-def get_cursor(db='default'):
-    return connections[db].cursor()
-
-
-def dictfetchall(query, cache_key=None, cache_time=None):
-    "Returns all rows from a cursor as a dict"
-    from django.core.cache import caches
-    query_cache = caches['default']
-    if cache_time is not None:
-        results = query_cache.get(cache_key)
-        if results is not None:
-            return results
-
-    cursor = get_cursor()
-    cursor.execute(query)
-    desc = cursor.description
-    results = [
-            dict(zip([col[0] for col in desc], row))
-            for row in cursor.fetchall()
-    ]
-
-    cursor.close()
-
-    if cache_time is not None:
-        query_cache.set(cache_key, results, cache_time)
-
-    return results

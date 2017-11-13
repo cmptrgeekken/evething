@@ -47,7 +47,7 @@ def roman_to_int(n):
 
 
 class Station(models.Model):
-    id = models.IntegerField(primary_key=True, auto_created=False)
+    id = models.BigIntegerField(primary_key=True, auto_created=False)
     name = models.CharField(max_length=128)
     short_name = models.CharField(max_length=64, default='')
     is_citadel = models.BooleanField(default=False)

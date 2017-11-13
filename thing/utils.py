@@ -32,6 +32,30 @@ KEY_ERRORS = {
 }
 
 
+def dictfetchall(query, cache_key=None, cache_time=None):
+    "Returns all rows from a cursor as a dict"
+    from django.core.cache import caches
+    query_cache = caches['default']
+    if cache_time is not None:
+        results = query_cache.get(cache_key)
+        if results is not None:
+            return results
+
+    cursor = connections['default'].cursor()
+    cursor.execute(query)
+    desc = cursor.description
+    results = [
+            dict(zip([col[0] for col in desc], row))
+            for row in cursor.fetchall()
+    ]
+
+    cursor.close()
+
+    if cache_time is not None:
+        query_cache.set(cache_key, results, cache_time)
+
+    return results
+
 def total_seconds(delta):
     """Convert a datetime.timedelta object into a number of seconds"""
     return (delta.days * 24 * 60 * 60) + delta.seconds
