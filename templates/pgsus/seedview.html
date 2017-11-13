@@ -15,7 +15,9 @@
 <section class="container section-md">
       <div class="row">
         <div class="col-lg-12">
+            {% if char_id %}
             <a href="{{ url('pgsus.views.seedlist') }}">Back to List View</a>
+            {% endif %}
             <h3>{{ list.name }} {% if char_id == list.char_id %} <a href="{{ url('pgsus.views.seededit') }}?id={{ list.id }}">Edit</a>{% endif %}</h3>
             <h4>Creator: {{ list.char.name }}</h4>
 
