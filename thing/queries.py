@@ -557,7 +557,7 @@ select i.id,
     LEFT JOIN thing_stationorder so ON iss.station_id=so.station_id and iss.item_id=so.item_id and so.buy_order=0
     WHERE iss.list_id=%s
     GROUP BY iss.item_id,s.id
-    ORDER BY i.name, s.name
+    ORDER BY s.name, i.name
 """
 
 stationorder_analysis = """

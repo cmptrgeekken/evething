@@ -80,6 +80,7 @@ def seededit(request):
             return redirect('%s?id=%d' % (reverse(seededit), list.id))
 
         if updateMethod == "delete":
+            list.get_items().delete()
             list.delete()
 
             return redirect(reverse(seedlist))
