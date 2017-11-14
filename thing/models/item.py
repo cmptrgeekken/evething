@@ -229,7 +229,7 @@ SELECT price * SUM(im.quantity) /
                 # TODO: Calculate reprocessing rate correctly
                 average += material.z_qty * reprocess_pct * material.get_history_avg(days=days, region_id=region_id, issued=issued, pct=pct, reprocess=False)
 
-            return average
+            return round(float(average / self.portion_size), 2)
 
         query = PriceHistory.objects.filter(
             item_id=self.id,
