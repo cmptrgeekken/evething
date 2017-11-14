@@ -548,7 +548,7 @@ stationorder_seeding_qty = """
 select i.id, 
        s.id AS station_id,
        i.name AS item_name,
-       COALESCE(NULLIF(s.short_name, ''), s.name) AS station_name,
+       s.name AS station_name,
        iss.min_qty,SUM(so.volume_remaining) AS volume_remaining,
        SUM(so.price*so.volume_remaining)/SUM(so.volume_remaining) AS avg_price
     FROM thing_itemstationseed iss 
@@ -607,57 +607,51 @@ SELECT
    s.id as station_id, 
    ic.name AS category, 
    ig.name AS grp, 
-   mg1.name AS mg1,
-   mg2.name AS mg2,
-   mg3.name AS mg3,
-   mg4.name AS mg4,
-   mg5.name AS mg5,
-   mg6.name AS mg6,
    i.name AS item_name,
    s.name AS station_name,  
-   SUM(so.volume_remaining) AS volume,
-   ROUND(SUM(so.volume_remaining*so.price)/SUM(so.volume_remaining), 2) AS avg_price, 
-   i.sell_fivepct_price AS jita_price, 
-   ROUND(i.sell_fivepct_price*pm.cross_region_collateral+i.volume*pm.cross_region_m3, 2) AS jita_shipping,
+   iss.min_qty AS min_qty,
+   COUNT(so.order_id) AS active_order_count,
+   COALESCE(AVG(so.times_updated),0) AS avg_order_updates,
+   COALESCE(AVG(DATEDIFF(NOW(),so.issued)),0) AS avg_order_age,
+   COALESCE(AVG(so.times_updated / DATEDIFF(NOW(),so.issued)),0) AS avg_updates_per_day,
+   COALESCE(SUM(so.volume_remaining),0) AS volume_remaining,
+   COALESCE(ROUND(SUM(so.volume_remaining*so.price)/SUM(so.volume_remaining), 2),0) AS avg_price,
+   (SELECT MIN(jso.price) FROM thing_stationorder jso WHERE jso.item_id=i.id AND jso.station_id=60003760 AND jso.buy_order=0) AS jita_min_price,
+   COALESCE(i.sell_fivepct_price,0) AS fivepct_price, 
+   COALESCE(pm.cross_region_collateral, 0.02) AS shipping_collateral,
+   COALESCE(pm.cross_region_m3, 400) AS shipping_m3,
+   ROUND(i.sell_fivepct_price*COALESCE(pm.cross_region_collateral, 0.02)+i.volume*COALESCE(pm.cross_region_m3, 400), 2) AS jita_shipping,
    ph30.thirtyday_vol AS thirtyday_vol,
    ph30.thirtyday_orders AS thirtyday_order,
    ph5.fiveday_vol AS fiveday_vol,
-   ph5.fiveday_orders AS five_order
-FROM thing_stationorder so 
-INNER JOIN thing_station s ON s.id=so.station_id
-INNER JOIN thing_system sy ON s.system_id=sy.id
-INNER JOIN thing_constellation c ON sy.constellation_id=c.id
-INNER JOIN thing_item i ON so.item_id=i.id
-INNER JOIN thing_itemgroup ig ON i.item_group_id=ig.id
-INNER JOIN thing_itemcategory ic ON ig.category_id=ic.id
-INNER JOIN thing_marketgroup mg1 ON i.market_group_id=mg1.id
-INNER JOIN thing_view_pricehistory_thirtyday ph30 ON ph30.item_id=i.id AND ph30.region_id=c.region_id
-INNER JOIN thing_view_pricehistory_fiveday ph5 ON ph5.item_id=i.id AND ph5.region_id=c.region_id
-INNER JOIN thing_view_stationorder_stdev stdev ON i.id=stdev.item_id and s.id=stdev.station_id
-LEFT JOIN thing_marketgroup mg2 ON mg1.parent_id=mg2.id
-LEFT JOIN thing_marketgroup mg3 ON mg2.parent_id=mg3.id
-LEFT JOIN thing_marketgroup mg4 ON mg3.parent_id=mg4.id
-LEFT JOIN thing_marketgroup mg5 ON mg4.parent_id=mg5.id
-LEFT JOIN thing_marketgroup mg6 ON mg5.parent_id=mg6.id
-INNER JOIN thing_freightersystem fs ON fs.system_id=s.system_id
-INNER JOIN thing_freighterpricemodel pm ON fs.price_model_id=pm.id
-INNER JOIN thing_freightersystem fs2 ON fs2.price_model_id=pm.id AND fs2.system_id=30000142
-WHERE 
-	so.station_id != 60003760 
-    AND so.price <= stdev.avg_price+stdev.stdev
-    AND so.buy_order=0
-GROUP BY so.item_id, so.station_id
+   ph5.fiveday_orders AS fiveday_order 
+FROM thing_itemstationseed iss
+LEFT JOIN thing_stationorder so ON iss.item_id=so.item_id AND iss.station_id=so.station_id
+LEFT JOIN thing_station s ON s.id=iss.station_id
+LEFT JOIN thing_system sy ON s.system_id=sy.id
+LEFT JOIN thing_constellation c ON sy.constellation_id=c.id
+LEFT JOIN thing_item i ON iss.item_id=i.id
+LEFT JOIN thing_itemgroup ig ON i.item_group_id=ig.id
+LEFT JOIN thing_itemcategory ic ON ig.category_id=ic.id
+LEFT JOIN thing_marketgroup mg1 ON i.market_group_id=mg1.id
+LEFT JOIN thing_view_pricehistory_thirtyday ph30 ON ph30.item_id=i.id AND ph30.region_id=c.region_id
+LEFT JOIN thing_view_pricehistory_fiveday ph5 ON ph5.item_id=i.id AND ph5.region_id=c.region_id
+LEFT JOIN thing_view_stationorder_stdev stdev ON i.id=stdev.item_id and s.id=stdev.station_id
+LEFT JOIN thing_freightersystem fs ON fs.system_id=s.system_id
+LEFT JOIN thing_freighterpricemodel pm ON fs.price_model_id=pm.id AND pm.is_thirdparty=1
+LEFT JOIN thing_freightersystem fs2 ON fs2.price_model_id=pm.id AND fs2.system_id=30000142
+WHERE so.price IS NULL OR (so.buy_order=0 AND so.price < stdev.avg_price + 2 * stdev.stdev)
+GROUP BY iss.item_id, iss.station_id
 """
 
 stationorder_overpriced = """
 SELECT *, 
-    ROUND(jita_price+jita_shipping, 2) AS jita_price_plus_shipping, 
-    ROUND((jita_price+jita_shipping)*1.025*1.02, 2) AS imported_price,
-    ROUND((jita_price+jita_shipping)*1.025*1.02*1.2, 2) AS twentypct_profit,
-    CAST((avg_price / ((jita_price + jita_shipping)*1.025*1.02)) * 10000 AS UNSIGNED)/100 AS overpriced_pct
+    ROUND(jita_min_price+jita_shipping, 2) AS jita_price_plus_shipping, 
+    ROUND((jita_min_price+jita_shipping)*1.025*1.02, 2) AS imported_price,
+    ROUND((jita_min_price+jita_shipping)*1.025*1.02*1.2, 2) AS twentypct_profit,
+    CAST((avg_price / ((jita_min_price + jita_shipping)*1.025*1.02)) * 10000 AS UNSIGNED)/100 AS overpriced_pct
 FROM (""" + stationorder_overpriced_base_query + """
     ) o 
-   WHERE o.jita_price > 0
 """
 
 stationorder_localprice_truncate = """
@@ -669,7 +663,34 @@ INSERT INTO `thing_cache_localprice`
 %s;""" % stationorder_overpriced
 
 stationorder_overpriced_cached = """
-SELECT * FROM `thing_cache_localprice`"""
+SELECT iss.*,
+	   lp.category,
+       lp.grp,
+       lp.item_name,
+       lp.station_name, lp.min_qty,
+       lp.active_order_count,
+       lp.avg_order_updates,
+       lp.avg_order_age, 
+       lp.avg_updates_per_day,
+       lp.volume_remaining,
+       lp.avg_price,
+       lp.jita_min_price,
+       lp.fivepct_price,
+       lp.shipping_collateral,
+       lp.shipping_m3,
+       lp.jita_shipping,
+       lp.thirtyday_vol,
+       lp.thirtyday_order,
+       lp.fiveday_vol,
+       lp.fiveday_order,
+       lp.jita_price_plus_shipping,
+       lp.imported_price,
+       lp.twentypct_profit,
+       lp.overpriced_pct
+FROM thing_itemstationseed iss 
+    LEFT JOIN thing_cache_localprice lp ON iss.item_id=lp.item_id AND iss.station_id=lp.station_id
+WHERE iss.list_id=%s
+ORDER BY station_name, item_name"""
 
 stationorder_localprice_create = """
 CREATE TABLE `thing_cache_localprice` (
@@ -677,22 +698,24 @@ CREATE TABLE `thing_cache_localprice` (
   `station_id` bigint(20) NOT NULL,
   `category` varchar(64) NOT NULL,
   `grp` varchar(128) NOT NULL,
-  `mg1` varchar(100) NOT NULL,
-  `mg2` varchar(100),
-  `mg3` varchar(100),
-  `mg4` varchar(100),
-  `mg5` varchar(100),
-  `mg6` varchar(100),
   `item_name` varchar(128) NOT NULL,
   `station_name` varchar(128) NOT NULL,
-  `volume` decimal(20,0) DEFAULT NULL,
+  `min_qty` int(11) NOT NULL,
+  `active_order_count` int(11) NOT NULL,
+  `avg_order_updates` decimal(20,2) NOT NULL,
+  `avg_order_age` int(11) NOT NULL,
+  `avg_updates_per_day` decimal(20,2) NOT NULL,
+  `volume_remaining` decimal(20,0) DEFAULT NULL,
   `avg_price` decimal(20,2) DEFAULT NULL,
-  `jita_price` decimal(20,2) NOT NULL,
+  `jita_min_price` decimal(20,2) NOT NULL,
+  `fivepct_price` decimal(20,2) NOT NULL,
+  `shipping_collateral` decimal(20,2) NOT NULL,
+  `shipping_m3` int(11) NOT NULL,
   `jita_shipping` decimal(20,2) NOT NULL DEFAULT '0.00',
   `thirtyday_vol` decimal(20,0) DEFAULT NULL,
   `thirtyday_order` decimal(20,0) DEFAULT NULL,
   `fiveday_vol` decimal(20,0) DEFAULT NULL,
-  `five_order` decimal(20,0) DEFAULT NULL,
+  `fiveday_order` decimal(20,0) DEFAULT NULL,
   `jita_price_plus_shipping` decimal(20,2) NOT NULL DEFAULT '0.00',
   `imported_price` decimal(20,2) NOT NULL DEFAULT '0.00',
   `twentypct_profit` decimal(20,2) NOT NULL DEFAULT '0.00',
@@ -701,12 +724,12 @@ CREATE TABLE `thing_cache_localprice` (
   KEY `avg_price_idx` (`avg_price`),
   KEY `jita_import_price_idx` (`imported_price`),
   KEY `overage_pct_idx` (`overpriced_pct`),
-  KEY `volume_idx` (`volume`),
-  KEY `fiveday_order_idx` (`five_order`),
+  KEY `volume_idx` (`volume_remaining`),
+  KEY `fiveday_order_idx` (`fiveday_order`),
   KEY `fiveday_volume_idx` (`fiveday_vol`),
   KEY `thirtyday_order_idx` (`thirtyday_order`),
   KEY `thirtyday_volume_idx` (`thirtyday_vol`),
-  KEY `group_idx` (`grp` ASC, `mg1` ASC, `mg2` ASC, `mg3` ASC, `mg4` ASC, `mg5` ASC, `mg6` ASC)
+  KEY `group_idx` (`grp` ASC)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 """
 

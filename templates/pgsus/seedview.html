@@ -54,35 +54,129 @@
                     <thead>
                       <tr class="c">
                           <th>Item</th>
+                          <th><abbr title="Active Orders">O</abbr></th>
                           <th>Station</th>
-                          <th>Min</th>
-                          <th>Current</th>
-                          <th>Avg Price</th>
+                          <th><abbr title="Min Qty">Min</abbr></th>
+                          <th><abbr title="Current Stock">Stock</abbr></th>
+                          <th><abbr title="Average Local Price">Price</abbr></th>
+                          <th><abbr title="20% Profit Sell">20%</abbr></th>
+                          <th><abbr title="Jita Price + Shipping (approx)">J+S</abbr></th>
+                          <th><abbr title="Jita Price">J</abbr></th>
+                          <th><abbr title="30-day volume">30</abbr></th>
+                          <th><abbr title="Overpriced Pct">%</abbr></th>
                       </tr>
                     </thead>
                     <tbody>
                       {% for item in seed_data -%}
-                      <tr class="
-                      {%- if item.volume_remaining is none or item.volume_remaining < item.min_qty %}danger{% elif item.volume_remaining < item.min_qty*1.2 %}warning{% endif -%}">
-                        <td>{{ item.item_name }}</td>
+                      <tr>
+                        <td>
+                            {% if item['o'] %}
+                                <a href="#" data-toggle="modal" data-target="#modal-{{ item.station_id }}-{{ item.id }}">
+                                    {{ item.item_name }}
+                                </a>
+                            {% else %}
+                                {{ item.item_name }}
+                            {% endif %}
+                        </td>
+                        <td>{{ item.o.orders|length }}</td>
                         <td>{{ item.station_name }}</td>
                         <td>{{ item.min_qty|commas }}</td>
-                        <td>
-                            {{ item.volume_remaining|commas }}
+                        <td class="{{ item.volume_state }}" style="font-weight: bold">
+                            {% if item.volume_remaining %}
+                                {{ item.volume_remaining|commas }}
+                            {% else %}
+                                <i>None</i>
+                            {% endif %}
                         </td>
-                        <td>{{ item.avg_price|float|round_price|commas }}</td>
+                        <td class="{{ item['price_state'] }}" style="font-weight: bold">
+                            {% if item['o'] %}
+                                {{ item.avg_price|float|round_price|commas(2) }}
+                            {% else %}
+                            <i>N/A</i>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if item.d.twentypct_profit %}
+                                {{ item.d.twentypct_profit|float|round_price|commas(0) }}
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if item.d.jita_price_plus_shipping %}
+                                <abbr title="{{ (item.d.shipping_collateral*100)|float|round_price|commas }}%+{{ item.d.shipping_m3 }}ISK/m3">
+                                    {{ item.d.jita_price_plus_shipping|float|round_price|commas(0) }}
+                                </abbr>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if item.d.jita_min_price %}
+                            {{ item.d.jita_min_price|float|round_price|commas(0) }}
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if item.d.thirtyday_vol %}
+                                {{ item.d.thirtyday_vol }}
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if item.d.overpriced_pct %}
+                                {{ item.d.overpriced_pct|round_nodecimal|commas }}%
+                            {% endif %}
+                        </td>
                      </tr>
                       {%- else -%}
                       <tr>
-                        <td colspan="8">No items.</td>
+                        <td colspan="10">No items.</td>
                       </tr>
                       {%- endfor %}
                     </tbody>
                   </table>
               </div>
           </div>
-          </form>
         </div>
       </div>
 </section>
+{% endblock %}
+
+{% block modals %}
+    {% for d in seed_data %}
+        {% if d['o']: %}
+        <div class="modal fade" id="modal-{{  d.station_id }}-{{ d.id }}" tabindex="-1" role="dialog">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                        <h4 class="modal-title">Market for {{ d.item_name }} in {{ d.station_name }}</h4>
+                    </div>
+                    <div class="modal-body modal-body-scroll">
+                        <h3>Orders</h3>
+                        <table class="table table-striped">
+                            <tr>
+                                <th>Quantity</th>
+                                <th>Price</th>
+                                <th>Expiration</th>
+                                <th>Last Checked</th>
+                            </tr>
+                            {% for order in d['o'].orders %}
+                            <tr>
+                                <td>
+                                    <div>{{ order.volume_remaining|commas }}</div>
+                                </td>
+                                <td class="{% if d.d.twentypct_profit%}{% if order.price > d.d.twentypct_profit|float*1.1 %}danger{% elif order.price > d.d.twentypct_profit %}warning{% endif %}{% endif %}">
+                                    <div>{{ order.price|commas(2) }} ISK</div>
+                                </td>
+                                <td>
+                                    <time class="timeago" datetime="{{order.expires|timeago}}">{{ order.expires}}</time>
+                                </td>
+                                <td>
+                                    <time class="timeago" datetime="{{order.last_updated|timeago}}">{{ order.last_updated}}</time>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </table>
+                    </div>
+                </div><!-- /.modal-content -->
+            </div><!-- /.modal-dialog -->
+        </div><!-- /.modal -->
+        {% endif %}
+    {% endfor %}
 {% endblock %}

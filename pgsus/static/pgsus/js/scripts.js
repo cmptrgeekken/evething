@@ -32,6 +32,7 @@ $(document).ready(function() {
     });
 
     if ($().timeago) {
+        jQuery.timeago.settings.allowFuture = true;
         $('.timeago').timeago();
     }
 

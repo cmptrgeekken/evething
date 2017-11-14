@@ -100,7 +100,8 @@ class Item(models.Model):
 
         return orders.aggregate(total_volume=Sum('volume_remaining'))['total_volume']
 
-    def get_current_orders(self, quantity,
+    def get_current_orders(self,
+                           quantity=None,
                            buy=False,
                            ignore_seed_items=True,
                            source_station_ids=None,
@@ -156,15 +157,22 @@ SELECT price * SUM(im.quantity) /
 
         qty_remaining = quantity
 
+        ttl_order_volume = 0
+
         station_orders = {}
 
         for order in orders:
             if order.price_with_shipping is None:
                 continue
 
-            order_qty = min(qty_remaining, order.volume_remaining)
+            if qty_remaining is None:
+                order_qty = order.volume_remaining
+            else:
+                order_qty = min(qty_remaining, order.volume_remaining)
 
-            qty_remaining = max(0, qty_remaining - order_qty)
+                qty_remaining = max(0, qty_remaining - order_qty)
+
+            ttl_order_volume += order_qty
 
             order.z_order_qty = Decimal(order_qty)
             order.z_price_with_shipping = round(order.price_with_shipping*100)/100
@@ -185,9 +193,14 @@ SELECT price * SUM(im.quantity) /
                 # Do not display orders beyond what is needed
                 break
 
-        self.z_qty_remaining = qty_remaining
-        self.z_qty = quantity - qty_remaining
-        self.z_qty_needed = quantity
+        if quantity is not None:
+            self.z_qty_remaining = qty_remaining
+            self.z_qty = quantity - qty_remaining
+            self.z_qty_needed = quantity
+        else:
+            self.z_qty_remaining = 0
+            self.z_qty = ttl_order_volume
+
         self.z_orders = station_orders
 
         self.z_ttl_price_best = 0

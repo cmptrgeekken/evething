@@ -197,6 +197,13 @@ def seedview(request):
 
     seed_data = dictfetchall(queries.stationorder_seeding_qty % list_id)
 
+    pricing_data = dictfetchall(queries.stationorder_overpriced_cached % list_id)
+
+    data_lookup = dict()
+    for data in pricing_data:
+        key = '%d-%d' % (data['station_id'], data['item_id'])
+        data_lookup[key] = data
+
     low_qty_only = True
     if not request.GET.get('low_qty_only'):
         low_qty_only = False
@@ -206,12 +213,49 @@ def seedview(request):
     seed_items =[]
     stations = dict()
     for data in seed_data:
+        key = '%d-%d' % (data['station_id'], data['id'])
         stations[data['station_id']] = data['station_name']
 
         if data['volume_remaining'] is None or data['volume_remaining'] < data['min_qty']:
-            data['state'] = 'danger'
+            data['volume_state'] = 'danger'
         elif data['volume_remaining'] < data['min_qty'] * 1.2:
-            data['state'] = 'warning'
+            data['volume_state'] = 'warning'
+        else:
+            data['volume_state'] = 'success'
+
+        if key in data_lookup:
+            data['d'] = data_lookup[key]
+        else:
+            data['d'] = dict()
+
+        item = Item.objects.filter(id=data['id']).first()
+
+        if item is not None:
+            item.get_current_orders(
+                ignore_seed_items=False,
+                dest_station_id=data['station_id'],
+                source_station_ids=[data['station_id']])
+
+            if data['station_id'] in item.z_orders:
+                data['o'] = item.z_orders[data['station_id']]
+            else:
+                data['o'] = None
+
+        if 'avg_price' in data['d'] and data['d']['avg_price'] is not None:
+            data['avg_price'] = data['d']['avg_price']
+
+        if not data['avg_price']:
+            data['price_state'] = 'danger'
+        elif 'twentypct_profit' in data['d'] and data['d']['twentypct_profit'] > 0:
+                twentypct_profit = data['d']['twentypct_profit']
+                if twentypct_profit > data['avg_price']:
+                    data['price_state'] = 'success'
+                elif data['avg_price'] < float(twentypct_profit) * 1.1:
+                    data['price_state'] = 'warning'
+                else:
+                    data['price_state'] = 'danger'
+        else:
+            data['price_state'] = 'success'
 
         if low_qty_only and 'state' not in data:
             continue

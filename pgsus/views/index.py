@@ -327,7 +327,7 @@ def freighter(request):
             if shipping_info['max_collateral_exceeded']:
                 errors.append('Max Collateral for this route: %s ISK' % humanize(shipping_info['max_collateral']))
 
-            if is_station:
+            if is_station and shipping_info['rate'] is not None:
                 shipping_info['rate'] += 5000000
                 errors.append('A fee of 5,000,000 ISK has been applied since pick up or destination is a station.')
 
