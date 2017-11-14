@@ -560,6 +560,56 @@ select i.id,
     ORDER BY s.name, i.name
 """
 
+stationorder_seeding_breakdown = """
+SELECT *, 
+    ROUND(jita_min_price+jita_shipping, 2) AS jita_price_plus_shipping, 
+    ROUND((jita_min_price+jita_shipping)*1.025*1.02, 2) AS imported_price,
+    ROUND((jita_min_price+jita_shipping)*1.025*1.02*1.2, 2) AS twentypct_profit,
+    CAST((avg_price / ((jita_min_price + jita_shipping)*1.025*1.02)) * 10000 AS UNSIGNED)/100 AS overpriced_pct
+FROM (
+SELECT    
+   i.id AS item_id, 
+   s.id as station_id, 
+   c.region_id AS region_id,
+   ic.name AS category, 
+   ig.name AS grp, 
+   i.name AS item_name,
+   s.name AS station_name,  
+   iss.min_qty AS min_qty,
+   COUNT(so.order_id) AS active_order_count,
+   COALESCE(AVG(so.times_updated),0) AS avg_order_updates,
+   COALESCE(AVG(DATEDIFF(NOW(),so.issued)),0) AS avg_order_age,
+   COALESCE(AVG(so.times_updated / DATEDIFF(NOW(),so.issued)),0) AS avg_updates_per_day,
+   COALESCE(SUM(so.volume_remaining),0) AS volume_remaining,
+   COALESCE(ROUND(SUM(so.volume_remaining*so.price)/SUM(so.volume_remaining), 2),0) AS avg_price,
+   (SELECT MIN(jso.price) FROM thing_stationorder jso WHERE jso.item_id=i.id AND jso.station_id=60003760 AND jso.buy_order=0) AS jita_min_price,
+   COALESCE(i.sell_fivepct_price,0) AS fivepct_price, 
+   COALESCE(pm.cross_region_collateral, 0.02) AS shipping_collateral,
+   COALESCE(pm.cross_region_m3, 400) AS shipping_m3,
+   ROUND(i.sell_fivepct_price*COALESCE(pm.cross_region_collateral, 0.02)+i.volume*COALESCE(pm.cross_region_m3, 400), 2) AS jita_shipping
+FROM thing_itemstationseed iss
+LEFT JOIN thing_stationorder so ON iss.item_id=so.item_id AND iss.station_id=so.station_id
+LEFT JOIN thing_station s ON s.id=iss.station_id
+LEFT JOIN thing_system sy ON s.system_id=sy.id
+LEFT JOIN thing_constellation c ON sy.constellation_id=c.id
+LEFT JOIN thing_item i ON iss.item_id=i.id
+LEFT JOIN thing_itemgroup ig ON i.item_group_id=ig.id
+LEFT JOIN thing_itemcategory ic ON ig.category_id=ic.id
+LEFT JOIN thing_marketgroup mg1 ON i.market_group_id=mg1.id
+LEFT JOIN thing_freightersystem fs ON fs.system_id=s.system_id
+LEFT JOIN thing_freighterpricemodel pm ON fs.price_model_id=pm.id AND pm.is_thirdparty=1
+LEFT JOIN thing_freightersystem fs2 ON fs2.price_model_id=pm.id AND fs2.system_id=30000142
+WHERE 
+	(so.price IS NULL OR so.buy_order=0)
+	AND iss.list_id=%s
+GROUP BY so.item_id, so.station_id
+) o
+ORDER BY station_name, item_name;
+"""
+
+
+
+
 stationorder_analysis = """
 SELECT so.id, 
     so.name, 

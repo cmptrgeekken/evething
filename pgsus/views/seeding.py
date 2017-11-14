@@ -195,14 +195,7 @@ def seedview(request):
     if list is None or (list.is_private and list.char_id != char_id):
         return redirect('/')
 
-    seed_data = dictfetchall(queries.stationorder_seeding_qty % list_id)
-
-    pricing_data = dictfetchall(queries.stationorder_overpriced_cached % list_id)
-
-    data_lookup = dict()
-    for data in pricing_data:
-        key = '%d-%d' % (data['station_id'], data['item_id'])
-        data_lookup[key] = data
+    seed_data = dictfetchall(queries.stationorder_seeding_breakdown % list_id)
 
     low_qty_only = True
     if not request.GET.get('low_qty_only'):
@@ -213,7 +206,6 @@ def seedview(request):
     seed_items =[]
     stations = dict()
     for data in seed_data:
-        key = '%d-%d' % (data['station_id'], data['id'])
         stations[data['station_id']] = data['station_name']
 
         if data['volume_remaining'] is None or data['volume_remaining'] < data['min_qty']:
@@ -223,12 +215,7 @@ def seedview(request):
         else:
             data['volume_state'] = 'success'
 
-        if key in data_lookup:
-            data['d'] = data_lookup[key]
-        else:
-            data['d'] = dict()
-
-        item = Item.objects.filter(id=data['id']).first()
+        item = Item.objects.filter(id=data['item_id']).first()
 
         if item is not None:
             item.get_current_orders(
@@ -241,13 +228,13 @@ def seedview(request):
             else:
                 data['o'] = None
 
-        if 'avg_price' in data['d'] and data['d']['avg_price'] is not None:
-            data['avg_price'] = data['d']['avg_price']
+            data['thirtyday_vol'] = item.get_volume(region_id=data['region_id'], days=30)
+            data['fiveday_vol'] = item.get_volume(region_id=data['region_id'], days=5)
 
         if not data['avg_price']:
             data['price_state'] = 'danger'
-        elif 'twentypct_profit' in data['d'] and data['d']['twentypct_profit'] > 0:
-                twentypct_profit = data['d']['twentypct_profit']
+        elif data['twentypct_profit'] > 0:
+                twentypct_profit = data['twentypct_profit']
                 if twentypct_profit > data['avg_price']:
                     data['price_state'] = 'success'
                 elif data['avg_price'] < float(twentypct_profit) * 1.1:

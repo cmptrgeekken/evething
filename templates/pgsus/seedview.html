@@ -62,8 +62,9 @@
                           <th><abbr title="20% Profit Sell">20%</abbr></th>
                           <th><abbr title="Jita Price + Shipping (approx)">J+S</abbr></th>
                           <th><abbr title="Jita Price">J</abbr></th>
-                          <th><abbr title="30-day volume">30</abbr></th>
                           <th><abbr title="Overpriced Pct">%</abbr></th>
+                          <th><abbr title="30-day volume">30</abbr></th>
+                          <th><abbr title="5-day volume">5</abbr></th>
                       </tr>
                     </thead>
                     <tbody>
@@ -71,7 +72,7 @@
                       <tr>
                         <td>
                             {% if item['o'] %}
-                                <a href="#" data-toggle="modal" data-target="#modal-{{ item.station_id }}-{{ item.id }}">
+                                <a href="#" data-toggle="modal" data-target="#modal-{{ item.station_id }}-{{ item.item_id }}">
                                     {{ item.item_name }}
                                 </a>
                             {% else %}
@@ -96,30 +97,35 @@
                             {% endif %}
                         </td>
                         <td>
-                            {% if item.d.twentypct_profit %}
-                                {{ item.d.twentypct_profit|float|round_price|commas(0) }}
+                            {% if item.twentypct_profit %}
+                                {{ item.twentypct_profit|float|round_price|commas(0) }}
                             {% endif %}
                         </td>
                         <td>
-                            {% if item.d.jita_price_plus_shipping %}
-                                <abbr title="{{ (item.d.shipping_collateral*100)|float|round_price|commas }}%+{{ item.d.shipping_m3 }}ISK/m3">
-                                    {{ item.d.jita_price_plus_shipping|float|round_price|commas(0) }}
+                            {% if item.jita_price_plus_shipping %}
+                                <abbr title="{{ (item.shipping_collateral*100)|float|round_price|commas }}%+{{ item.shipping_m3 }}ISK/m3">
+                                    {{ item.jita_price_plus_shipping|float|round_price|commas(0) }}
                                 </abbr>
                             {% endif %}
                         </td>
                         <td>
-                            {% if item.d.jita_min_price %}
-                            {{ item.d.jita_min_price|float|round_price|commas(0) }}
+                            {% if item.jita_min_price %}
+                            {{ item.jita_min_price|float|round_price|commas(0) }}
                             {% endif %}
                         </td>
                         <td>
-                            {% if item.d.thirtyday_vol %}
-                                {{ item.d.thirtyday_vol }}
+                            {% if item.overpriced_pct %}
+                                {{ item.overpriced_pct|round_nodecimal|commas }}%
                             {% endif %}
                         </td>
                         <td>
-                            {% if item.d.overpriced_pct %}
-                                {{ item.d.overpriced_pct|round_nodecimal|commas }}%
+                            {% if item.thirtyday_vol %}
+                                {{ item.thirtyday_vol|commas(0) }}
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if item.fiveday_vol %}
+                                {{ item.fiveday_vol|commas(0) }}
                             {% endif %}
                         </td>
                      </tr>
@@ -140,7 +146,7 @@
 {% block modals %}
     {% for d in seed_data %}
         {% if d['o']: %}
-        <div class="modal fade" id="modal-{{  d.station_id }}-{{ d.id }}" tabindex="-1" role="dialog">
+        <div class="modal fade" id="modal-{{  d.station_id }}-{{ d.item_id }}" tabindex="-1" role="dialog">
             <div class="modal-dialog" role="document">
                 <div class="modal-content">
                     <div class="modal-header">
@@ -161,7 +167,7 @@
                                 <td>
                                     <div>{{ order.volume_remaining|commas }}</div>
                                 </td>
-                                <td class="{% if d.d.twentypct_profit%}{% if order.price > d.d.twentypct_profit|float*1.1 %}danger{% elif order.price > d.d.twentypct_profit %}warning{% endif %}{% endif %}">
+                                <td class="{% if d.twentypct_profit%}{% if order.price > d.twentypct_profit|float*1.1 %}danger{% elif order.price > d.twentypct_profit %}warning{% endif %}{% endif %}">
                                     <div>{{ order.price|commas(2) }} ISK</div>
                                 </td>
                                 <td>

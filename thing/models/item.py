@@ -253,10 +253,11 @@ SELECT price * SUM(im.quantity) /
 
         return average
 
-    def get_volume(self, days=7):
-        iph_days = self.pricehistory_set.all()[:days]
-        agg = self.pricehistory_set.filter(pk__in=iph_days).aggregate(Sum('movement'))
-        if agg['movement__sum'] is None:
-            return Decimal('0')
-        else:
-            return Decimal(str(agg['movement__sum']))
+    def get_volume(self, region_id, days=7):
+        from thing.models.pricehistory import PriceHistory
+
+        history = PriceHistory.objects.filter(item_id=self.id, region_id=region_id).order_by('-date').all()[:days]
+
+        volume = sum([h.movement for h in history])
+
+        return volume
