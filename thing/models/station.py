@@ -28,6 +28,7 @@ from django.db import models
 from thing.models.system import System
 from thing.models.item import Item
 from thing.models.userprofile import UserProfile
+from thing.models.corporation import Corporation
 
 numeral_map = zip(
     (1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1),
@@ -58,6 +59,7 @@ class Station(models.Model):
 
     system = models.ForeignKey(System, blank=True, null=True, default=None, on_delete=models.DO_NOTHING)
     type = models.ForeignKey(Item, null=True, default=None, on_delete=models.DO_NOTHING)
+    corporation = models.ForeignKey(Corporation, null=True, default=None, on_delete=models.DO_NOTHING)
 
     class Meta:
         app_label = 'thing'
