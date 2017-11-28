@@ -489,6 +489,7 @@ def pricer(request):
                 item.get_current_orders(pricer_item['qty'],
                                         buy=False,
                                         source_station_ids=source_stations,
+                                        ignore_seed_items=False,
                                         dest_station_id=destination_station,
                                         buy_tolerance=buy_all_tolerance/100)
 
