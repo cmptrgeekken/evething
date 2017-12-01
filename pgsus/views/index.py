@@ -490,6 +490,7 @@ def pricer(request):
                                         buy=False,
                                         source_station_ids=source_stations,
                                         dest_station_id=destination_station,
+                                        ignore_seed_items=False,
                                         buy_tolerance=buy_all_tolerance/100)
 
             total_volume += item.z_ttl_volume
