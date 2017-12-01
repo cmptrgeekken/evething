@@ -36,12 +36,11 @@ from thing.models import Alliance, Character, Contract, ContractItem, Corporatio
 class EsiContracts(APITask):
     name = 'thing.esi_contracts'
 
-    corp_contract_url = '/corporations/{0}/contracts/'
-    corp_contract_item_url = '/corporations/{0}/contracts/{1}/items/'
+    corp_contract_url = '/corporations/%d/contracts/?datasource=tranquility'
+    corp_contract_item_url = '/corporations/%d/contracts/%d/items/?datasource=tranquility'
 
     def run(self, base_url):
-        if self.init() is False:
-            return
+        self.init()
 
         now = datetime.datetime.now()
 
@@ -61,12 +60,13 @@ class EsiContracts(APITask):
         data = self.fetch_esi_url(base_url + (self.corp_contract_url % corp_id), access_token)
 
         if data is False:
-            # self.log_error('API returned an error for url %s' % url)
+            self.log_error('API returned an error for %s' % (self.corp_contract_url % corp_id))
             return
 
         try:
             contracts = json.loads(data)
         except:
+            self.log_error('Cannot parse data: %s' % data)
             return
 
         # Retrieve a list of this user's characters and corporations
@@ -200,18 +200,18 @@ class EsiContracts(APITask):
             assignee_id = int(row['assignee_id'])
             acceptor_id = int(row['acceptor_id'])
 
-            dateIssued = self.parse_esi_date(row['date_issued'])
-            dateExpired = self.parse_esi_date(row['date_expired'])
+            dateIssued = self.parse_api_date(row['date_issued'], True)
+            dateExpired = self.parse_api_date(row['date_expired'], True)
 
             dateAccepted = row['date_accepted']
             if dateAccepted:
-                dateAccepted = self.parse_esi_date(dateAccepted)
+                dateAccepted = self.parse_api_date(dateAccepted, True)
             else:
                 dateAccepted = None
 
             dateCompleted = row['date_completed']
             if dateCompleted:
-                dateCompleted = self.parse_esi_date(dateCompleted)
+                dateCompleted = self.parse_api_date(dateCompleted, True)
             else:
                 dateCompleted = None
 
@@ -261,12 +261,11 @@ class EsiContracts(APITask):
                     num_days=int(row['days_to_complete']),
                     price=Decimal(row['price']),
                     reward=Decimal(row['reward']),
-                    collateral=Decimal(row['collateral'] or 0),
-                    buyout=Decimal(row['buyout'] or 0),
+                    collateral=Decimal(row['collateral'] if 'collateral' in row else 0),
+                    buyout=Decimal(row['buyout'] if 'buyout' in row else 0),
                     volume=Decimal(row['volume']),
                 )
-                if self.apikey.key_type == APIKey.CORPORATION_TYPE:
-                    contract.corporation = self.apikey.corporation
+                contract.corporation_id = corp_id
 
                 new_contracts.append(contract)
 
@@ -292,21 +291,21 @@ class EsiContracts(APITask):
         c_filter.update()
 
         # # Now go fetch items for each contract
-        items_url = self.corp_contract_item_url % (corp_id, contract.contract_id)
+
         new = []
         seen_contracts = []
         # Apparently courier contracts don't have ContractItems support? :ccp:
         for contract in c_filter.filter(retrieved_items=False).exclude(type='Courier'):
-
-            data = self.fetch_esi_url(items_url, access_token)
+            items_url = self.corp_contract_item_url % (corp_id, contract.contract_id)
+            data = self.fetch_esi_url(base_url + items_url, access_token)
             if data is False:
                 # self.log_error('API returned an error for url %s' % url)
-                return
+                continue
 
             try:
                 items_response = json.loads(data)
             except:
-                return
+                continue
 
             contract_items = dict()
 
