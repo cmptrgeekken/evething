@@ -392,7 +392,10 @@ class APITask(Task):
                     r = self._session.get(url + '&token=' + access_token)
                     data = r.text
                     current = self.parse_esi_date(r.headers['date'])
-                    until = self.parse_esi_date(r.headers['expires'])
+                    if 'expires' in r.headers:
+                        until = self.parse_esi_date(r.headers['expires'])
+                    else:
+                        until = datetime.datetime.now() + datetime.timedelta(hours=1)
 
                     self._cache_delta = until - current
                     break
