@@ -102,7 +102,8 @@ class APITask(Task):
         # Set our process ID if it hasn't been set yet
         global this_process
         if this_process is None:
-            this_process = int(current_process()._name.split('-')[1])
+            pname = current_process()._name
+            this_process = pname.split('-')[1] if '-' in pname else 1
 
             # Sleep for staggered worker startup
             if settings.STAGGER_APITASK_STARTUP:
