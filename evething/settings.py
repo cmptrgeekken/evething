@@ -293,7 +293,8 @@ CELERYBEAT_SCHEDULE = {
         'options': {
             'expires': 240*60,
             'queue': 'et_medium'
-        }
+        },
+        'args': ['https://esi.tech.ccp.is/latest'],
     },
 
     # update unknown character/corporation names every hour

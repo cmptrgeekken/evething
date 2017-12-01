@@ -39,8 +39,8 @@ class EsiContracts(APITask):
     corp_contract_url = '/corporations/{0}/contracts/'
     corp_contract_item_url = '/corporations/{0}/contracts/{1}/items/'
 
-    def run(self, base_url, taskstate_id, api_key, zero):
-        if self.init(taskstate_id) is False:
+    def run(self, base_url):
+        if self.init() is False:
             return
 
         now = datetime.datetime.now()
