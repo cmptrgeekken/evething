@@ -583,10 +583,11 @@ SELECT
    COALESCE(SUM(so.volume_remaining),0) AS volume_remaining,
    COALESCE(ROUND(SUM(so.volume_remaining*so.price)/SUM(so.volume_remaining), 2),0) AS avg_price,
    (SELECT MIN(jso.price) FROM thing_stationorder jso WHERE jso.item_id=i.id AND jso.station_id=60003760 AND jso.buy_order=0) AS jita_min_price,
-   COALESCE(i.sell_fivepct_price,0) AS fivepct_price,
-   COALESCE(pm.cross_region_collateral, 0.02) AS shipping_collateral,
-   COALESCE(pm.cross_region_m3, 400) AS shipping_m3,
-   ROUND(i.sell_fivepct_price*COALESCE(pm.cross_region_collateral, 0.02)+i.volume*COALESCE(pm.cross_region_m3, 400), 2) AS jita_shipping
+   (SELECT SUM(jso.volume_remaining) FROM thing_stationorder jso WHERE jso.item_id=i.id AND jso.station_id=60003760 AND jso.buy_order=0) AS jita_current_volume,
+   COALESCE(i.sell_fivepct_price,0) AS fivepct_price, 
+   COALESCE(MAX(pm.cross_region_collateral), 0.02) AS shipping_collateral,
+   COALESCE(MAX(pm.cross_region_m3), 400) AS shipping_m3,
+   ROUND(i.sell_fivepct_price*COALESCE(MAX(pm.cross_region_collateral), 0.02)+i.volume*COALESCE(MAX(pm.cross_region_m3), 400), 2) AS jita_shipping
 FROM thing_itemstationseed iss
 LEFT JOIN thing_stationorder so ON iss.item_id=so.item_id AND iss.station_id=so.station_id AND so.buy_order=0
 LEFT JOIN thing_station s ON s.id=iss.station_id
@@ -1026,4 +1027,13 @@ LEFT JOIN thing_itemmaterial im ON im.item_id=material_group.item_id
 LEFT JOIN thing_item imi ON im.material_id=imi.id
 ) final_group
 GROUP BY final_group.item_name
+"""
+
+closest_celestial = """
+SELECT i.name AS obj_type, item_name
+FROM evedb.thing_mapdenormalize md
+    INNER JOIN thing_item i ON md.type_id=i.id
+    WHERE md.solar_system_id=%d
+    ORDER BY POWER(x - %s,2)+POWER(y-%s,2)+POWER(z-%s,2)
+    LIMIT 1;
 """

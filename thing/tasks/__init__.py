@@ -13,6 +13,7 @@ from characterinfo import CharacterInfo
 from charactersheet import CharacterSheet
 from citadels import Citadels
 from contracts import Contracts
+from esi_contracts import EsiContracts
 from corporationsheet import CorporationSheet
 from industryjobs import IndustryJobs
 from industryjobscurrent import IndustryJobsCurrent
