@@ -46,6 +46,7 @@ def seededit(request):
     parse_results = None
     seed_input = ''
     default_qty = 1
+    multiplier = 1
 
     stations = dict()
 
@@ -108,7 +109,8 @@ def seededit(request):
 
         if updateMethod == 'additems':
             seed_input = request.POST.get('seed_input')
-            default_qty = request.POST.get('default_qty')
+            default_qty = int(request.POST.get('default_qty'))
+            multiplier = int(request.POST.get('multiplier'))
 
             try:
                 parse_results = parse(seed_input)
@@ -134,6 +136,8 @@ def seededit(request):
                                         min_qty = default_qty
                                     else:
                                         min_qty = entry['quantity']
+
+                                    min_qty = min_qty * multiplier
 
                                     existing_item = ItemStationSeed.objects.filter(
                                         list_id=list.id,
@@ -175,6 +179,7 @@ def seededit(request):
             seeditems=seeditems,
             default_qty=default_qty,
             parse_results=parse_results,
+            multiplier=multiplier,
         ),
         request
     )

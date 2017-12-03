@@ -24,35 +24,51 @@
 # ------------------------------------------------------------------------------
 
 import datetime
+import time
 
 from decimal import Decimal
 
-from .apitask import APITask
+import os
+
+# Set up our environment and import settings
+os.environ['DJANGO_SETTINGS_MODULE'] = 'evething.settings'
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "evething.settings")
+import django
+django.setup()
+from django.db import connections, transaction
+from django.conf import settings
+
+from thing.tasks.apitask import APITask
 import json
+
+import sys
+import time
+
 
 from thing.models import Alliance, Character, Contract, ContractItem, Corporation, Event, Station, APIKey, UserProfile
 
 
-class EsiContracts(APITask):
-    name = 'thing.esi_contracts'
+class NotEsi(APITask):
+    # name = 'thing.esi_contracts'
 
     corp_contract_url = '/corporations/%d/contracts/?datasource=tranquility'
     corp_contract_item_url = '/corporations/%d/contracts/%d/items/?datasource=tranquility'
 
-    def run(self, base_url):
+    def stuff(self, base_url):
         self.init()
 
         now = datetime.datetime.now()
 
         character_id = 96243993
         corp_id = 98388312
-        profile = UserProfile.objects.filter(id=4).first()
-        access_token = self.get_access_token(profile.sso_refresh_token)
+        profile = UserProfile.objects.filter(id=1).first()
+        access_token, expires = self.get_access_token(profile.sso_refresh_token)
 
         try:
             character = Character.objects.select_related('details').get(pk=character_id)
         except Character.DoesNotExist:
             self.log_warn('Character %s does not exist!', character_id)
+            print('Character %s does not exist!')
             return
 
         c_filter = Contract.objects.filter(corporation=corp_id)
@@ -61,12 +77,17 @@ class EsiContracts(APITask):
 
         if data is False:
             self.log_error('API returned an error for %s' % (self.corp_contract_url % corp_id))
+            print('API Returned an error! %s' % access_token)
+
             return
 
         try:
             contracts = json.loads(data)
+            if 'response' in contracts:
+                contracts = contracts['response']
         except:
             self.log_error('Cannot parse data: %s' % data)
+            print('Cannot parse data')
             return
 
         # Retrieve a list of this user's characters and corporations
@@ -225,13 +246,13 @@ class EsiContracts(APITask):
                 if contract.status != row['status']:
                     text = "Contract %s changed status from '%s' to '%s'" % (
                         contract, contract.status, row['status'])
-
+                    '''
                     new_events.append(Event(
                         user_id=self.apikey.user.id,
                         issued=now,
                         text=text,
                     ))
-
+                    '''
                     contract.status = row['status']
                     contract.date_accepted = dateAccepted
                     contract.date_completed = dateCompleted
@@ -276,13 +297,13 @@ class EsiContracts(APITask):
                     if assignee is not None:
                         text = "Contract %s was created from '%s' to '%s' with status '%s'" % (
                             contract, contract.get_issuer_name(), assignee.name, contract.status)
-
+                        '''
                         new_events.append(Event(
                             user_id=self.apikey.user.id,
                             issued=now,
                             text=text,
                         ))
-
+                        '''
         # And save the damn things
         Contract.objects.bulk_create(new_contracts)
         Event.objects.bulk_create(new_events)
@@ -297,7 +318,7 @@ class EsiContracts(APITask):
         # Apparently courier contracts don't have ContractItems support? :ccp:
         for contract in c_filter.filter(retrieved_items=False).exclude(type='Courier'):
             items_url = self.corp_contract_item_url % (corp_id, contract.contract_id)
-            data = self.fetch_esi_url(base_url + items_url, access_token)
+            data = self.fetch_esi_url(base_url +items_url, access_token)
             if data is False:
                 # self.log_error('API returned an error for url %s' % url)
                 continue
@@ -307,17 +328,25 @@ class EsiContracts(APITask):
             except:
                 continue
 
+            if 'error' in items_response and items_response['error'] == 'Contract not found!':
+                seen_contracts.append(contract.contract_id)
+                continue
+
             contract_items = dict()
 
             for row in items_response:
-                contract_item = ContractItem(
-                    contract_id=contract.contract_id,
-                    item_id=row['type_id'],
-                    quantity=int(row['quantity']),
-                    raw_quantity=row.get('raw_quantity', 0),
-                    singleton=row['is_singleton'],
-                    included=row['is_included'],
-                )
+                try:
+                    contract_item = ContractItem(
+                        contract_id=contract.contract_id,
+                        item_id=row['type_id'],
+                        quantity=int(row['quantity']),
+                        raw_quantity=row.get('raw_quantity', 0),
+                        singleton=row['is_singleton'],
+                        included=row['is_included'],
+                    )
+                except:
+                    print("Data: %s" %  data)
+                    raise
 
                 if contract_item.item.id not in contract_items:
                     contract_items[contract_item.item.id] = contract_item
@@ -328,8 +357,21 @@ class EsiContracts(APITask):
 
             seen_contracts.append(contract.contract_id)
 
+            if len(seen_contracts) >= 50:
+                print("Persisting %d contract items.." % len(seen_contracts))
+                ContractItem.objects.bulk_create(new)
+                c_filter.filter(contract_id__in=seen_contracts).update(retrieved_items=True)
+                new = []
+                seen_contracts = []
+                time.sleep(5)
+
+
         if new:
             ContractItem.objects.bulk_create(new)
             c_filter.filter(contract_id__in=seen_contracts).update(retrieved_items=True)
 
         return True
+
+if __name__ == '__main__':
+    e = NotEsi()
+    e.stuff('https://esi.tech.ccp.is/latest')

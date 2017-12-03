@@ -98,7 +98,6 @@ def stats(request):
 
     return out
 
-
 def buyback(request):
     buyback_items = PriceWatch.objects.filter(
             active=True,
@@ -491,7 +490,6 @@ def pricer(request):
                                         source_station_ids=source_stations,
                                         ignore_seed_items=False,
                                         dest_station_id=destination_station,
-                                        ignore_seed_items=False,
                                         buy_tolerance=buy_all_tolerance/100)
 
             total_volume += item.z_ttl_volume

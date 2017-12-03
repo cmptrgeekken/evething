@@ -103,7 +103,7 @@ class APITask(Task):
         global this_process
         if this_process is None:
             pname = current_process()._name
-            this_process = pname.split('-')[1] if '-' in pname else 1
+            this_process = int(pname.split('-')[1]) if '-' in pname else 1
 
             # Sleep for staggered worker startup
             if settings.STAGGER_APITASK_STARTUP:
@@ -411,7 +411,11 @@ class APITask(Task):
                 if r.status_code == '400' or r.status_code == 400:
                     self._cache_delta = datetime.timedelta(hours=4)
                     self.log_warn('400 error, caching for 2 hours')
-                return False
+                    return False
+                elif r.status_code == '500' or r.status_code == 500:
+                    self.json = json.loads(data)
+                    if len(self.json['response']) == 0:
+                        return False
         else:
             data = cached_data
 

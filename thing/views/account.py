@@ -75,6 +75,11 @@ def account_oauth_callback(request):
 
         try:
             user_info = json.loads(results)
+
+            char = Character.objects.filter(id=user_info['CharacterID']).first()
+            if char is None:
+                char = Character(id=user_info['CharacterID'], name=user_info['CharacterName'])
+                char.save()
         except:
             user_info = None
 
