@@ -315,8 +315,14 @@ class NotEsi(APITask):
 
         new = []
         seen_contracts = []
+        contracts_to_populate = c_filter.filter(retrieved_items=False).exclude(type='Courier')
+        print("Populating %d contracts..." % len(contracts_to_populate))
+        ttl_count = 0
         # Apparently courier contracts don't have ContractItems support? :ccp:
-        for contract in c_filter.filter(retrieved_items=False).exclude(type='Courier'):
+        for contract in contracts_to_populate:
+            if expires <= datetime.datetime.now():
+                access_token, expires = self.get_access_token(profile.sso_refresh_token)
+
             items_url = self.corp_contract_item_url % (corp_id, contract.contract_id)
             data = self.fetch_esi_url(base_url +items_url, access_token)
             if data is False:
@@ -328,9 +334,13 @@ class NotEsi(APITask):
             except:
                 continue
 
-            if 'error' in items_response and items_response['error'] == 'Contract not found!':
-                seen_contracts.append(contract.contract_id)
-                continue
+            if 'error' in items_response:
+                if items_response['error'] == 'Contract not found!':
+                    seen_contracts.append(contract.contract_id)
+                    continue
+                elif items_response['error'] == 'expired':
+                    print("Refreshing access token!")
+                    access_token, expires = self.get_access_token(profile.sso_refresh_token)
 
             contract_items = dict()
 
@@ -353,19 +363,20 @@ class NotEsi(APITask):
                 else:
                     contract_items[contract_item.item.id].quantity += int(contract_item.quantity)
 
+            print('%d/%d' % (ttl_count+1,len(contracts_to_populate)))
+
+            ttl_count += 1
             new = new + contract_items.values()
 
             seen_contracts.append(contract.contract_id)
 
-            if len(seen_contracts) >= 50:
-                print("Persisting %d contract items.." % len(seen_contracts))
+            if len(seen_contracts) >= 10:
+                print("Persisting %d contract items (Total: %d).." % (len(seen_contracts), ttl_count))
                 ContractItem.objects.bulk_create(new)
                 c_filter.filter(contract_id__in=seen_contracts).update(retrieved_items=True)
                 new = []
                 seen_contracts = []
                 time.sleep(5)
-
-
         if new:
             ContractItem.objects.bulk_create(new)
             c_filter.filter(contract_id__in=seen_contracts).update(retrieved_items=True)

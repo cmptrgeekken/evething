@@ -32,6 +32,7 @@ import datetime
 import hashlib
 import requests
 import time
+import re
 from requests_oauth2 import OAuth2
 
 try:
@@ -412,9 +413,32 @@ class APITask(Task):
                     self._cache_delta = datetime.timedelta(hours=4)
                     self.log_warn('400 error, caching for 2 hours')
                     return False
-                elif r.status_code == '500' or r.status_code == 500:
+                else:
                     self.json = json.loads(data)
-                    if len(self.json['response']) == 0:
+                    if 'error' in self.json:
+                        '''
+                        {"error":"{'error_label': 'ConStopSpamming', 'error_dict': {'remainingTime': 141761L}}"}
+                        '''
+                        if self.json['error'] == 'Contract not found!':
+                            return data
+                        print(data)
+                        if 'error_label' in self.json['error']:
+                            error_body = self.json['error'].replace("'", '"')
+                            error_body = re.sub(r'(\d+)L', r'\1', error_body)
+                            print(error_body)
+                            error_msg = json.loads(error_body)
+                            if error_msg['error_label'] == 'ConStopSpamming':
+                                self.log_warn('Rate Limit Hit: Sleeping for 30 seconds!')
+                                print('Rate Limit Hit: Sleeping for 30 seconds!')
+                                time.sleep(30)
+                                return False
+                            else:
+                                self.log_warn('Unknown error: %s' % data)
+                                print('Unknown error: %s' % data)
+                                return data
+
+                    if 'response' not in self.json or len(self.json['response']) == 0:
+                        print('Unknown error: %s' % data)
                         return False
         else:
             data = cached_data
