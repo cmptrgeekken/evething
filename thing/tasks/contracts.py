@@ -310,10 +310,14 @@ class Contracts(APITask):
                     included=row.attrib['included'] == '1',
                 )
 
-                if contract_item.item.id not in contract_items:
-                    contract_items[contract_item.item.id] = contract_item
-                else:
-                    contract_items[contract_item.item.id].quantity += int(contract_item.quantity)
+                try:
+                    if contract_item.item.id not in contract_items:
+                        contract_items[contract_item.item.id] = contract_item
+                    else:
+                        contract_items[contract_item.item.id].quantity += int(contract_item.quantity)
+                except Exception:
+                    self.log_warn('Contract Item ID %d not found!' % row.attrib['typeID'])
+                    raise
 
             new = new + contract_items.values()
 
