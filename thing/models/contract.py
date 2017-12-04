@@ -79,3 +79,8 @@ class Contract(models.Model):
             return self.issuer_corp.name
         else:
             return self.issuer_char.name
+
+    def get_items(self):
+        from thing.models import ContractItem
+
+        return ContractItem.objects.filter(contract_id=self.contract_id)
