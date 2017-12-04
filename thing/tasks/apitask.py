@@ -421,16 +421,14 @@ class APITask(Task):
                         '''
                         if self.json['error'] == 'Contract not found!':
                             return data
-                        print(data)
                         if 'error_label' in self.json['error']:
                             error_body = self.json['error'].replace("'", '"')
                             error_body = re.sub(r'(\d+)L', r'\1', error_body)
-                            print(error_body)
                             error_msg = json.loads(error_body)
                             if error_msg['error_label'] == 'ConStopSpamming':
-                                self.log_warn('Rate Limit Hit: Sleeping for 30 seconds!')
-                                print('Rate Limit Hit: Sleeping for 30 seconds!')
-                                time.sleep(30)
+                                self.log_warn('Rate Limit Hit: Sleeping for 60 seconds!')
+                                print('Rate Limit Hit: Sleeping for 60 seconds!')
+                                time.sleep(60)
                                 return False
                             else:
                                 self.log_warn('Unknown error: %s' % data)

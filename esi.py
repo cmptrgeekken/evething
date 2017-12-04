@@ -337,6 +337,9 @@ class NotEsi(APITask):
             if 'error' in items_response:
                 if items_response['error'] == 'Contract not found!':
                     seen_contracts.append(contract.contract_id)
+                    ttl_count += 1
+                    if len(seen_contracts) % 10 == 0:
+                        time.sleep(10)
                     continue
                 elif items_response['error'] == 'expired':
                     print("Refreshing access token!")
@@ -376,7 +379,7 @@ class NotEsi(APITask):
                 c_filter.filter(contract_id__in=seen_contracts).update(retrieved_items=True)
                 new = []
                 seen_contracts = []
-                time.sleep(5)
+                time.sleep(10)
         if new:
             ContractItem.objects.bulk_create(new)
             c_filter.filter(contract_id__in=seen_contracts).update(retrieved_items=True)
