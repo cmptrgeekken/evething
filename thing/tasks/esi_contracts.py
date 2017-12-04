@@ -230,7 +230,7 @@ class EsiContracts(APITask):
                         contract, contract.status, row['status'])
 
                     new_events.append(Event(
-                        user_id=self.apikey.user.id,
+                        user_id=1,
                         issued=now,
                         text=text,
                     ))
@@ -281,7 +281,7 @@ class EsiContracts(APITask):
                             contract, contract.get_issuer_name(), assignee.name, contract.status)
 
                         new_events.append(Event(
-                            user_id=self.apikey.user.id,
+                            user_id=1,
                             issued=now,
                             text=text,
                         ))
