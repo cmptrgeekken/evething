@@ -62,6 +62,7 @@
                         <input type="checkbox" name="private" id="private" value="Y" {% if list.is_private %}checked{% endif %} />
                     </div>
                 </div>
+                {% if list.id %}
                 <div class="form-group">
                     <label class="col-sm-2 col-form-label" for="raw_text">Fitting:</label>
                 </div>
@@ -70,6 +71,7 @@
                         <textarea name="raw_text" id="raw_text" rows="15" style="width: 85%;" placeholder="Paste fit here (e.g., 200x 50mn Y-T8 Compact Microwarpdrive)">{{ list.raw_text }}</textarea>
                     </div>
                 </div>
+                {% endif %}
                 <div class="form-group">
                     <div class="col-sm-6">
                         <button type="submit" class="btn btn-primary">

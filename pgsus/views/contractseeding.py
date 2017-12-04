@@ -103,7 +103,8 @@ def contractseededit(request):
 
             do_redirect = True
 
-            if list.raw_text != request.POST.get('raw_text'):
+            if list.raw_text != request.POST.get('raw_text')\
+                    and request.POST.get('raw_text') is not None:
                 list.raw_text = request.POST.get('raw_text')
 
                 seed_input = request.POST.get('raw_text')
