@@ -1,0 +1,92 @@
+{% extends "web_template.html" %}
+{% import 'macros/common.html' as common %}
+  
+{% block title %}Contract Seeding &mdash; {{ list.name }}{% endblock %}
+
+{% block content %}
+<section class="bg-19 bg-center bg-cover">
+    <div>
+        <div class="container section-sm">
+            <h1 class="top-title">Contract Seeding &mdash; {{ list.station.system.name }} &mdash; {{ list.name }}</h1>
+        </div>
+    </div>
+</section>
+
+<section class="container section-md">
+      <div class="row">
+        <div class="col-lg-12">
+            {% if char_id %}
+            <a href="{{ url('pgsus.views.contractseedlist') }}">Back to List View</a>
+            {% endif %}
+            <h3>{{ list.name }} {% if char_id == list.char_id %} <a href="{{ url('pgsus.views.contractseededit') }}?id={{ list.id }}">Edit</a>{% endif %}</h3>
+          <div class="row">
+              <div class="col-lg-6">
+                <table id="seeding-table" class="table table-striped table-bordered table-condensed">
+                    <thead>
+                      <tr class="c">
+                          <th>Name</th>
+                          <th>Issuer</th>
+                          <th>Price</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for contract in list.get_stock() -%}
+                      <tr>
+                        <td>
+                          <a href="#" data-toggle="modal" data-target="#modal-{{ contract.contract_id }}">
+                            {{ contract.title }}
+                          </a>
+                        </td>
+                          <td>
+                              {{ contract.issuer_char.name }}
+                          </td>
+                        <td>{{ contract.price | humanize }}</td>
+
+                     </tr>
+                      {%- else -%}
+                      <tr>
+                        <td colspan="4">No items.</td>
+                      </tr>
+                      {%- endfor %}
+                    </tbody>
+                  </table>
+              </div>
+          </div>
+        </div>
+      </div>
+</section>
+{% endblock %}
+
+{% block modals %}
+    {% for c in list.get_stock() %}
+        <div class="modal fade" id="modal-{{  c.contract_id }}" tabindex="-1" role="dialog">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                        <h4 class="modal-title">Contract Details - {{ c.title }}</h4>
+                    </div>
+                    <div class="modal-body modal-body-scroll">
+                        <h3>Orders</h3>
+                        <table class="table table-striped">
+                            <tr>
+                                <th>Item</th>
+                                <th>Quantity</th>
+                            </tr>
+                            {% for ci in c.get_items() %}
+                            <tr>
+                                <td>
+                                    {{ ci.item.name }}
+                                </td>
+                                <td>
+                                    {{ ci.quantity }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </table>
+                    </div>
+                </div><!-- /.modal-content -->
+            </div><!-- /.modal-dialog -->
+        </div><!-- /.modal -->
+    {% endfor %}
+{% endblock %}

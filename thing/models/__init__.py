@@ -76,3 +76,6 @@ from thing.models.freighterpricemodel import FreighterPriceModel
 from thing.models.poswatchcorpdeposit import PosWatchCorpDeposit
 from thing.models.poswatchcorporation import PosWatchCorporation
 from thing.models.poswatchposhistory import PosWatchPosHistory
+
+from thing.models.contractseeding import ContractSeeding
+from thing.models.contractseedingitem import ContractSeedingItem

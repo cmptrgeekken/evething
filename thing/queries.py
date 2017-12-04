@@ -1037,3 +1037,22 @@ FROM evedb.thing_mapdenormalize md
     ORDER BY POWER(x - %s,2)+POWER(y-%s,2)+POWER(z-%s,2)
     LIMIT 1;
 """
+
+contractseeding_contracts = """
+SELECT DISTINCT c.contract_id AS contract_id
+FROM thing_contract c
+INNER JOIN thing_contractseeding cs ON c.start_station_id=cs.station_id
+INNER JOIN
+(
+SELECT c.contract_id, cs.id AS csid, COUNT(DISTINCT ci.item_id) AS matching_values
+FROM thing_contract c
+	LEFT JOIN thing_contractitem ci ON c.contract_id=ci.contract_id
+    INNER JOIN thing_contractseeding cs ON c.start_station_id=cs.station_id
+    WHERE 
+		ci.item_id IN (SELECT csi.item_id FROM thing_contractseedingitem csi WHERE csi.contractseeding_id=cs.id AND csi.required=1)
+        AND c.status='outstanding' 
+    GROUP BY c.contract_id) search ON c.contract_id=search.contract_id AND search.csid=cs.id
+WHERE 
+	cs.id = %d
+    AND search.matching_values = (SELECT COUNT(*) FROM thing_contractseedingitem csi WHERE csi.contractseeding_id=cs.id AND csi.required=1)
+"""

@@ -31,6 +31,9 @@ urlpatterns += patterns(
     url(r'^seeding$', 'seedlist', name='seedlist'),
     url(r'^seeding/edit', 'seededit', name='seededit'),
     url(r'^seeding/view', 'seedview', name='seedview'),
+    url(r'^contractseeding$', 'contractseedlist', name='contractseedlist'),
+    url(r'^contractseeding/edit', 'contractseededit', name='contractseededit'),
+    url(r'^contractseeding/view', 'contractseedview', name='contractseedview'),
 )
 
 urlpatterns += patterns(
