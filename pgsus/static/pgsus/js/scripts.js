@@ -642,6 +642,6 @@ $(document).ready(function() {
     }).trigger('blur');
 
     $(':input').on('click', function(){
-        this.setSelectionRange&&this.setSelectionRange(0, this.value.length);
+        // this.setSelectionRange&&this.setSelectionRange(0, this.value.length);
     });
 });
