@@ -24,7 +24,7 @@ def contractseedlist(request):
 
     char = Character.objects.filter(id=charid).first()
 
-    public_lists = ContractSeeding.objects.filter(is_private=False, corp_id=char.corporation_id)
+    public_lists = ContractSeeding.objects.filter(is_private=False)
 
     station_lists = dict()
 

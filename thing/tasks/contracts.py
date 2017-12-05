@@ -316,7 +316,7 @@ class Contracts(APITask):
                     else:
                         contract_items[contract_item.item.id].quantity += int(contract_item.quantity)
                 except Exception:
-                    self.log_warn('Contract Item ID %d not found!' % row.attrib['typeID'])
+                    self.log_warn('Contract Item ID %s not found!' % row.attrib['typeID'])
                     raise
 
             new = new + contract_items.values()
