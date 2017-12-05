@@ -215,15 +215,60 @@ def contractseedview(request):
 
     list_id = request.GET.get('id')
 
+    page = int(request.GET.get('page') or 1)
+
     list = ContractSeeding.objects.filter(id=list_id).first()
 
     if list is None or (list.is_private and list.char_id != char_id):
         return redirect('/')
 
+    related_contracts, ttl_pages = list.get_stock(page=page)
+
+    item_lookup = dict()
+
+    for item in list.get_items():
+        item_lookup[item.item_id] = item
+
+    ttl_items = len(item_lookup.keys())
+
+    for c in related_contracts:
+        c_items = c.get_items()
+
+        c_matching_ct = 0
+
+        c_extra_items = []
+        c_missing_items = []
+        c_short_items = []
+
+        c_item_lookup = dict()
+
+        for c_item in c_items:
+            c_item_lookup[c_item.item_id] = c_item
+
+        for id, item in item_lookup.items():
+            if id not in c_item_lookup:
+                c_missing_items.append(dict(name=item.item.name, missing_qty=item.min_qty))
+            elif c_item_lookup[id].quantity < item.min_qty:
+                c_missing_items.append(dict(name=item.item.name, missing_qty=item.min_qty - c_item_lookup[id].quantity))
+            else:
+                c_matching_ct += 1
+
+        for id, c_item in c_item_lookup.items():
+            if id not in item_lookup:
+                c_extra_items.append(dict(name=c_item.item.name, extra_qty=c_item.quantity))
+
+        c.z_matching_pct = float(c_matching_ct) / ttl_items
+        c.z_missing_items = c_missing_items
+        c.z_extra_items = c_extra_items
+
     out = render_page(
         'pgsus/contractseedview.html',
         dict(
             list=list,
+            item_lookup=item_lookup,
+            ttl_pages=ttl_pages,
+            current_page=page,
+            related_contracts=related_contracts,
             char_id=char_id,
         ),
         request

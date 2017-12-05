@@ -7,7 +7,7 @@
 <section class="bg-19 bg-center bg-cover">
     <div>
         <div class="container section-sm">
-            <h1 class="top-title">Contract Seeding &mdash; {{ list.station.system.name }} &mdash; {{ list.name }}</h1>
+            <h1 class="top-title">Contract Seeding &mdash; {{ list.name }}</h1>
         </div>
     </div>
 </section>
@@ -18,19 +18,43 @@
             {% if char_id %}
             <a href="{{ url('pgsus.views.contractseedlist') }}">Back to List View</a>
             {% endif %}
-            <h3>{{ list.name }} {% if char_id == list.char_id %} <a href="{{ url('pgsus.views.contractseededit') }}?id={{ list.id }}">Edit</a>{% endif %}</h3>
+            <h3>{{ list.station.system.name }} &mdash;{{ list.name }} {% if char_id == list.char_id %} <a href="{{ url('pgsus.views.contractseededit') }}?id={{ list.id }}">Edit</a>{% endif %}</h3>
+            <h4>Stock Count: <span style="padding: 0.1em" class="{% if list.get_stock_count() < list.min_qty %}error{% elif list.get_stock_count() < list.min_qty*1.2 %}warning{% else %}success{% endif %}">{{ list.get_stock_count() }} / {{ list.min_qty }}</span></h4>
+            <div id="accordion" role="tablist">
+              <div class="card">
+                <div class="card-header" role="tab" id="headingOne">
+                  <h5 class="mb-0">
+                    <a data-toggle="collapse" href="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
+                      View Fit
+                    </a>
+                    <!-- Trigger -->
+                    <button class="btn btn-xs" type="button" data-clipboard-text="{{ list.raw_text }}">
+                        <img src="{{ STATIC_URL }}pgsus/img/clippy.svg" width="13" title="Copy Fit to Clipboard">
+                    </button>
+                  </h5>
+                </div>
+
+                <div id="collapseOne" class="collapse" role="tabpanel" aria-labelledby="headingOne" data-parent="#accordion">
+                  <div class="card-body">
+                    <pre>{{ list.raw_text }}</pre>
+                  </div>
+                </div>
+              </div>
+            </div>
           <div class="row">
-              <div class="col-lg-6">
+              <div class="col-lg-8">
                 <table id="seeding-table" class="table table-striped table-bordered table-condensed">
                     <thead>
                       <tr class="c">
                           <th>Name</th>
                           <th>Issuer</th>
                           <th>Price</th>
+                          <th><abbr title="% of complete fit">Match</abbr></th>
+                          <th>Expires</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {% for contract in list.get_stock() -%}
+                      {% for contract in related_contracts -%}
                       <tr>
                         <td>
                           <a href="#" data-toggle="modal" data-target="#modal-{{ contract.contract_id }}">
@@ -41,15 +65,24 @@
                               {{ contract.issuer_char.name }}
                           </td>
                         <td>{{ contract.price | humanize }}</td>
-
+                        <td class="{% if contract.z_matching_pct < 0.5 %}error{% elif contract.z_matching_pct < 0.75 %}warning{% else %}success{% endif %}">{{ (contract.z_matching_pct * 100)|round(0) }}%</td>
+                        <td>{{ contract.date_expired }}</td>
                      </tr>
                       {%- else -%}
                       <tr>
-                        <td colspan="4">No items.</td>
+                        <td colspan="5">No items.</td>
                       </tr>
                       {%- endfor %}
                     </tbody>
                   </table>
+
+                  {% if ttl_pages > 1 %}
+                  <ul class="pagination">
+                    {% for p in range(1, ttl_pages) %}
+                    <li class="page-item{% if p == current_page %} active{% endif %}"><a class="page-link" href="{{ url('pgsus.views.contractseedview') }}?id={{ list.id }}&page={{p}}">{{p}}</a></li>
+                    {% endfor %}
+                  </ul>
+                  {% endif %}
               </div>
           </div>
         </div>
@@ -58,32 +91,98 @@
 {% endblock %}
 
 {% block modals %}
-    {% for c in list.get_stock() %}
+    {% for c in related_contracts %}
         <div class="modal fade" id="modal-{{  c.contract_id }}" tabindex="-1" role="dialog">
-            <div class="modal-dialog" role="document">
+            <div class="modal-dialog modal-sm" role="document">
                 <div class="modal-content">
                     <div class="modal-header">
                         <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
                         <h4 class="modal-title">Contract Details - {{ c.title }}</h4>
                     </div>
                     <div class="modal-body modal-body-scroll">
-                        <h3>Orders</h3>
-                        <table class="table table-striped">
-                            <tr>
-                                <th>Item</th>
-                                <th>Quantity</th>
-                            </tr>
-                            {% for ci in c.get_items() %}
-                            <tr>
-                                <td>
-                                    {{ ci.item.name }}
-                                </td>
-                                <td>
-                                    {{ ci.quantity }}
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </table>
+                        <div class="row clearfix">
+                            <div class="col-lg-12">
+                                <ul class="nav nav-tabs">
+                                    <li class="active">
+                                        <a href="#content-{{ c.contract_id }}" data-toggle="tab">Contents</a>
+                                    </li>
+                                    {% if c.z_missing_items %}
+                                    <li>
+                                        <a href="#missing-{{ c.contract_id }}" data-toggle="tab">Missing</a>
+                                    </li>
+                                    {% endif %}
+                                    {% if c.z_extra_items %}
+                                    <li>
+                                        <a href="#extra-{{ c.contract_id }}" data-toggle="tab">Extra</a>
+                                    </li>
+                                    {% endif %}
+                                </ul>
+                            </div>
+                            <div class="col-lg-12">
+                                <div class="tab-content clearfix">
+                                    <div class="tab-pane active" id="content-{{c.contract_id}}">
+                                        <table class="table table-striped">
+                                            <tr>
+                                                <th>Item</th>
+                                                <th>Quantity</th>
+                                            </tr>
+                                            {% for ci in c.get_items() %}
+                                            <tr>
+                                                <td>
+                                                    {{ ci.item.name }}
+                                                </td>
+                                                <td>
+                                                    {{ ci.quantity|commas(0) }}
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </table>
+                                    </div>
+                                    {% if c.z_missing_items %}
+                                    <div class="tab-pane" id="missing-{{ c.contract_id }}">
+                                        <table class="table table-striped">
+                                            <tr>
+                                                <th>Item</th>
+                                                <th>Quantity</th>
+                                            </tr>
+                                            {% for i in c.z_missing_items: %}
+                                            <tr>
+                                                <td>
+                                                    {{ i.name }}
+                                                </td>
+                                                <td>
+                                                    {{ i.missing_qty|commas(0) }}
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </table>
+                                    </div>
+                                    {% endif %}
+                                    {% if c.z_extra_items %}
+                                    <div class="tab-pane" id="extra-{{ c.contract_id }}">
+                                        <table class="table table-striped">
+                                            <tr>
+                                                <th>Item</th>
+                                                <th>Quantity</th>
+                                            </tr>
+                                            {% for i in c.z_extra_items: %}
+                                            <tr>
+                                                <td>
+                                                    {{ i.name }}
+                                                </td>
+                                                <td>
+                                                    {{ i.extra_qty|commas(0) }}
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </table>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+
                     </div>
                 </div><!-- /.modal-content -->
             </div><!-- /.modal-dialog -->

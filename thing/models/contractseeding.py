@@ -32,7 +32,7 @@ from thing.models.contract import Contract
 from thing.models.contractitem import ContractItem
 from thing.utils import dictfetchall
 from thing import queries
-
+import math
 
 class ContractSeeding(models.Model):
     id = models.AutoField(primary_key=True)
@@ -52,17 +52,24 @@ class ContractSeeding(models.Model):
 
         return ContractSeedingItem.objects.filter(contractseeding_id=self.id).order_by('-required', 'item__name')
 
-    def get_stock(self):
+    def get_stock(self, page=1, page_size=20):
         contracts = dictfetchall(queries.contractseeding_contracts % self.id)
         contract_ids = []
         for c in contracts:
             contract_ids.append(c['contract_id'])
 
-        return Contract.objects.filter(contract_id__in=contract_ids).order_by('price')
+        contracts = Contract.objects.filter(contract_id__in=contract_ids).order_by('price')
+
+        ttl_pages = int(math.ceil(len(contracts) / float(page_size))) + 1
+
+        if page is not None:
+            return contracts[page_size*(page-1):page_size*page], ttl_pages
+        else:
+            return contracts
 
     def get_stock_count(self):
         if self.stock_count is None:
-            self.stock_count = len(self.get_stock())
+            self.stock_count = len(self.get_stock(page=None))
         return self.stock_count
 
     def get_seed_price(self):
