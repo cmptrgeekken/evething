@@ -81,9 +81,13 @@ def stats(request):
     buyback_completed_stats = dictfetchall(queries.buyback_completed_stats)
     buyback_pending_stats = dictfetchall(queries.buyback_pending_stats)
 
+
+
+
     out = render_page(
         'pgsus/stats.html',
         dict(
+            login_prompt=request.GET.get('login') == '1',
             fuel_purchase_stats=fuel_purchase_stats,
             fuel_purchase_ttl=fuel_purchase_ttl[0],
             fuel_pending_stats=fuel_pending_stats,

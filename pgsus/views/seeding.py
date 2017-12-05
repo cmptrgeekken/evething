@@ -16,7 +16,7 @@ Displays all seeding lists associated to the currently logged-in user.
 """
 def seedlist(request):
     if 'char' not in request.session:
-        return redirect('/')
+        return redirect('/?login=1')
 
     charid = request.session['char']['id']
 
@@ -39,7 +39,7 @@ def seedlist(request):
 
 def seededit(request):
     if 'char' not in request.session:
-        return redirect('/')
+        return redirect('/?login=1')
 
     char_id = request.session['char']['id']
 
@@ -198,7 +198,7 @@ def seedview(request):
     list = SeedList.objects.filter(id=list_id).first()
 
     if list is None or (list.is_private and list.char_id != char_id):
-        return redirect('/')
+        return redirect('/?login=1')
 
     seed_data = dictfetchall(queries.stationorder_seeding_breakdown % list_id)
 

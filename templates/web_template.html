@@ -85,11 +85,6 @@
             <div class="collapse navbar-collapse" id="bs-navbar-collapse-1">
                 <ul class="nav navbar-nav navbar-right ">
                     <li>
-                        <a href="{{ url('pgsus.views.index') }}" >
-                            Home
-                        </a>
-                    </li>
-                    <li>
                         <a href="{{ url('pgsus.views.buyback') }}">
                             Buyback
                         </a>
@@ -107,7 +102,12 @@
                     {% if charid %}
                     <li>
                         <a href="{{ url('pgsus.views.seedlist') }}">
-                            Seeding
+                            Market Seeding
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ url('pgsus.views.contractseedlist') }}">
+                            Contract Seeding
                         </a>
                     </li>
                     <li>

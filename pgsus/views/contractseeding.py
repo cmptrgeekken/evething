@@ -16,7 +16,7 @@ Displays all seeding lists associated to the currently logged-in user.
 """
 def contractseedlist(request):
     if 'char' not in request.session:
-        return redirect('/')
+        return redirect('/?login=1')
 
     charid = request.session['char']['id']
 
@@ -48,7 +48,7 @@ def contractseedlist(request):
 
 def contractseededit(request):
     if 'char' not in request.session:
-        return redirect('/')
+        return redirect('/?login=1')
 
     char_id = request.session['char']['id']
 
@@ -220,7 +220,7 @@ def contractseedview(request):
     list = ContractSeeding.objects.filter(id=list_id).first()
 
     if list is None or (list.is_private and list.char_id != char_id):
-        return redirect('/')
+        return redirect('/?login=1')
 
     related_contracts, ttl_pages = list.get_stock(page=page)
 
