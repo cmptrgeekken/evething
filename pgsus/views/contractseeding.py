@@ -20,8 +20,6 @@ def contractseedlist(request):
 
     charid = request.session['char']['id']
 
-    lists = ContractSeeding.objects.filter  (char_id=charid)
-
     char = Character.objects.filter(id=charid).first()
 
     public_lists = ContractSeeding.objects.filter(is_private=False)
@@ -29,15 +27,15 @@ def contractseedlist(request):
     station_lists = dict()
 
     for list in public_lists:
-        if list.station.name not in station_lists:
-            station_lists[list.station.name] = []
+        if list.station.system.name not in station_lists:
+            station_lists[list.station.system.name] = []
 
-        station_lists[list.station.name].append(list)
+        station_lists[list.station.system.name].append(list)
 
     out = render_page(
         'pgsus/contractseedlist.html',
         dict(
-            seed_lists=lists,
+            char_id=charid,
             station_lists=station_lists,
         ),
         request
@@ -150,6 +148,16 @@ def contractseededit(request):
 
                     if len(parse_results['bad_lines']) > 0:
                         do_redirect = False
+
+            list.estd_price = 0
+
+            for i in list.get_items():
+                i.item.get_current_orders(quantity=i.min_qty, ignore_seed_items=False, dest_station_id=list.station_id, source_station_ids=[60003760])
+                print('%d, %s = %d' % (i.item_id, i.item.name, i.item.z_ttl_price_multibuy))
+                if i.item.item_group.category.name == 'Ship':
+                    list.estd_price += i.item.z_ttl_price_multibuy
+                else:
+                    list.estd_price += i.item.z_ttl_price_with_shipping
 
             list.save()
 
