@@ -1051,8 +1051,9 @@ FROM thing_contract c
     WHERE 
 		ci.item_id IN (SELECT csi.item_id FROM thing_contractseedingitem csi WHERE csi.contractseeding_id=cs.id AND csi.required=1)
         AND c.status='outstanding' 
+        AND cs.id = %d
     GROUP BY c.contract_id, cs.id) search ON c.contract_id=search.contract_id AND search.csid=cs.id
 WHERE 
-	cs.id = %d
+	cs.id = search.csid
     AND search.matching_values = (SELECT COUNT(*) FROM thing_contractseedingitem csi WHERE csi.contractseeding_id=cs.id AND csi.required=1)
 """

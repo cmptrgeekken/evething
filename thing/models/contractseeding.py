@@ -43,6 +43,7 @@ class ContractSeeding(models.Model):
     min_qty = models.IntegerField()
     is_private = models.BooleanField()
     raw_text = models.TextField()
+    estd_price = models.DecimalField(max_digits=20, decimal_places=2)
 
     stock_count = None
     seed_price = None

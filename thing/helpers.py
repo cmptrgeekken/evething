@@ -84,6 +84,18 @@ def round_price(value):
 def round_nodecimal(value):
     return round(value, 0)
 
+@register.filter
+def slugify(value):
+    import unicodedata
+    """
+    Converts to lowercase, removes non-word characters (alphanumerics and
+    underscores) and converts spaces to hyphens. Also strips leading and
+    trailing whitespace.
+    """
+    value = unicodedata.normalize('NFKD', value).encode('ascii', 'ignore').decode('ascii')
+    value = re.sub('[^\w\s-]', '', value).strip().lower()
+    return re.sub('[-\s]+', '-', value)
+
 def _commafy(s):
     r = []
     for i, c in enumerate(reversed(s)):

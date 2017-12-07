@@ -63,6 +63,12 @@ def render_page(template, data, request, character_ids=None, corporation_ids=Non
         response_type='code',
         state='client_authorize')
 
+    data['oauth_authorize_ui_url'] = oauth2_handler.authorize_url(
+        'esi-ui.open_window.v1',
+        response_type='code',
+        state='client_authorize',
+    )
+
     if request.user.is_authenticated():
         # Get nav counts data
         cache_key = 'nav_counts:%s' % (request.user.id)

@@ -1,13 +1,13 @@
 {% extends "web_template.html" %}
 {% import 'macros/common.html' as common %}
   
-{% block title %}Seeding{% endblock %}
+{% block title %}Contract Fits{% endblock %}
 
 {% block content %}
 <section class="bg-19 bg-center bg-cover">
     <div>
         <div class="container section-sm">
-            <h1 class="top-title">Contract Seeding</h1>
+            <h1 class="top-title">Contract Fits</h1>
         </div>
     </div>
 </section>
@@ -15,42 +15,51 @@
 <section class="container section-md">
       <div class="row">
         <div class="col-lg-12">
-            <h3>Your Contracts:</h3>
-            {% if seed_lists|length > 0 %}
-            <ul>
-            {% for list in seed_lists %}
-                <li>{{ list.station.system.name }} &mdash; {{ list.name }} <i>({% if list.is_private %}Private{% else %}Public{% endif %})</i>  ({{ list.get_stock_count() }} / {{ list.min_qty }}) <a href="{{url('pgsus.views.contractseededit')}}?id={{list.id}}">Edit</a> | <a href="{{url('pgsus.views.contractseedview')}}?id={{list.id}}">View</a></li>
-            {% endfor %}
-            </ul>
-            {% else %}
-            <i>You haven't defined any seeding lists!</i>
-            {% endif %}
-            <div>
-                <a href="{{ url('pgsus.views.contractseededit') }}">Add List!</a>
-            </div>
-            <h3>Seeding Contracts:</h3>
+            <h4>
+                <a href="{{ url('pgsus.views.contractseededit') }}">Add Fit!</a>
+            </h4>
             {% if station_lists|length > 0 %}
-                {% for station,lists in station_lists.items() %}
-                <div class="row">
-                    <div class="col-md-6">
-                    <h4>{{ station }}</h4>
-                    <table class="table table-bordered">
-                        <tr>
-                            <th>List Name</th>
-                            <th width="20%">Quantity</th>
-                            <th>Est. Seed Price</th>
-                        </tr>
-                    {% for list in lists %}
-                        <tr>
-                            <td><a href="{{url('pgsus.views.contractseedview')}}?id={{list.id}}">{{ list.name }}</a> </td>
-                            <td class="{% if list.get_stock_count() < list.min_qty %}error{% elif list.get_stock_count() < list.min_qty*1.2 %}warning{% else %}success{% endif %}">({{ list.get_stock_count() }} / {{ list.min_qty }})</td>
-                            <td><i>TBA</i></td>
-                        </tr>
-                    {% endfor %}
-                    </table>
-                    </div>
-                </div>
-                {% endfor %}
+                <div class="row clearfix">
+                    <div class="col-lg-12">
+                        <ul class="nav nav-tabs" style="border-bottom: 0;">
+                            {% for station,lists in station_lists.items() %}
+                                <li class="{% if loop.index == 1 %}active{% endif %}">
+                                    <a href="#content-{{ station|slugify }}" data-toggle="tab">{{ station }}</a>
+                                </li>
+                            {% endfor %}
+                            </ul>
+                        </div>
+                        <div class="col-lg-8">
+                            <div class="tab-content clearfix">
+                                {% for station,lists in station_lists.items() %}
+                                <div class="tab-pane{% if loop.index == 1 %} active{% endif %}" id="content-{{ station|slugify }}">
+                                    <table class="table table-bordered">
+                                        <tr>
+                                            <th>Fit Name</th>
+                                            <th width="20%">Quantity</th>
+                                            <th>Est. Seed Price</th>
+                                        </tr>
+                                    {% for list in lists %}
+                                        <tr>
+                                            <td>
+                                                <a href="{{url('pgsus.views.contractseedview')}}?id={{list.id}}">{{ list.name }}</a>
+                                                {% if list.char_id == char_id %}
+                                                (<a href="{{url('pgsus.views.contractseededit')}}?id={{list.id}}">Edit</a>)
+                                                {% endif %}
+                                            </td>
+                                            <td class="{% if list.get_stock_count() < list.min_qty %}error{% elif list.get_stock_count() < list.min_qty*1.2 %}warning{% else %}success{% endif %}">({{ list.get_stock_count() }} / {{ list.min_qty }})</td>
+                                            <td>
+                                                {% if list.estd_price > 0 %}
+                                                <abbr title="Assumes hulls are built locally.">{{ list.estd_price | humanize }} ISK</abbr>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                    </table>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
             {% else %}
             <i>None currently shared!</i>
             {% endif %}

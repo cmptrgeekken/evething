@@ -56,6 +56,14 @@
                       <input name="min_qty" id="min_qty" required="required" type="number" min="1" step="1" value="{{ min_qty }}">
                   </div>
                 </div>
+                {% if list.estd_price %}
+                <div class="form-group">
+                    <label class="col-sm-2 col-form-label">Estimated Price:</label>
+                    <div class="col-sm-3">
+                        <abbr title="Assumes hulls are built locally.">{{ list.estd_price | humanize }} ISK</abbr>
+                    </div>
+                </div>
+                {% endif %}
                 <div class="form-group">
                     <label class="col-sm-2 col-form-label" for="private">Private:</label>
                     <div class="col-sm-1">
@@ -88,19 +96,17 @@
                 <input type="hidden" name="method" value="manageitems"/>
                 <table class="table table-bordered table-hover">
                     <tr>
-                        <th width="30" align="center"><abbr title="Delete">Del</abbr></th>
+                        <th width="30" align="center"><abbr title="Used to identify the contract">ID</abbr></th>
                         <th>Item</th>
-                        <th>Identifier</th>
                         <th>Min Qty</th>
                     </tr>
                     {% for item in seeditems %}
                     <tr>
                         <td align="center">
                             <input type="hidden" name="seed_id" value="{{item.id}}"/>
-                            <input type="checkbox" name="del_id" value="{{ item.id }}"/>
+                            <input type="checkbox" name="reqd_id" value="{{ item.id }}"{% if item.required %} checked{% endif %}/>
                         </td>
                         <td class="{% if item.required %}success{% endif %}">{{ item.item.name }}</td>
-                        <td><input type="checkbox" name="reqd_id" value="{{ item.id }}"{% if item.required %} checked{% endif %}/></td>
                         <td><input type="number" name="min_qty" value="{{ item.min_qty }}"/></td>
                     </tr>
                     {% endfor %}

@@ -80,6 +80,10 @@ def account_oauth_callback(request):
             if char is None:
                 char = Character(id=user_info['CharacterID'], name=user_info['CharacterName'])
                 char.save()
+
+            if 'refresh_token' in response:
+                char.sso_refresh_token = response['refresh_token']
+                char.save()
         except:
             user_info = None
 

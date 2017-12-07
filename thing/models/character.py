@@ -34,6 +34,7 @@ class Character(models.Model):
 
     name = models.CharField(max_length=64)
     corporation = models.ForeignKey(Corporation, blank=True, null=True, on_delete=models.DO_NOTHING)
+    sso_refresh_token = models.CharField(max_length=4000)
 
     class Meta:
         app_label = 'thing'

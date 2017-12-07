@@ -20,6 +20,9 @@
             {% endif %}
             <h3>{{ list.station.system.name }} &mdash;{{ list.name }} {% if char_id == list.char_id %} <a href="{{ url('pgsus.views.contractseededit') }}?id={{ list.id }}">Edit</a>{% endif %}</h3>
             <h4>Stock Count: <span style="padding: 0.1em" class="{% if list.get_stock_count() < list.min_qty %}error{% elif list.get_stock_count() < list.min_qty*1.2 %}warning{% else %}success{% endif %}">{{ list.get_stock_count() }} / {{ list.min_qty }}</span></h4>
+            {% if list.estd_price > 0 %}
+            <h4>Estd. Price: <abbr title="Assumes hulls are built locally.">{{ list.estd_price | humanize }} ISK</abbr></h4>
+            {% endif %}
             <div id="accordion" role="tablist">
               <div class="card">
                 <div class="card-header" role="tab" id="headingOne">
@@ -46,7 +49,7 @@
                 <table id="seeding-table" class="table table-striped table-bordered table-condensed">
                     <thead>
                       <tr class="c">
-                          <th>Name</th>
+                          <th>Title</th>
                           <th>Issuer</th>
                           <th>Price</th>
                           <th><abbr title="% of complete fit">Match</abbr></th>
@@ -58,7 +61,12 @@
                       <tr>
                         <td>
                           <a href="#" data-toggle="modal" data-target="#modal-{{ contract.contract_id }}">
-                            {{ contract.title }}
+                              {% if contract.title %}
+                                {{ contract.title }}
+                              {% else %}
+                                <i>No Title</i>
+                              {% endif %}
+
                           </a>
                         </td>
                           <td>
