@@ -30,7 +30,7 @@ from thing.models.character import Character
 
 class CharacterApiScope(models.Model):
     character = models.ForeignKey(Character, on_delete=models.DO_NOTHING)
-    scope = models.CharField()
+    scope = models.CharField(max_length=50)
 
     class Meta:
         app_label = 'thing'

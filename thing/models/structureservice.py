@@ -30,8 +30,8 @@ from thing.models.structure import Structure
 
 class StructureService(models.Model):
     structure = models.ForeignKey(Structure, on_delete=models.DO_NOTHING)
-    name = models.CharField()
-    state = models.CharField()
+    name = models.CharField(max_length=4000)
+    state = models.CharField(max_length=45)
 
     class Meta:
         app_label = 'thing'
