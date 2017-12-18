@@ -31,7 +31,7 @@ from decimal import Decimal
 from .apitask import APITask
 import json
 
-from thing.models import Alliance, Character, Contract, ContractItem, Corporation, Event, Station, APIKey, UserProfile
+from thing.models import Alliance, Character, Contract, ContractItem, Corporation, Event, Item, Station, APIKey, UserProfile
 
 
 class EsiContracts(APITask):
@@ -338,10 +338,26 @@ class EsiContracts(APITask):
                     included=row['is_included'],
                 )
 
-                if contract_item.item.id not in contract_items:
-                    contract_items[contract_item.item.id] = contract_item
-                else:
-                    contract_items[contract_item.item.id].quantity += int(contract_item.quantity)
+                try:
+                    if contract_item.item.id not in contract_items:
+                        contract_items[contract_item.item.id] = contract_item
+                    else:
+                        contract_items[contract_item.item.id].quantity += int(contract_item.quantity)
+                except:
+                    self.log_error('Item not found: %d', row['type_id'])
+
+                    new_item = Item(
+                        id=row['type_id'],
+                        name='**UNKNOWN**',
+                        item_group=20,  # Mineral, just
+                    )
+
+                    new_item.save()
+
+                    if contract_item.item.id not in contract_items:
+                        contract_items[contract_item.item.id] = contract_item
+                    else:
+                        contract_items[contract_item.item.id].quantity += int(contract_item.quantity)
 
             ttl_count += 1
             new = new + contract_items.values()
