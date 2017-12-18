@@ -79,3 +79,8 @@ from thing.models.poswatchposhistory import PosWatchPosHistory
 
 from thing.models.contractseeding import ContractSeeding
 from thing.models.contractseedingitem import ContractSeedingItem
+
+from thing.models.structure import Structure
+from thing.models.structureservice import StructureService
+from thing.models.moonextraction import MoonExtraction
+from thing.models.characterapiscope import CharacterApiScope

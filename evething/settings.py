@@ -297,6 +297,16 @@ CELERYBEAT_SCHEDULE = {
         'args': ['https://esi.tech.ccp.is/latest'],
     },
 
+    'corp_moon_updater': {
+        'task': 'thing.moonextraction',
+        'schedule': timedelta(hours=1),
+        'options': {
+            'expires': 240 * 60,
+            'queue': 'et_medium'
+        },
+        'args': ['https://esi.tech.ccp.is/latest'],
+    },
+
     # update unknown character/corporation names every hour
     'fix-names': {
         'task': 'thing.fix_names',

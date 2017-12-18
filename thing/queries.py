@@ -1030,7 +1030,7 @@ GROUP BY final_group.item_name
 """
 
 closest_celestial = """
-SELECT i.name AS obj_type, item_name
+SELECT md.item_id
 FROM evedb.thing_mapdenormalize md
     INNER JOIN thing_item i ON md.type_id=i.id
     WHERE md.solar_system_id=%d
