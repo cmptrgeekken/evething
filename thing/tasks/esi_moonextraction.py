@@ -30,6 +30,9 @@ import json
 
 from thing.models import CharacterApiScope, MoonExtraction, Station, Structure, StructureService
 from thing import queries
+from thing.utils import dictfetchall
+
+import traceback
 
 class EsiMoonExtraction(APITask):
     name = 'thing.moonextraction'
@@ -79,11 +82,21 @@ class EsiMoonExtraction(APITask):
 
                         results = self.fetch_esi_url(self.structure_url % struct['structure_id'], access_token)
 
-                        info = json.loads(results)
+                        info = None
+
+                        try:
+                            info = json.loads(results)
+                        except:
+                            self.log_debug("Cannot find info on structure: %s" % struct['structure_id'])
+                            continue
+
+                        if info is None:
+                            continue
 
                         db_station = Station.objects.filter(id=struct['structure_id']).first()
                         if db_station is None:
                             db_station = Station(
+                                id=struct['structure_id'],
                                 name=info['name'],
                                 is_citadel=True,
                                 system_id=info['solar_system_id'],
@@ -97,17 +110,19 @@ class EsiMoonExtraction(APITask):
                         db_struct.y = info['position']['y']
                         db_struct.z = info['position']['z']
 
-                        closest_celestial_id = self.dictfetchall(queries.closest_celestial % (
-                            db_station.system_id, db_struct.x,
-                            db_struct.y, db_struct.z))[0]
+                        closest_celestial_id = dictfetchall(queries.closest_celestial % (
+                            info['solar_system_id'], db_struct.x,
+                            db_struct.y, db_struct.z))[0]['item_id']
 
                         db_struct.closest_celestial_id = closest_celestial_id
 
-                    db_struct.fuel_expires=self.parse_api_date(struct['fuel_expires'], True)
+                    if 'fuel_expires' in struct:
+                        db_struct.fuel_expires=self.parse_api_date(struct['fuel_expires'], True)
+
                     db_struct.state_timer_start=self.parse_api_date(struct['state_timer_start'], True)
                     db_struct.state_timer_end=self.parse_api_date(struct['state_timer_end'], True)
 
-                    db_struct = Structure.objects.filter(station_id=struct['structure_id'])
+                    db_struct.save()
 
                     StructureService.objects.filter(structure_id=db_struct.id).delete()
                     if 'services' in struct:
@@ -120,27 +135,28 @@ class EsiMoonExtraction(APITask):
 
                             db_service.save()
 
-                    if expires <= datetime.datetime.now():
-                        access_token, expires = self.get_access_token(refresh_token)
+            if expires <= datetime.datetime.now():
+                access_token, expires = self.get_access_token(refresh_token)
 
-                    results = self.fetch_esi_url(self.mining_url % corp_id, access_token)
+            results = self.fetch_esi_url(self.mining_url % corp_id, access_token)
 
-                    mining_info = json.loads(results)
+            mining_info = json.loads(results)
 
-                    for info in mining_info:
-                        db_moonextract = MoonExtraction.objects.filter(moon_id=info['moon_id']).first()
-                        if db_moonextract is None:
-                            db_moonextract = MoonExtraction(
-                                structure_id=info['structure_id'],
-                                moon_id=info['moon_id'],
-                            )
+            for info in mining_info:
+                db_moonextract = MoonExtraction.objects.filter(moon_id=info['moon_id']).first()
+                if db_moonextract is None:
+                    db_moonextract = MoonExtraction(
+                        moon_id=info['moon_id'],
+                    )
 
-                        db_moonextract.extraction_start_time = self.parse_api_date(info['extraction_start_time'], True)
-                        db_moonextract.chunk_arrival_time = self.parse_api_date(info['chunk_arrival_time'], True)
-                        db_moonextract.natural_decay_time = self.parse_api_date(info['natural_decay_time'], True)
+                db_moonextract.extraction_start_time = self.parse_api_date(info['extraction_start_time'], True)
+                db_moonextract.chunk_arrival_time = self.parse_api_date(info['chunk_arrival_time'], True)
+                db_moonextract.natural_decay_time = self.parse_api_date(info['natural_decay_time'], True)
+                db_moonextract.structure_id=info['structure_id']
 
-                        db_moonextract.save()
-        except:
+                db_moonextract.save()
+        except Exception,e:
+            traceback.print_exc(e)
             return True
 
         return True
