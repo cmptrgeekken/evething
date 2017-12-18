@@ -349,7 +349,7 @@ class EsiContracts(APITask):
                     new_item = Item(
                         id=row['type_id'],
                         name='**UNKNOWN**',
-                        item_group=20,  # Mineral, just
+                        item_group_id=20,  # Mineral, just
                     )
 
                     new_item.save()

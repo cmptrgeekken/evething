@@ -1033,7 +1033,7 @@ closest_celestial = """
 SELECT md.item_id
 FROM evedb.thing_mapdenormalize md
     INNER JOIN thing_item i ON md.type_id=i.id
-    WHERE md.solar_system_id=%d
+    WHERE md.solar_system_id=%s
     ORDER BY POWER(x - %s,2)+POWER(y-%s,2)+POWER(z-%s,2)
     LIMIT 1;
 """
