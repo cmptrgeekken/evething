@@ -30,7 +30,7 @@ from thing.models.mapdenormalize import MapDenormalize
 
 
 class Structure(models.Model):
-    station = models.ForeignKey(Station, on_delete=models.DO_NOTHING)
+    station = models.ForeignKey(Station, on_delete=models.DO_NOTHING, unique=True)
     profile_id = models.IntegerField()
     fuel_expires = models.DateTimeField()
     state_timer_start = models.DateTimeField()
@@ -38,11 +38,10 @@ class Structure(models.Model):
     x = models.FloatField()
     y = models.FloatField()
     z = models.FloatField()
-    closest_celestial = models.ForeignKey(MapDenormalize, on_delete=models.DO_NOTHING)
+    closest_celestial = models.ForeignKey(MapDenormalize, on_delete=models.DO_NOTHING, to_field='item_id', db_column='closest_celestial_id')
 
     class Meta:
         app_label = 'thing'
 
     def __unicode__(self):
         return self.station.name
-

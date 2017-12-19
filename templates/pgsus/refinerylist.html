@@ -1,0 +1,63 @@
+{% extends "web_template.html" %}
+{% import 'macros/common.html' as common %}
+  
+{% block title %}Moon Refineries{% endblock %}
+
+{% block content %}
+<section class="bg-19 bg-center bg-cover">
+    <div>
+        <div class="container section-sm">
+            <h1 class="top-title">Moon Refineries</h1>
+        </div>
+    </div>
+</section>
+
+<section class="container section-md">
+      <div class="row">
+        <div class="col-lg-12">
+            {% if structures|length > 0 %}
+                <table class="table table-striped">
+                    <tr>
+                        <th>Name</th>
+                        <th>Drill Online</th>
+                        <th>Chunking</th>
+                        <th>Extract Time</th>
+                        <th>Chunk Time</th>
+                        <th>Decay Time</th>
+                    </tr>
+                    {% for s in structures %}
+                    <tr>
+                        <td>
+                            {{ s.station.name }}
+                        </td>
+                        <td style="text-align: center;">
+                            {% if s.z_online %}YES{% else %}NO{% endif %}
+                        </td>
+                        <td style="text-align: center;" class="{% if s.z_not_extracting %}error{% endif %}">
+                            {% if s.z_not_extracting %}NO{% else %}YES{% endif %}
+                        </td>
+                        {% if s.z_moon_info %}
+                        <td>
+                            {{ s.z_moon_info.extraction_start_time }}
+                        </td>
+                        <td>
+                            {{ s.z_moon_info.chunk_arrival_time }}
+                        </td>
+                        <td>
+                            {{ s.z_moon_info.natural_decay_time }}
+                        </td>
+                        {% else %}
+                        <td colspan="3">
+                            <i>Not Applicable</i>
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                </table>
+            {% else %}
+            <i>No Structures Found!</i>
+            {% endif %}
+        </div>
+      </div>
+</section>
+{% endblock %}

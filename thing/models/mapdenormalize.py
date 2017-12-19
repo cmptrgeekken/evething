@@ -33,7 +33,7 @@ from thing.models.itemgroup import ItemGroup
 
 
 class MapDenormalize(models.Model):
-    #item_id = models.IntegerField()
+    item_id = models.IntegerField(unique=True, primary_key=True)
     type = models.ForeignKey(Item, on_delete=models.DO_NOTHING)
     group = models.ForeignKey(ItemGroup, on_delete=models.DO_NOTHING)
     solar_system = models.ForeignKey(System, on_delete=models.DO_NOTHING)

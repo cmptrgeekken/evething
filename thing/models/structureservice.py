@@ -29,7 +29,7 @@ from thing.models.structure import Structure
 
 
 class StructureService(models.Model):
-    structure = models.ForeignKey(Structure, on_delete=models.DO_NOTHING)
+    structure = models.ForeignKey(Structure, on_delete=models.DO_NOTHING, to_field='station_id', db_column='structure_id')
     name = models.CharField(max_length=4000)
     state = models.CharField(max_length=45)
 

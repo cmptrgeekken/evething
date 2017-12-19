@@ -25,20 +25,12 @@
 
 from django.db import models
 
-from thing.models.structure import Structure
-from thing.models.mapdenormalize import MapDenormalize
+from thing.models.character import Character
 
 
-class MoonExtraction(models.Model):
-    structure = models.ForeignKey(Structure, on_delete=models.DO_NOTHING, to_field='station_id', db_column='structure_id')
-    moon = models.ForeignKey(MapDenormalize, on_delete=models.DO_NOTHING, to_field='item_id', db_column='moon_id')
-    extraction_start_time = models.DateTimeField()
-    chunk_arrival_time = models.DateTimeField()
-    natural_decay_time = models.DateTimeField()
+class CharacterRole(models.Model):
+    id = models.IntegerField(primary_key=True)
 
-    class Meta:
-        app_label = 'thing'
-
-    def __unicode__(self):
-        return self.moon.item_name
+    character = models.ForeignKey(Character, on_delete=models.DO_NOTHING)
+    role = models.CharField(max_length=50)
 

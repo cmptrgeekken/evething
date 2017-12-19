@@ -69,13 +69,30 @@ class EsiMoonExtraction(APITask):
                     break
 
                 for struct in structure_info:
+                    db_station = Station.objects.filter(id=struct['structure_id']).first()
+                    if db_station is None:
+                        db_station = Station(
+                            id=struct['structure_id'],
+                            name=info['name'],
+                            is_citadel=True,
+                            is_unknown=False,
+                            system_id=info['solar_system_id'],
+                            corporation_id=struct['corporation_id'],
+                            type_id=struct['type_id'],
+                        )
+
+                        db_station.save()
+
                     db_struct = Structure.objects.filter(station_id=struct['structure_id']).first()
 
-                    if db_struct is None:
-                        db_struct = Structure(
-                            station_id=struct['structure_id'],
-                            profile_id=struct['profile_id'],
-                        )
+                    if db_struct is None\
+                            or db_station.is_unknown:
+
+                        if db_struct is None:
+                            db_struct = Structure(
+                                station_id=struct['structure_id'],
+                                profile_id=struct['profile_id'],
+                            )
 
                         if expires <= datetime.datetime.now():
                             access_token, expires = self.get_access_token(refresh_token)
@@ -93,18 +110,10 @@ class EsiMoonExtraction(APITask):
                         if info is None:
                             continue
 
-                        db_station = Station.objects.filter(id=struct['structure_id']).first()
-                        if db_station is None:
-                            db_station = Station(
-                                id=struct['structure_id'],
-                                name=info['name'],
-                                is_citadel=True,
-                                system_id=info['solar_system_id'],
-                                corporation_id=struct['corporation_id'],
-                                type_id=struct['type_id'],
-                            )
-
-                            db_station.save()
+                        db_station.name = info['name']
+                        db_station.is_unknown = False
+                        db_station.system_id = info['solar_system_id']
+                        db_station.save()
 
                         db_struct.x = info['position']['x']
                         db_struct.y = info['position']['y']
