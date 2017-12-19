@@ -1057,3 +1057,28 @@ WHERE
 	cs.id = search.csid
     AND search.matching_values = (SELECT COUNT(*) FROM thing_contractseedingitem csi WHERE csi.contractseeding_id=cs.id AND csi.required=1)
 """
+
+assetlist_query = """
+select ea1.item_id,
+	   i.name AS item_name,
+       ea1.quantity,
+	   i2.name AS parent_name,
+	   ea2.item_id AS parent_id,
+       s.name AS station_name,
+       COALESCE(sy1.name, sy2.name) AS system_name,
+       ea1.quantity * (SELECT MIN(so.price) FROM thing_stationorder so where so.buy_order=0 AND so.item_id=i.id AND so.station_id=60003760) AS rough_value,
+       ea1.quantity * i.volume AS m3
+	from thing_esiasset ea1 
+	inner join thing_item i on ea1.type_id=i.id
+	LEFT JOIN thing_esiasset ea2 ON ea1.location_id=ea2.item_id
+    LEFT JOIN thing_item i2 ON ea2.type_id=i2.id
+    LEFT JOIN thing_station s ON s.id = COALESCE(ea2.location_id, ea1.location_id)
+    LEFT JOIN thing_system sy1 ON sy1.id = COALESCE(ea2.location_id, ea1.location_id)
+    LEFT JOIN thing_system sy2 ON sy2.id = s.system_id
+    WHERE %s
+    ORDER BY system_name ASC, parent_id IS NULL DESC;;
+"""
+
+assetlist_corporation_query = assetlist_query % "ea1.corporation_id=%s"
+
+assetlist_character_query = assetlist_query % "ea1.character_id=%s"
