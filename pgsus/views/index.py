@@ -36,6 +36,8 @@ from thing.stuff import render_page, datetime  # NOPEP8
 from thing.helpers import humanize
 from thing.utils import ApiHelper
 
+from django.shortcuts import redirect, render
+
 from django.http import HttpResponse
 
 from pgsus import Calculator
@@ -793,6 +795,84 @@ def seeding(request):
             seeder=seeder,
             seeders=seeders,
 
+        ),
+        request
+    )
+
+    return out
+
+
+def assets(request):
+    #if 'char' not in request.session:
+    #    return redirect('/?login=1')
+
+    #charid = request.session['char']['id']
+
+    char = Character.objects.filter(name='Penny Beck').first()
+
+    if request.GET.get('for_corp') == '1':
+        query = queries.assetlist_corporation_query % char.corporation.id
+    else:
+        query = queries.assetlist_character_query % char.id
+
+    print(char.corporation.id)
+
+    results = dictfetchall(query)
+
+    assets = dict()
+
+    sorted_assets = []
+
+    total_value = 0
+    total_m3 = 0
+    for result in results:
+        if result['station_name'] is not None:
+            key = result['station_name']
+        else:
+            key = result['system_name']
+
+        if key not in assets:
+            assets[key] = dict(location=key, value=0, m3=0, assets=dict())
+
+        entry = assets[key]
+
+        subentry = None
+
+        if result['parent_id'] is None:
+            entry['assets'][result['item_id']] = dict(entry=result, value=result['rough_value'] or 0, m3=result['m3'] or 0, assets=[])
+            if result['m3'] is not None:
+                entry['m3'] += result['m3']
+                total_m3 += result['m3']
+        elif result['parent_id'] in entry['assets']:
+            subentry = entry['assets'][result['parent_id']]
+            subentry['assets'].append(result)
+
+        if result['rough_value'] is not None:
+            entry['value'] += result['rough_value']
+            if subentry is not None:
+                subentry['value'] += result['rough_value']
+            total_value += result['rough_value']
+
+        if result['m3'] is not None:
+            entry['m3'] += result['m3']
+            total_m3 += result['m3']
+
+    def sort_stuff(itema, itemb):
+        return -1 if itema < itemb else 1
+
+    keys = assets.keys()
+
+    keys.sort(sort_stuff)
+
+    for key in keys:
+        sorted_assets.append(assets[key])
+
+    out = render_page(
+        'pgsus/assets.html',
+        dict(
+            assets=sorted_assets,
+            total_value=total_value,
+            total_m3=total_m3,
         ),
         request
     )
