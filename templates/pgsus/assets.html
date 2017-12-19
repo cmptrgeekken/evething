@@ -30,7 +30,11 @@
                     </tr>
                     {% for asset in assets %}
                     <tr>
-                        <td>{{ asset.location }}</td>
+                        <td>
+                            <a href="#" data-toggle="modal" data-target="#modal-{{ asset.location|slugify }}">
+                            {{ asset.location }}
+                            </a>
+                        </td>
                         <td>{{ asset.value|commas }}</td>
                         <td>{{ asset.m3|commas }}</td>
                     </tr>
@@ -42,4 +46,43 @@
         </div>
       </div>
 </section>
+{% endblock %}
+
+{% block modals %}
+    {% for a in assets %}
+        <div class="modal fade" id="modal-{{ a.location|slugify }}" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-sm" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                        <h4 class="modal-title">Asset Contract Details - {{ a['location'] }}</h4>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row clearfix">
+                            <div class="col-lg-12">
+                                <ul>
+                                {% for r in a['assets'].values() %}
+                                    <li>
+                                        {% if r['assets'] %}
+                                        <a data-toggle="collapse" href="#inners-{{r['entry']['item_id']}}" aria-expanded="false" aria-controls="inners-{{r['entry']['item_id']}}">
+                                            {{ r['entry']['item_name'] }} ({{ r['entry']['rough_value']|humanize }} ISK)
+                                        </a>
+                                        <ul id="inners-{{r['entry']['item_id']}}" class="collapse">
+                                            {% for sr in r['assets'] %}
+                                            <li>{{ sr['item_name'] }}</li>
+                                            {% endfor %}
+                                        </ul>
+                                        {% else %}
+                                            {{ r['entry']['item_name'] }} ({{ r['value']|humanize }} ISK)
+                                        {% endif %}
+                                    </li>
+                                {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div><!-- /.modal-content -->
+            </div><!-- /.modal-dialog -->
+        </div><!-- /.modal -->
+    {% endfor %}
 {% endblock %}

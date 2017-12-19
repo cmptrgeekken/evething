@@ -808,7 +808,7 @@ def assets(request):
 
     #charid = request.session['char']['id']
 
-    char = Character.objects.filter(name='Penny Beck').first()
+    char = Character.objects.filter(name='KenGeorge Beck').first()
 
     if request.GET.get('for_corp') == '1':
         query = queries.assetlist_corporation_query % char.corporation.id
