@@ -85,3 +85,5 @@ from thing.models.structureservice import StructureService
 from thing.models.moonextraction import MoonExtraction
 from thing.models.characterapiscope import CharacterApiScope
 from thing.models.characterrole import CharacterRole
+
+from thing.models.esiasset import EsiAsset

@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # ------------------------------------------------------------------------------
 # Copyright (c) 2010-2013, EVEthing team
 # All rights reserved.
@@ -24,25 +23,31 @@
 # OF SUCH DAMAGE.
 # ------------------------------------------------------------------------------
 
-import cPickle
-import os
-import sys
-import time
+from django.db import models
 
-from decimal import Decimal, InvalidOperation
-
-# Set up our environment and import settings
-os.environ['DJANGO_SETTINGS_MODULE'] = 'evething.settings'
-import django
-django.setup()
-from django.db import connections, transaction
-from thing.tasks import EsiMoonExtraction, EsiAssets
-
-from thing.models import *  # NOPEP8
+from thing.models.character import Character
+from thing.models.corporation import Corporation
+from thing.models.item import Item
 
 
-if __name__ == '__main__':
-    task = EsiAssets()
-    #task = EsiMoonExtraction()
-    task.run('')
+class EsiAsset(models.Model):
+    item_id = models.BigIntegerField(db_index=True)
 
+    character = models.ForeignKey(Character, on_delete=models.DO_NOTHING)
+    corporation = models.ForeignKey(Corporation, on_delete=models.DO_NOTHING)
+
+    type = models.ForeignKey(Item, on_delete=models.DO_NOTHING)
+
+    location_flag = models.CharField(max_length=50)
+    location_id = models.BigIntegerField()
+    location_type = models.CharField(max_length=50)
+
+    asset_name = models.CharField(max_length=128, default='')
+
+    is_singleton = models.BooleanField(default=False)
+    quantity = models.IntegerField()
+
+    last_updated = models.DateTimeField()
+
+    class Meta:
+        app_label = 'thing'
