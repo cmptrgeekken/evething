@@ -78,7 +78,7 @@ def refinerylist(request):
         if structure.z_moon_info is None:
             structure.z_next_chunk_time = datetime.datetime.utcnow().replace(second=0, microsecond=0) + datetime.timedelta(days=28)
         else:
-            structure.z_next_chunk_time = structure.z_moon_info.extraction_start_time + datetime.timedelta(days=28)
+            structure.z_next_chunk_time = structure.z_moon_info.chunk_arrival_time + datetime.timedelta(days=28)
 
         if service.structure.id not in struct_list:
             struct_list[service.structure.id] = service.structure
