@@ -75,6 +75,7 @@ class EsiMoonExtraction(APITask):
 
                     if db_struct is None\
                             or db_station is None\
+                            or db_station.corporation_id is None\
                             or db_station.is_unknown:
 
                         if db_struct is None:
