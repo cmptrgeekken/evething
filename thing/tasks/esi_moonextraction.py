@@ -130,7 +130,7 @@ class EsiMoonExtraction(APITask):
 
                     db_struct.save()
 
-                    StructureService.objects.filter(structure_id=db_struct.structure_id).delete()
+                    StructureService.objects.filter(structure_id=db_struct.station_id).delete()
                     if 'services' in struct:
                         for service in struct['services']:
                             db_service = StructureService(
