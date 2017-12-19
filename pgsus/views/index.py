@@ -34,6 +34,9 @@ from thing.utils import dictfetchall
 from thing.models import *  # NOPEP8
 from thing.stuff import render_page, datetime  # NOPEP8
 from thing.helpers import humanize
+from thing.utils import ApiHelper
+
+from django.http import HttpResponse
 
 from pgsus import Calculator
 
@@ -101,6 +104,31 @@ def stats(request):
     )
 
     return out
+
+
+def add_waypoint(request):
+    waypoint_url = 'https://esi.tech.ccp.is/latest/ui/autopilot/waypoint/?datasource=tranquility&add_to_beginning=false&clear_other_waypoints=false&destination_id=%s'
+
+    if 'char' in request.session:
+        charid = request.session['char']['id']
+
+        scope = CharacterApiScope.objects.filter(character_id=charid, scope='esi-ui.write_waypoint.v1').first()
+
+        dest = request.GET.get('waypoint')
+
+        dest_station = Station.objects.filter(id=dest).first()
+
+        if dest_station is not None and scope is not None:
+            refresh_token = scope.character.sso_refresh_token
+
+            helper = ApiHelper()
+
+            access_token, expires = helper.get_access_token(refresh_token)
+
+            response = helper.fetch_esi_url(waypoint_url % dest_station.id, access_token)
+
+    return HttpResponse('')
+
 
 def buyback(request):
     buyback_items = PriceWatch.objects.filter(

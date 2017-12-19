@@ -63,6 +63,8 @@ def refinerylist(request):
 
     corpid = role.character.corporation.id
 
+    waypoint_scope = CharacterApiScope.objects.filter(character_id=charid, scope='esi-ui.write_waypoint.v1').first()
+
     struct_services = StructureService.objects.filter(name='Moon Drilling', structure__station__corporation_id=corpid)
 
     struct_list = dict()
@@ -104,6 +106,7 @@ def refinerylist(request):
         'pgsus/refinerylist.html',
         dict(
             structures=struct_list,
+            add_waypoint=waypoint_scope is not None,
         ),
         request,
     )

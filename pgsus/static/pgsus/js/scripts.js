@@ -644,4 +644,12 @@ $(document).ready(function() {
     $(':input').on('click', function(){
         // this.setSelectionRange&&this.setSelectionRange(0, this.value.length);
     });
+
+    $('.js-addWaypoint').on('click', function(){
+        var elem = $(this);
+
+        var waypoint = elem.data('waypoint');
+
+        $.get('/api/waypoint', {waypoint: waypoint});
+    });
 });

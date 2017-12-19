@@ -28,14 +28,15 @@
                     {% for s in structures %}
                     <tr>
                         <td>
-                            {{ s.station.name }}<br/>
-                            <small>Next Chunk: {{ s.z_next_chunk_time }}</small>
-                            <button class="btn btn-xs" type="button" data-clipboard-text="{{ s.z_next_chunk_time|date('%Y-%m-%d') }}">
+                            {{ s.station.name }}
+                            <button class="btn btn-xs" type="button" data-clipboard-text="{{ s.station.name }}">
                                 <img src="{{ STATIC_URL }}pgsus/img/clippy.svg" width="13" title="Copy Day">
                             </button>
-                            <button class="btn btn-xs" type="button" data-clipboard-text="{{ s.z_next_chunk_time|time }}">
-                                <img src="{{ STATIC_URL }}pgsus/img/clippy.svg" width="13" title="Copy Time">
-                            </button>
+                            {% if add_waypoint %}
+                            <small><a href="javascript:void(0)" class="js-addWaypoint" data-waypoint="{{ s.station.id }}">Add Waypoint</a></small>
+                            {% endif %}
+                            <br/>
+                            <small>Next Chunk: {{ s.z_next_chunk_time }}</small>
                         </td>
                         <td style="text-align: center;">
                             {% if s.z_online %}YES{% else %}NO{% endif %}
