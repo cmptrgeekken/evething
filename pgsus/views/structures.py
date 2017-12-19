@@ -63,9 +63,9 @@ def refinerylist(request):
 
     corpid = role.character.corporation.id
 
-    struct_services = StructureService.objects.filter(name='Moon Drilling')
+    struct_services = StructureService.objects.filter(name='Moon Drilling', structure__station__corporation_id=corpid)
 
-    struct_list = []
+    struct_list = dict()
 
     for service in struct_services:
         structure = service.structure
@@ -75,7 +75,13 @@ def refinerylist(request):
         structure.z_not_extracting = structure.z_moon_info is None\
             or structure.z_moon_info.chunk_arrival_time < datetime.datetime.utcnow()
 
-        struct_list.append(service.structure)
+        if structure.z_moon_info is None:
+            structure.z_next_chunk_time = datetime.datetime.utcnow().replace(second=0, microsecond=0) + datetime.timedelta(days=28)
+        else:
+            structure.z_next_chunk_time = structure.z_moon_info.extraction_start_time + datetime.timedelta(days=28)
+
+        if service.structure.id not in struct_list:
+            struct_list[service.structure.id] = service.structure
 
     def service_sort(itema, itemb):
         if not itema.z_online:
@@ -89,6 +95,8 @@ def refinerylist(request):
             return 1
 
         return -1 if itema.z_moon_info.chunk_arrival_time < itemb.z_moon_info.chunk_arrival_time else 1
+
+    struct_list = struct_list.values()
 
     struct_list.sort(service_sort)
 

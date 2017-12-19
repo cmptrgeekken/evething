@@ -196,6 +196,10 @@ def date(d, f):
     return d.strftime(f)
 
 @register.filter
+def time(d):
+    return d.strftime('%H:%M:%S')
+
+@register.filter
 def timeago(d):
     return d.strftime('%Y-%m-%dT%H:%M:%S+0000')
 

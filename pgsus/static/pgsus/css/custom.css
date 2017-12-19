@@ -15,6 +15,10 @@
     z-index: 10000 !important;
 }
 
+.error {
+    background-color: rgba(223,108,79,0.9) !important;
+}
+
 .market-order-buy td {
     background-color: #00ff7f !important;
 }

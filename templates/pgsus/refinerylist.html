@@ -28,7 +28,14 @@
                     {% for s in structures %}
                     <tr>
                         <td>
-                            {{ s.station.name }}
+                            {{ s.station.name }}<br/>
+                            <small>Next Chunk: {{ s.z_next_chunk_time }}</small>
+                            <button class="btn btn-xs" type="button" data-clipboard-text="{{ s.z_next_chunk_time|date('%Y-%m-%d') }}">
+                                <img src="{{ STATIC_URL }}pgsus/img/clippy.svg" width="13" title="Copy Day">
+                            </button>
+                            <button class="btn btn-xs" type="button" data-clipboard-text="{{ s.z_next_chunk_time|time }}">
+                                <img src="{{ STATIC_URL }}pgsus/img/clippy.svg" width="13" title="Copy Time">
+                            </button>
                         </td>
                         <td style="text-align: center;">
                             {% if s.z_online %}YES{% else %}NO{% endif %}
@@ -38,13 +45,16 @@
                         </td>
                         {% if s.z_moon_info %}
                         <td>
-                            {{ s.z_moon_info.extraction_start_time }}
+                            {{ s.z_moon_info.extraction_start_time }}<br/>
+                            <small><time class="timeago" datetime="{{s.z_moon_info.extraction_start_time|timeago}}">{{ s.z_moon_info.extraction_start_time}}</time></small>
                         </td>
                         <td>
-                            {{ s.z_moon_info.chunk_arrival_time }}
+                            {{ s.z_moon_info.chunk_arrival_time }}<br/>
+                            <small><time class="timeago" datetime="{{s.z_moon_info.chunk_arrival_time|timeago}}">{{ s.z_moon_info.chunk_arrival_time}}</time></small>
                         </td>
                         <td>
-                            {{ s.z_moon_info.natural_decay_time }}
+                            {{ s.z_moon_info.natural_decay_time }}<br/>
+                            <small><time class="timeago" datetime="{{s.z_moon_info.natural_decay_time|timeago}}">{{ s.z_moon_info.natural_decay_time}}</time></small>
                         </td>
                         {% else %}
                         <td colspan="3">
