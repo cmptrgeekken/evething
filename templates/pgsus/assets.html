@@ -55,26 +55,36 @@
                 <div class="modal-content">
                     <div class="modal-header">
                         <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                        <h4 class="modal-title">Asset Contract Details - {{ a['location'] }}</h4>
+                        <h4 class="modal-title">Assets - {{ a['location'] }}</h4>
                     </div>
                     <div class="modal-body">
                         <div class="row clearfix">
                             <div class="col-lg-12">
                                 <ul>
-                                {% for r in a['assets'].values() %}
+                                {% for l in a['assets'].values() %}
                                     <li>
-                                        {% if r['assets'] %}
-                                        <a data-toggle="collapse" href="#inners-{{r['entry']['item_id']}}" aria-expanded="false" aria-controls="inners-{{r['entry']['item_id']}}">
-                                            {{ r['entry']['item_name'] }} ({{ r['entry']['rough_value']|humanize }} ISK)
+                                        <a data-toggle="collapse" href="#location-{{a.location|slugify}}-{{l['flag']|slugify}}" aria-expanded="false">
+                                            {{ l['flag'] }} ({{ l['value']|humanize }} ISK)
                                         </a>
-                                        <ul id="inners-{{r['entry']['item_id']}}" class="collapse">
-                                            {% for sr in r['assets'] %}
-                                            <li>{{ sr['item_name'] }}</li>
+                                        <ul id="location-{{a.location|slugify}}-{{l['flag']|slugify}}" class="collapse">
+                                            {% for r in l['assets'].values() %}
+                                            <li>
+                                                {% if r['assets'] %}
+                                                    <a data-toggle="collapse" href="#inner-{{a.location|slugify}}-{{l['flag']|slugify}}-{{r['entry']['asset_id']}}" aria-expanded="false">
+                                                        {{ r['entry']['item_name'] }} ({{ r['value']|humanize }} ISK)
+                                                    </a>
+                                                    <ul id="inner-{{a.location|slugify}}-{{l['flag']|slugify}}-{{r['entry']['asset_id']}}" class="collapse">
+                                                        {% for sr in r['assets'] %}
+                                                        <li>{{ sr['item_name'] }} ({{sr['rough_value']|humanize}})</li>
+                                                        {% endfor %}
+                                                    </ul>
+                                                {% else %}
+                                                    {{ r['entry']['item_name'] }} ({{ r['value']|humanize }} ISK)
+                                                {% endif %}
+
+                                            </li>
                                             {% endfor %}
                                         </ul>
-                                        {% else %}
-                                            {{ r['entry']['item_name'] }} ({{ r['value']|humanize }} ISK)
-                                        {% endif %}
                                     </li>
                                 {% endfor %}
                                 </ul>

@@ -801,27 +801,25 @@ def seeding(request):
 
     return out
 
-
 def assets(request):
-    #if 'char' not in request.session:
-    #    return redirect('/?login=1')
+    if 'char' not in request.session:
+        return redirect('/?login=1')
 
-    #charid = request.session['char']['id']
+    charid = request.session['char']['id']
 
-    char = Character.objects.filter(name='KenGeorge Beck').first()
+    char = Character.objects.filter(id=charid).first()
 
     if request.GET.get('for_corp') == '1':
         query = queries.assetlist_corporation_query % char.corporation.id
     else:
         query = queries.assetlist_character_query % char.id
 
-    print(char.corporation.id)
-
     results = dictfetchall(query)
 
     assets = dict()
 
     sorted_assets = []
+    parent_entries = dict()
 
     total_value = 0
     total_m3 = 0
@@ -836,36 +834,50 @@ def assets(request):
 
         entry = assets[key]
 
-        subentry = None
-
         if result['parent_id'] is None:
-            entry['assets'][result['item_id']] = dict(entry=result, value=result['rough_value'] or 0, m3=result['m3'] or 0, assets=[])
+            if result['location_flag'] not in entry['assets']:
+                location_list = entry['assets'][result['location_flag']] = dict(flag=result['location_flag'], assets=dict(), value=0, m3=0)
+            else:
+                location_list = entry['assets'][result['location_flag']]
+
+            parent_entry = location_list['assets'][result['asset_id']] = dict(entry=result, value=result['rough_value'] or 0, m3=result['m3'] or 0, assets=[])
+
+            if result['rough_value'] is not None:
+                location_list['value'] += result['rough_value']
+                total_value += result['rough_value']
+
             if result['m3'] is not None:
-                entry['m3'] += result['m3']
+                location_list['m3'] += result['m3']
                 total_m3 += result['m3']
-        elif result['parent_id'] in entry['assets']:
-            subentry = entry['assets'][result['parent_id']]
-            subentry['assets'].append(result)
+
+            parent_entries[result['asset_id']] = parent_entry
+
+        elif result['parent_id'] in parent_entries:
+            parent_entry = parent_entries[result['parent_id']]
+
+            parent_entry['assets'].append(result)
+
+            location_entry = assets[key]['assets'][parent_entry['entry']['location_flag']]
+
+            if result['rough_value'] is not None:
+                parent_entry['value'] += result['rough_value']
+                total_value += result['rough_value']
+                location_entry['value'] += result['rough_value']
+        else:
+            print('%s - %s - %s' % (result['item_name'], result['location_flag'], result['parent_id']))
 
         if result['rough_value'] is not None:
             entry['value'] += result['rough_value']
-            if subentry is not None:
-                subentry['value'] += result['rough_value']
-            total_value += result['rough_value']
 
         if result['m3'] is not None:
             entry['m3'] += result['m3']
-            total_m3 += result['m3']
 
     def sort_stuff(itema, itemb):
-        return -1 if itema < itemb else 1
+        return -1 if itema['value'] > itemb['value'] else 1
 
-    keys = assets.keys()
+    sorted_assets = assets.values()
 
-    keys.sort(sort_stuff)
-
-    for key in keys:
-        sorted_assets.append(assets[key])
+    sorted_assets.sort(sort_stuff)
 
     out = render_page(
         'pgsus/assets.html',
