@@ -36,7 +36,7 @@
                             <small><a href="javascript:void(0)" class="js-addWaypoint" data-waypoint="{{ s.station.id }}">Add Waypoint</a></small>
                             {% endif %}
                             <br/>
-                            <small>Next Chunk: {{ s.z_next_chunk_time }}</small>
+                            <small>Next Chunk: {{ s.z_next_chunk_time }} ({{ s.z_cycle_time }} days)</small>
                         </td>
                         <td style="text-align: center;">
                             {% if s.z_online %}YES{% else %}NO{% endif %}

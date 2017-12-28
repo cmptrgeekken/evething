@@ -77,10 +77,20 @@ def refinerylist(request):
         structure.z_not_extracting = structure.z_moon_info is None\
             or structure.z_moon_info.chunk_arrival_time < datetime.datetime.utcnow()
 
+        cycle_time = 28
+        try:
+            if structure.station.system.alliance_id is None\
+                    or structure.station.system.alliance.name != 'Pandemic Horde':
+                cycle_time = 7
+        except:
+            cycle_time = 7
+
+        structure.z_cycle_time = cycle_time
+
         if structure.z_moon_info is None:
-            structure.z_next_chunk_time = datetime.datetime.utcnow().replace(second=0, microsecond=0) + datetime.timedelta(days=28)
+            structure.z_next_chunk_time = datetime.datetime.utcnow().replace(second=0, microsecond=0) + datetime.timedelta(days=cycle_time)
         else:
-            structure.z_next_chunk_time = structure.z_moon_info.chunk_arrival_time + datetime.timedelta(days=28)
+            structure.z_next_chunk_time = structure.z_moon_info.chunk_arrival_time + datetime.timedelta(days=cycle_time)
 
         if service.structure.id not in struct_list:
             struct_list[service.structure.id] = service.structure
