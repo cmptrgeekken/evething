@@ -299,7 +299,7 @@ CELERYBEAT_SCHEDULE = {
 
     'corp_moon_updater': {
         'task': 'thing.moonextraction',
-        'schedule': timedelta(hours=1),
+        'schedule': timedelta(minutes=30),
         'options': {
             'expires': 240 * 60,
             'queue': 'et_medium'
