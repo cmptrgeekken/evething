@@ -95,7 +95,7 @@ def refinerylist(request):
 
         config = structure.get_config()
 
-        structure.z_config = config or MoonConfig(chunk_time=None)
+        structure.z_config = config or MoonConfig(chunk_days=None)
 
         structure.z_next_chunk_time = None
 
