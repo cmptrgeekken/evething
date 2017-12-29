@@ -63,6 +63,22 @@ def refinerylist(request):
 
     corpid = role.character.corporation.id
 
+    if request.method == 'POST':
+        structure_id = request.POST.get('structure_id')
+        next_date_override = request.POST.get('next_date_override') or None
+        chunk_time = request.POST.get('chunk_time') or None
+
+        config = MoonConfig.objects.filter(structure_id=structure_id).first()
+        if config is None:
+            config = MoonConfig(
+                structure_id=structure_id
+            )
+
+        config.next_date_override=next_date_override
+        config.chunk_days = chunk_time
+
+        config.save()
+
     waypoint_scope = CharacterApiScope.objects.filter(character_id=charid, scope='esi-ui.write_waypoint.v1').first()
 
     struct_services = StructureService.objects.filter(name='Moon Drilling', structure__station__corporation_id=corpid)
@@ -77,20 +93,33 @@ def refinerylist(request):
         structure.z_not_extracting = structure.z_moon_info is None\
             or structure.z_moon_info.chunk_arrival_time < datetime.datetime.utcnow()
 
-        cycle_time = 28
-        try:
-            if structure.station.system.alliance_id is None\
-                    or structure.station.system.alliance.name != 'Pandemic Horde':
+        config = structure.get_config()
+
+        structure.z_config = config or MoonConfig()
+
+        structure.z_next_chunk_time = None
+
+        if config is None or config.chunk_days is None:
+            cycle_time = 28
+            try:
+                if structure.station.system.alliance_id is None\
+                        or structure.station.system.alliance.name != 'Pandemic Horde':
+                    cycle_time = 7
+            except:
                 cycle_time = 7
-        except:
-            cycle_time = 7
+        else:
+            cycle_time = config.chunk_days
+
+        if config is None or config.next_date_override is None \
+                or config.next_date_override <= datetime.datetime.utcnow():
+            if structure.z_moon_info is None:
+                structure.z_next_chunk_time = datetime.datetime.utcnow().replace(second=0, microsecond=0) + datetime.timedelta(days=cycle_time)
+            else:
+                structure.z_next_chunk_time = structure.z_moon_info.chunk_arrival_time + datetime.timedelta(days=cycle_time)
+        else:
+            structure.z_next_chunk_time = config.next_date_override
 
         structure.z_cycle_time = cycle_time
-
-        if structure.z_moon_info is None:
-            structure.z_next_chunk_time = datetime.datetime.utcnow().replace(second=0, microsecond=0) + datetime.timedelta(days=cycle_time)
-        else:
-            structure.z_next_chunk_time = structure.z_moon_info.chunk_arrival_time + datetime.timedelta(days=cycle_time)
 
         if service.structure.id not in struct_list:
             struct_list[service.structure.id] = service.structure

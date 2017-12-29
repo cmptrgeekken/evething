@@ -87,3 +87,4 @@ from thing.models.characterapiscope import CharacterApiScope
 from thing.models.characterrole import CharacterRole
 
 from thing.models.esiasset import EsiAsset
+from thing.models.moonconfig import MoonConfig

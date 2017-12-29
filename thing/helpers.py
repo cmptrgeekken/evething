@@ -200,8 +200,11 @@ def time(d):
     return d.strftime('%H:%M:%S')
 
 @register.filter
-def timeago(d):
-    return d.strftime('%Y-%m-%dT%H:%M:%S+0000')
+def timeago(d, tz=True):
+    fmt_str = '%Y-%m-%dT%H:%M:%S'
+    if tz:
+        fmt_str += '+0000'
+    return '' if d is None else d.strftime(fmt_str)
 
 # Shorten numbers to a human readable version
 THOUSAND = 10 ** 3

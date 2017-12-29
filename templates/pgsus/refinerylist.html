@@ -36,7 +36,33 @@
                             <small><a href="javascript:void(0)" class="js-addWaypoint" data-waypoint="{{ s.station.id }}">Add Waypoint</a></small>
                             {% endif %}
                             <br/>
-                            <small>Next Chunk: {{ s.z_next_chunk_time }} ({{ s.z_cycle_time }} days)</small>
+                            <small>
+                                <a role="button" data-toggle="collapse" aria-expanded="false" aria-controls="#chunk-form-{{ s.id }}" href="#chunk-form-{{ s.id }}">
+                                    Next Chunk: {{ s.z_next_chunk_time }}
+                                    ({{ s.z_cycle_time }} days)
+                                </a>
+
+                                <div class="collapse" id="chunk-form-{{ s.id }}">
+                                    <form method="post">
+                                        <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                                        <input type="hidden" name="structure_id" value="{{ s.id }}"/>
+                                        <div class="form-group row">
+                                            <div class="col-sm-12">
+                                                <label for="next_date_override_{{s.id}}">Next Date Override</label>
+                                                <input   class="form-control" id="next_date_override_{{s.id}}" type="datetime-local" name="next_date_override" value="{{ s.z_config.next_date_override|timeago(false) }}"/>
+                                            </div>
+                                        </div>
+                                        <div class="form-group row">
+                                            <div class="col-sm-4">
+                                                <label for="chunk_time_override_{{s.id}}">Cycle Day Override</label>
+                                                <input class="form-control" id="chunk_time_override_{{s.id}}" type="number" min="1" max="56" step="1" name="chunk_time" value="{{ s.z_config.chunk_days }}" />
+                                            </div>
+                                        </div>
+
+                                        <button type="submit" class="btn btn_primary">Save</button>
+                                    </form>
+                                </div>
+                            </small>
                         </td>
                         <td style="text-align: center;">
                             {% if s.z_online %}YES{% else %}NO{% endif %}

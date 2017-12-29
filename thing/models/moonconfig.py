@@ -25,28 +25,17 @@
 
 from django.db import models
 
-from thing.models.station import Station
-from thing.models.mapdenormalize import MapDenormalize
+from thing.models.structure import Structure
 
 
-class Structure(models.Model):
-    station = models.ForeignKey(Station, on_delete=models.DO_NOTHING, unique=True)
-    profile_id = models.IntegerField()
-    fuel_expires = models.DateTimeField()
-    state_timer_start = models.DateTimeField()
-    state_timer_end = models.DateTimeField()
-    x = models.FloatField()
-    y = models.FloatField()
-    z = models.FloatField()
-    closest_celestial = models.ForeignKey(MapDenormalize, on_delete=models.DO_NOTHING, to_field='item_id', db_column='closest_celestial_id')
+class MoonConfig(models.Model):
+    structure = models.ForeignKey(Structure, on_delete=models.DO_NOTHING, unique=True)
+    chunk_days = models.IntegerField(default=28)
+    next_date_override = models.DateTimeField()
+    is_nationalized = models.BooleanField(default=False)
 
     class Meta:
         app_label = 'thing'
 
-    def get_config(self):
-        from thing.models.moonconfig import MoonConfig
-
-        return MoonConfig.objects.filter(structure_id=self.id).first()
-
     def __unicode__(self):
-        return self.station.name
+        return self.structure.name
