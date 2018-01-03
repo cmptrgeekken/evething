@@ -36,7 +36,8 @@ urlpatterns += patterns(
     url(r'^contractseeding/edit', 'contractseededit', name='contractseededit'),
     url(r'^contractseeding/view', 'contractseedview', name='contractseedview'),
     url(r'^refineries', 'refinerylist', name='refinerylist'),
-    url(r'^api/waypoint', 'add_waypoint', name='add_waypoint')
+    url(r'^api/waypoint', 'add_waypoint', name='add_waypoint'),
+    url(r'^perms', 'perms', name='perms')
 )
 
 urlpatterns += patterns(

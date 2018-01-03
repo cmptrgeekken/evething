@@ -306,6 +306,15 @@ CELERYBEAT_SCHEDULE = {
         },
         'args': ['https://esi.tech.ccp.is/latest'],
     },
+    'char_roles_updater': {
+        'task': 'thing.characterroles',
+        'schedule': timedelta(minutes=60),
+        'options': {
+            'expires': 240 * 60,
+            'queue': 'et_medium'
+        },
+        'args': [None],
+    },
 
     # update unknown character/corporation names every hour
     'fix-names': {

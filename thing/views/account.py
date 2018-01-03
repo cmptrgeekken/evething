@@ -66,26 +66,48 @@ def account_oauth_callback(request):
             return redirect('%s?auth_success=true#apikeys' % (reverse(account)))
         else:
             return redirect('%s?auth_success=false#apikeys' % (reverse(account)))
-    elif state == 'client_authorize':
+    elif state == 'request_scopes' or state == 'client_authorize':
         access_token = response['access_token']
 
         helper = ApiHelper()
 
-        results = helper.fetch_esi_url(settings.OAUTH_SERVER_URL + '/oauth/verify', access_token)
+        results = helper.fetch_esi_url('https://esi.tech.ccp.is/verify/?datasource=tranquility', access_token, method='GET')
+
+        char = None
 
         try:
             user_info = json.loads(results)
-
             char = Character.objects.filter(id=user_info['CharacterID']).first()
             if char is None:
                 char = Character(id=user_info['CharacterID'], name=user_info['CharacterName'])
                 char.save()
-
-            # if 'refresh_token' in response:
-                # char.sso_refresh_token = response['refresh_token']
-                # char.save()
         except:
             user_info = None
+
+        if char is not None and state == 'request_scopes' and 'refresh_token' in response:
+            char.sso_refresh_token = response['refresh_token']
+            char.save()
+
+            if 'request_scopes' in request.session:
+                from thing.models.characterapiscope import CharacterApiScope
+
+                CharacterApiScope.objects.filter(character_id=char.id).delete()
+
+                for scope in request.session['request_scopes']:
+                    char_scope = CharacterApiScope(
+                        character_id=char.id,
+                        scope=scope,
+                    )
+
+                    char_scope.save()
+
+                from thing.tasks.esi_characterroles import EsiCharacterRoles
+                task = EsiCharacterRoles()
+                task.run(char.id)
+
+            request.session.delete('scopes')
+
+            return redirect('/perms?updated=1')
 
         if not user_info:
             return redirect('/')

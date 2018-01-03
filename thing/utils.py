@@ -126,7 +126,7 @@ class ApiHelper:
 
         return data
 
-    def fetch_esi_url(self, url, access_token):
+    def fetch_esi_url(self, url, access_token, headers_to_return=None, method='post'):
         """
         Fetch an ESI URL
         """
@@ -137,6 +137,8 @@ class ApiHelper:
         retry = 3
 
         data = None
+
+        headers = dict()
 
         if cached_data is None:
             sleep_for = self._get_backoff()
@@ -149,7 +151,8 @@ class ApiHelper:
                     if '?' not in url:
                         url += '?'
 
-                    r = self._session.get(url + '&token=' + access_token, headers={'Authorization': 'Bearer %s' % access_token})
+                    r = self._session.request(method, url + '&token=' + access_token,
+                                           headers={'Authorization': 'Bearer %s' % access_token})
 
                     data = r.text
                     if 'date' in r.headers and 'expires' in r.headers:
@@ -157,6 +160,9 @@ class ApiHelper:
                         until = self.parse_esi_date(r.headers['expires'])
 
                         self._cache_delta = until - current
+                    if headers_to_return is not None:
+                        for header in headers_to_return:
+                            headers[header] = r.headers[header] if header in r.headers else None
                     break
                 except Exception, e:
                     # self._increment_backoff(e)
@@ -186,6 +192,8 @@ class ApiHelper:
                 if cache_expires >= 0:
                     cache.set(cache_key, data, cache_expires)
 
+        if headers_to_return is not None:
+            return data, headers
         return data
 
     # -----------------------------------------------------------------------
