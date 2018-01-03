@@ -24,39 +24,13 @@
 # ------------------------------------------------------------------------------
 
 from django.db import models
-from django.db.models import Sum
 
-from thing.models.corporation import Corporation
+from thing.models.character import Character
 
 
-class Character(models.Model):
+class CharacterApiRole(models.Model):
     id = models.IntegerField(primary_key=True)
 
-    name = models.CharField(max_length=64)
-    corporation = models.ForeignKey(Corporation, blank=True, null=True, on_delete=models.DO_NOTHING)
-    sso_refresh_token = models.CharField(max_length=4000)
+    character = models.ForeignKey(Character, on_delete=models.DO_NOTHING)
+    role = models.CharField(max_length=50)
 
-    class Meta:
-        app_label = 'thing'
-        ordering = ('name',)
-
-    def __unicode__(self):
-        return self.name
-
-    @models.permalink
-    def get_absolute_url(self):
-        return ('character', (), {'character_name': self.name, })
-
-    def get_total_skill_points(self):
-        from thing.models.characterskill import CharacterSkill
-        return CharacterSkill.objects.filter(character=self).aggregate(total_sp=Sum('points'))['total_sp']
-
-    def get_scopes(self):
-        from thing.models.characterapiscope import CharacterApiScope
-
-        return set([s.scope for s in CharacterApiScope.objects.filter(character_id=self.id)])
-
-    def get_apiroles(self):
-        from thing.models.characterapirole import CharacterApiRole
-
-        return set([r.role for r in CharacterApiRole.objects.filter(character_id=self.id)])

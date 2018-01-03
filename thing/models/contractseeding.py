@@ -41,7 +41,7 @@ class ContractSeeding(models.Model):
     station = models.ForeignKey(Station, on_delete=models.DO_NOTHING)
     name = models.CharField(max_length=4000)
     min_qty = models.IntegerField()
-    is_private = models.BooleanField()
+    is_private = models.BooleanField(default=True)
     raw_text = models.TextField()
     estd_price = models.DecimalField(max_digits=20, decimal_places=2)
 

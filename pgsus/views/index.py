@@ -802,12 +802,14 @@ def seeding(request):
     return out
 
 def assets(request):
-    if 'char' not in request.session:
-        return redirect('/?login=1')
+    from anytree import Node, RenderTree
+    #if 'char' not in request.session:
+    #    return redirect('/?login=1')
 
-    charid = request.session['char']['id']
+    #charid = request.session['char']['id']
 
-    char = Character.objects.filter(id=charid).first()
+    #char = Character.objects.filter(id=charid).first()
+    char = Character.objects.filter(name='KenGeorge Beck').first()
 
     if request.GET.get('for_corp') == '1':
         query = queries.assetlist_corporation_query % char.corporation.id
@@ -818,66 +820,47 @@ def assets(request):
 
     assets = dict()
 
-    sorted_assets = []
-    parent_entries = dict()
+    node_list = dict()
 
     total_value = 0
     total_m3 = 0
+
+    root_node = Node('Universe', label='Universe', value=0, m3=0, entry=None, quantity=0)
+
     for result in results:
         if result['station_name'] is not None:
             key = result['station_name']
+            loc_id = result['station_id']
         else:
             key = result['system_name']
+            loc_id = result['system_id']
 
-        if key not in assets:
-            assets[key] = dict(location=key, value=0, m3=0, assets=dict())
+        if loc_id not in node_list:
+            node_list[loc_id] = Node(loc_id, label=key, value=0, m3=0, entry=None, quantity=0, parent=root_node)
 
-        entry = assets[key]
-
-        if result['parent_id'] is None:
-            if result['location_flag'] not in entry['assets']:
-                location_list = entry['assets'][result['location_flag']] = dict(flag=result['location_flag'], assets=dict(), value=0, m3=0)
-            else:
-                location_list = entry['assets'][result['location_flag']]
-
-            parent_entry = location_list['assets'][result['asset_id']] = dict(entry=result, value=result['rough_value'] or 0, m3=result['m3'] or 0, assets=[])
-
-            if result['rough_value'] is not None:
-                location_list['value'] += result['rough_value']
-                total_value += result['rough_value']
-
-            if result['m3'] is not None:
-                location_list['m3'] += result['m3']
-                total_m3 += result['m3']
-
-            parent_entries[result['asset_id']] = parent_entry
-
-        elif result['parent_id'] in parent_entries:
-            parent_entry = parent_entries[result['parent_id']]
-
-            parent_entry['assets'].append(result)
-
-            location_entry = assets[key]['assets'][parent_entry['entry']['location_flag']]
-
-            if result['rough_value'] is not None:
-                parent_entry['value'] += result['rough_value']
-                total_value += result['rough_value']
-                location_entry['value'] += result['rough_value']
+        if result['parent_name'] is None:
+            container_id = '%s - %s' % (result['parent_id'], result['location_flag'])
         else:
-            print('%s - %s - %s' % (result['item_name'], result['location_flag'], result['parent_id']))
+            container_id = '%s - %s' % (loc_id, result['location_flag'])
 
-        if result['rough_value'] is not None:
-            entry['value'] += result['rough_value']
+        if container_id not in node_list:
+            node_list[container_id] = Node(container_id, value=0, m3=0, label=result['location_flag'], entry=None, quantity=0)
 
-        if result['m3'] is not None:
-            entry['m3'] += result['m3']
+        node_id = result['asset_id']
+        node_list[node_id] = Node(node_id, parent_id=container_id, value=result['rough_value'] or 0, m3=result['m3'], label=result['item_name'], location_key=key, entry=result, quantity=result['quantity'])
 
-    def sort_stuff(itema, itemb):
-        return -1 if itema['value'] > itemb['value'] else 1
+    for node in node_list.values():
+        if node.entry is not None:
+            if node.entry['parent_id'] is None:
+                node.parent = node_list[node.location_key]
+            else:
+                node.parent = node_list[node.container_id]
+        elif node.parent is None:
+            node.parent = node_list[node.container_id]
 
-    sorted_assets = assets.values()
+    print(RenderTree(root_node))
 
-    sorted_assets.sort(sort_stuff)
+    return HttpResponse('Done')
 
     out = render_page(
         'pgsus/assets.html',
@@ -890,3 +873,63 @@ def assets(request):
     )
 
     return out
+
+
+def perms(request):
+    from django.conf import settings
+    if 'char' not in request.session:
+        return redirect('/?login=1')
+
+    charid = request.session['char']['id']
+
+    char = Character.objects.filter(id=charid).first()
+
+    if char is None:
+        return redirect('/?login=1')
+
+    char_scopes = char.get_scopes()
+    roles = char.get_apiroles()
+
+    scopes = [
+        dict(scope='esi-characters.read_corporation_roles.v1', desc='Allows for reading of your roles within your corporation (e.g., Accountant, Station Manager). Required as certain endpoints require specific roles.', required=True),
+        dict(scope='esi-contracts.read_corporation_contracts.v1', desc='Allows for reading of corporation contracts.', required=False),
+        dict(scope='esi-corporations.read_structures.v1', desc='Allows for retrieval of information about corporation structures (requires Station Manager role).', required=False),
+        dict(scope='esi-universe.read_structures.v1', desc='Allows for retrieval of public structure information.', required=False),
+        dict(scope='esi-industry.read_corporation_mining.v1', desc='Allows for reading of moon extraction schedule (requires Station Manager role) and mining ledger (requires Accountant role).', required=False),
+        dict(scope='esi-ui.open_window.v1', desc='Allows for opening of Contract, Market or Info windows in-game.', required=False),
+        dict(scope='esi-ui.write_waypoint.v1', desc='Allows for setting and clearing of waypoints in-game.', required=False),
+        dict(scope='esi-assets.read_assets.v1', desc='Allows for reading of character assets.', required=False),
+        dict(scope='esi-assets.read_corporation_assets.v1', desc='Allows for reading of corporation assets (requires Director role).', required=False),
+    ]
+
+    for scope in scopes:
+        scope['active'] = scope['scope'] in char_scopes
+
+    if request.method == 'POST':
+        requested_scopes = request.POST.getlist('scope')
+
+        for scope in scopes:
+            if scope['required']:
+                requested_scopes.append(scope['scope'])
+
+        request.session['request_scopes'] = requested_scopes
+
+        api_helper = ApiHelper()
+        oauth2_handler = api_helper.oauth_handler()
+
+        oauth_url = oauth2_handler.authorize_url(
+            ' '.join(requested_scopes),
+            response_type='code',
+            state='request_scopes',
+        )
+
+        return redirect(oauth_url)
+
+    return render_page(
+        'pgsus/perms.html',
+        dict(
+            scopes=scopes,
+            roles=', '.join(roles).replace('_', ' '),
+        ),
+        request
+    )
