@@ -60,6 +60,11 @@ class ContractSeeding(models.Model):
             contract_ids.append(c['contract_id'])
 
         contracts = Contract.objects.filter(contract_id__in=contract_ids).order_by('price')
+        contracts_trimmed = dict()
+        for c in contracts:
+            contracts_trimmed[c.contract_id] = c
+
+        contracts = contracts_trimmed.values()
 
         ttl_pages = int(math.ceil(len(contracts) / float(page_size))) + 1
 
