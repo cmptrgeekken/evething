@@ -135,9 +135,6 @@ class PriceUpdater(APITask):
 
                 sql_inserts.append(new_sql)
 
-
-            self.log_debug('SQL generated for page %d.' % page_number)
-
             page_number += 1
 
             self.execute_query(sql_inserts)

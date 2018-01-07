@@ -89,3 +89,5 @@ from thing.models.characterrole import CharacterRole
 
 from thing.models.esiasset import EsiAsset
 from thing.models.moonconfig import MoonConfig
+from thing.models.moonobserver import MoonObserver
+from thing.models.moonobserverentry import MoonObserverEntry
