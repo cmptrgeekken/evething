@@ -296,7 +296,6 @@ CELERYBEAT_SCHEDULE = {
         },
         'args': ['https://esi.tech.ccp.is/latest'],
     },
-
     'corp_moon_updater': {
         'task': 'thing.moonextraction',
         'schedule': timedelta(minutes=30),
@@ -305,6 +304,15 @@ CELERYBEAT_SCHEDULE = {
             'queue': 'et_medium'
         },
         'args': ['https://esi.tech.ccp.is/latest'],
+    },
+    'corp_moon_observer': {
+        'task': 'thing.moonobserver',
+        'schedule': timedelta(minutes=60),
+        'options': {
+            'expires': 240 * 60,
+            'queue': 'et_medium'
+        },
+        'args': [''],
     },
     'char_roles_updater': {
         'task': 'thing.characterroles',

@@ -13,6 +13,37 @@
 </section>
 
 <section class="container section-md">
+    <div class="row">
+        <div class="col-lg-12">
+            <a role="button" data-toggle="collapse" aria-expanded="{% if error_lines%} true{% else %}false{% endif %}" aria-controls="#bulk-update-moon" href="#bulk-update-moon">
+                Update Moon Comps
+            </a>
+            {% if error_lines|length > 0 %}
+            <div class="alert alert-danger" role="alert">
+                <ul>
+                    {% for error in error_lines %}
+                        <li>{{error}}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+            <div class="collapse{% if error_lines%} in{% endif %}" id="bulk-update-moon">
+                <form method="post" action="{{ url('pgsus.views.mooncomp') }}">
+                    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"/>
+                    <div class="form-group">
+                        <label class="form-label" for="moon-comps">Moon Input</label>
+                        <textarea placeholder="1025833468663	Chromite	26%	Flawless Arkonor	31%	Loparite	21%	Xenotime	23%	1
+1025833794151	Brilliant Gneiss	19%	Dazzling Spodumain	21%	Sperrylite	20%	Xenotime	40%	1" class="form-control" rows="15" cols="30" id="moon-comps" name="moon_comps">{{moon_comps}}</textarea>
+                    </div>
+
+                    <button class="btn btn-primary">Submit</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="container section-md">
       <div class="row">
         <div class="col-lg-12">
             {% if structures|length > 0 %}

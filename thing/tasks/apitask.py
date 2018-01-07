@@ -391,7 +391,10 @@ class APITask(Task):
             start = time.time()
             while retry > 0:
                 try:
-                    r = self._session.get(url + '&token=' + access_token)
+                    if access_token is not None:
+                        r = self._session.get(url + '&token=' + access_token)
+                    else:
+                        r = self._session.get(url)
                     data = r.text
                     current = self.parse_esi_date(r.headers['date'])
                     if 'expires' in r.headers:

@@ -25,34 +25,20 @@
 
 from django.db import models
 
-from thing.models.structure import Structure
+from thing.models.moonobserver import MoonObserver
+from thing.models.character import Character
+from thing.models.corporation import Corporation
 from thing.models.item import Item
 
 
-class MoonConfig(models.Model):
-    structure = models.ForeignKey(Structure, on_delete=models.DO_NOTHING, unique=True)
-    chunk_days = models.IntegerField(default=28)
-    next_date_override = models.DateTimeField()
-    is_nationalized = models.BooleanField(default=False)
-
-    first_ore = models.ForeignKey(Item, on_delete=models.DO_NOTHING, related_name='first_ore')
-    first_ore_pct = models.DecimalField(decimal_places=2, max_digits=2)
-
-    second_ore = models.ForeignKey(Item, on_delete=models.DO_NOTHING, related_name='second_ore')
-    second_ore_pct = models.DecimalField(decimal_places=2, max_digits=2)
-
-    third_ore = models.ForeignKey(Item, on_delete=models.DO_NOTHING, related_name='third_ore')
-    third_ore_pct = models.DecimalField(decimal_places=2, max_digits=2)
-
-    fourth_ore = models.ForeignKey(Item, on_delete=models.DO_NOTHING, related_name='fourth_ore')
-    fourth_ore_pct = models.DecimalField(decimal_places=2, max_digits=2)
-
-    last_chunk_time = models.DateTimeField(null=True)
-    last_chunk_minutes = models.IntegerField(null=True)
-
+class MoonObserverEntry(models.Model):
+    observer = models.ForeignKey(MoonObserver, on_delete=models.DO_NOTHING)
+    character = models.ForeignKey(Character, on_delete=models.DO_NOTHING)
+    recorded_corporation = models.ForeignKey(Corporation, on_delete=models.DO_NOTHING)
+    last_updated = models.DateField()
+    type = models.ForeignKey(Item, on_delete=models.DO_NOTHING)
+    quantity = models.IntegerField()
 
     class Meta:
         app_label = 'thing'
 
-    def __unicode__(self):
-        return self.structure.name

@@ -28,7 +28,7 @@ import datetime
 from .apitask import APITask
 import json
 
-from thing.models import CharacterApiScope, MoonExtraction, Station, Structure, StructureService
+from thing.models import CharacterApiScope, MoonConfig, MoonExtraction, Station, Structure, StructureService
 from thing import queries
 from thing.utils import dictfetchall
 
@@ -46,10 +46,73 @@ class EsiMoonExtraction(APITask):
 
         extract_scopes = CharacterApiScope.objects.filter(scope='esi-industry.read_corporation_mining.v1')
 
+        structure_scopes = CharacterApiScope.objects.filter(scope='esi-corporations.read_structures.v1')
+
+        seen_corps = set()
+
+        for scope in structure_scopes:
+            char = scope.character
+
+            if 'Structure_Manager' in char.get_apiroles():
+                if char.corporation_id not in seen_corps:
+                    self.import_structures(char)
+                    seen_corps.add(char.corporation_id)
+
+        seen_corps = set()
+
         for scope in extract_scopes:
-            self.import_moon(scope.character)
+            char = scope.character
+
+            if 'Director' in char.get_apiroles():
+                if char.corporation_id not in seen_corps:
+                    self.import_moon(char)
+                    seen_corps.add(char.corporation_id)
 
     def import_moon(self, character):
+        corp_id = character.corporation.id
+        refresh_token = character.sso_refresh_token
+
+        access_token, expires = self.get_access_token(refresh_token)
+
+        try:
+            if expires <= datetime.datetime.now():
+                access_token, expires = self.get_access_token(refresh_token)
+
+            results = self.fetch_esi_url(self.mining_url % corp_id, access_token)
+
+            mining_info = json.loads(results)
+
+            for info in mining_info:
+                db_moonextract = MoonExtraction.objects.filter(moon_id=info['moon_id']).first()
+                if db_moonextract is None:
+                    db_moonextract = MoonExtraction(
+                        moon_id=info['moon_id'],
+                    )
+
+                db_moonconfig = MoonConfig.objects.filter(structure__station_id=info['structure_id']).first()
+
+                if db_moonconfig is not None:
+                    if db_moonextract.chunk_arrival_time < self.parse_api_date(info['chunk_arrival_time'], True)\
+                            or db_moonconfig.last_chunk_time is None:
+                        chunk_diff = (
+                                     db_moonextract.chunk_arrival_time - db_moonextract.extraction_start_time).total_seconds() / 60.0
+                        db_moonconfig.last_chunk_time = db_moonextract.chunk_arrival_time
+                        db_moonconfig.last_chunk_minutes = chunk_diff
+                        db_moonconfig.save()
+
+                db_moonextract.extraction_start_time = self.parse_api_date(info['extraction_start_time'], True)
+                db_moonextract.chunk_arrival_time = self.parse_api_date(info['chunk_arrival_time'], True)
+                db_moonextract.natural_decay_time = self.parse_api_date(info['natural_decay_time'], True)
+                db_moonextract.structure_id = info['structure_id']
+
+                db_moonextract.save()
+        except Exception, e:
+            traceback.print_exc(e)
+            return True
+
+        return True
+
+    def import_structures(self, character):
         corp_id = character.corporation.id
         refresh_token = character.sso_refresh_token
 
@@ -141,27 +204,6 @@ class EsiMoonExtraction(APITask):
                             )
 
                             db_service.save()
-
-            if expires <= datetime.datetime.now():
-                access_token, expires = self.get_access_token(refresh_token)
-
-            results = self.fetch_esi_url(self.mining_url % corp_id, access_token)
-
-            mining_info = json.loads(results)
-
-            for info in mining_info:
-                db_moonextract = MoonExtraction.objects.filter(moon_id=info['moon_id']).first()
-                if db_moonextract is None:
-                    db_moonextract = MoonExtraction(
-                        moon_id=info['moon_id'],
-                    )
-
-                db_moonextract.extraction_start_time = self.parse_api_date(info['extraction_start_time'], True)
-                db_moonextract.chunk_arrival_time = self.parse_api_date(info['chunk_arrival_time'], True)
-                db_moonextract.natural_decay_time = self.parse_api_date(info['natural_decay_time'], True)
-                db_moonextract.structure_id=info['structure_id']
-
-                db_moonextract.save()
         except Exception,e:
             traceback.print_exc(e)
             return True

@@ -126,7 +126,7 @@ class ApiHelper:
 
         return data
 
-    def fetch_esi_url(self, url, access_token, headers_to_return=None, method='post'):
+    def fetch_esi_url(self, url, access_token, headers_to_return=None, method='get'):
         """
         Fetch an ESI URL
         """
@@ -151,10 +151,14 @@ class ApiHelper:
                     if '?' not in url:
                         url += '?'
 
-                    r = self._session.request(method, url + '&token=' + access_token,
+                    if access_token is not None:
+                        r = self._session.request(method, url + '&token=' + access_token,
                                            headers={'Authorization': 'Bearer %s' % access_token})
+                    else:
+                        r = self._session.request(method, url)
 
                     data = r.text
+
                     if 'date' in r.headers and 'expires' in r.headers:
                         current = self.parse_esi_date(r.headers['date'])
                         until = self.parse_esi_date(r.headers['expires'])
