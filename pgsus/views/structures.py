@@ -269,7 +269,7 @@ def refinerylist(request):
 
     moon_system_ids = set([s.structure.station.system_id for s in struct_services.filter(state='online')])
 
-    repro_services = StructureService.objects.filter(name='Reprocessing', structure__station__corporation_id=corpid)
+    repro_services = StructureService.objects.filter(name='Reprocessing', structure__station__name__iregex='DRILL', structure__station__corporation_id=corpid)
 
     repro_system_ids = set([s.structure.station.system_id for s in repro_services])
 
