@@ -267,6 +267,16 @@ def refinerylist(request):
 
     struct_list = dict()
 
+    moon_system_ids = set([s.structure.station.system_id for s in struct_services.filter(state='online')])
+
+    repro_services = StructureService.objects.filter(name='Reprocessing', structure__station__corporation_id=corpid)
+
+    repro_system_ids = set([s.structure.station.system_id for s in repro_services])
+
+    system_ids_missing_repros = moon_system_ids - repro_system_ids
+
+    systems_missing_repros = System.objects.filter(id__in=system_ids_missing_repros)
+
     for service in struct_services:
         structure = service.structure
         structure.z_online = service.state == 'online'
@@ -326,17 +336,18 @@ def refinerylist(request):
     error_lines = []
     moon_comps = ''
 
-    if 'comp_errors' in request.session:
+    if 'comp_errors' in request.session and request.session['comp_errors']:
         error_lines = request.session['comp_errors']
         moon_comps = request.session['moon_comps']
-        request.session.delete('comp_errors')
-        request.session.delete('moon_comps')
+        request.session['comp_errors'] = None
+        request.session['moon_comps'] = None
 
     out = render_page(
         'pgsus/refinerylist.html',
         dict(
             structures=struct_list,
             add_waypoint=waypoint_scope is not None,
+            systems_missing_repros=systems_missing_repros,
             error_lines=error_lines,
             moon_comps=moon_comps,
         ),
