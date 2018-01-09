@@ -14,7 +14,7 @@
 
 <section class="container section-md">
     <div class="row">
-        <div class="col-lg-12">
+        <div class="col-lg-12" style="display: none">
             <a role="button" data-toggle="collapse" aria-expanded="{% if error_lines%} true{% else %}false{% endif %}" aria-controls="#bulk-update-moon" href="#bulk-update-moon">
                 Update Moon Comps
             </a>
@@ -39,6 +39,64 @@
                     <button class="btn btn-primary">Submit</button>
                 </form>
             </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-lg-12">
+            <form id="formEntry" class="form-horizontal" method="get" action="{{ url('pgsus.views.refinerylist') }}">
+                <div class="form-group">
+                  <label class="col-sm-2 col-form-label" for="region">Region</label>
+                  <div class="col-sm-8">
+                      <select name="region" id="region" class="js-select2 input-lg" tabindex="-1" aria-hidden="true">
+                            <option value="">Select One</option>
+                            {% for r in regions %}
+                            <option value="{{r}}"{% if region == r %} selected{% endif %}>{{r}}</option>
+                            {% endfor %}
+                      </select>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label class="col-sm-2 col-form-label" for="region">Constellation</label>
+                  <div class="col-sm-8">
+                      <select name="constellation" id="constellation" class="js-select2 input-lg" tabindex="-1" aria-hidden="true">
+                            <option value="">Select One</option>
+                            {% for c in constellations %}
+                            <option value="{{c}}"{% if constellation == c %} selected{% endif %}>{{c}}</option>
+                            {% endfor %}
+                      </select>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label class="col-sm-2 col-form-label" for="system">System</label>
+                  <div class="col-sm-8">
+                      <select name="system" id="system" class="js-select2 input-lg" tabindex="-1" aria-hidden="true">
+                            <option value="">Select One</option>
+                            {% for s in systems %}
+                            <option value="{{s}}"{% if system == s %} selected{% endif %}>{{s}}</option>
+                            {% endfor %}
+                      </select>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label class="col-sm-2 col-form-label" for="type">Type</label>
+                  <div class="col-sm-8">
+                      <select name="type" id="type" class="js-select2 input-lg" tabindex="-1" aria-hidden="true">
+                            <option value="">Select One</option>
+                            {% for t in types %}
+                            <option value="{{t}}"{% if type == t %} selected{% endif %}>{{t}}</option>
+                            {% endfor %}
+                      </select>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                    <div class="col-sm-6">
+                        <button type="submit" class="btn btn-primary">
+                            Submit
+                        </button>
+                    </div>
+                </div>
+            </form>
         </div>
     </div>
       <div class="row">
