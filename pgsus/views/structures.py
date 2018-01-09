@@ -302,14 +302,16 @@ def refinerylist(request):
         else:
             cycle_time = config.chunk_days
 
-        if config is None or config.next_date_override is None \
-                or config.next_date_override <= datetime.datetime.utcnow():
+        if config is None or config.next_date_override is None:
             if structure.z_moon_info is None:
                 structure.z_next_chunk_time = datetime.datetime.utcnow().replace(second=0, microsecond=0) + datetime.timedelta(days=cycle_time)
             else:
                 structure.z_next_chunk_time = structure.z_moon_info.chunk_arrival_time + datetime.timedelta(days=cycle_time)
         else:
-            structure.z_next_chunk_time = config.next_date_override
+            next_date_override = config.next_date_override
+            while next_date_override <= datetime.datetime.utcnow():
+                next_date_override += datetime.timedelta(days=cycle_time)
+            structure.z_next_chunk_time = next_date_override
 
         structure.z_cycle_time = cycle_time
 
