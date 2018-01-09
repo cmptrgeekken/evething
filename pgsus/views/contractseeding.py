@@ -22,13 +22,8 @@ def contractseedlist(request):
 
     char = Character.objects.filter(id=charid).first()
 
-<<<<<<< HEAD
     public_lists = ContractSeeding.objects.filter(is_private=False).order_by('name')
-=======
     role = CharacterRole.objects.filter(character_id=charid, role='contracts').first()
-
-    public_lists = ContractSeeding.objects.filter(is_private=False)
->>>>>>> bf8d37be17337afadd357a09b47715a4c525f16b
 
     station_lists = dict()
 
