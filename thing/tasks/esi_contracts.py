@@ -206,15 +206,13 @@ class EsiContracts(APITask):
             dateIssued = self.parse_api_date(row['date_issued'], True)
             dateExpired = self.parse_api_date(row['date_expired'], True)
 
-            dateAccepted = row['date_accepted']
-            if dateAccepted:
-                dateAccepted = self.parse_api_date(dateAccepted, True)
+            if 'date_accepted' in row:
+                dateAccepted = self.parse_api_date(row['date_accepted'], True)
             else:
                 dateAccepted = None
 
-            dateCompleted = row['date_completed']
-            if dateCompleted:
-                dateCompleted = self.parse_api_date(dateCompleted, True)
+            if 'date_completed' in row:
+                dateCompleted = self.parse_api_date(row['date_completed'], True)
             else:
                 dateCompleted = None
 
@@ -350,6 +348,8 @@ class EsiContracts(APITask):
                         id=row['type_id'],
                         name='**UNKNOWN**',
                         item_group_id=20,  # Mineral, just
+                        portion_size=1,
+                        base_price=1,
                     )
 
                     new_item.save()

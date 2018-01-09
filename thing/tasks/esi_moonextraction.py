@@ -53,8 +53,9 @@ class EsiMoonExtraction(APITask):
         for scope in structure_scopes:
             char = scope.character
 
-            if 'Structure_Manager' in char.get_apiroles():
+            if 'Station_Manager' in char.get_apiroles():
                 if char.corporation_id not in seen_corps:
+
                     self.import_structures(char)
                     seen_corps.add(char.corporation_id)
 

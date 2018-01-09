@@ -891,7 +891,7 @@ def perms(request):
     roles = char.get_apiroles()
 
     scopes = [
-        dict(scope='esi-characters.read_corporation_roles.v1', desc='Allows for reading of your roles within your corporation (e.g., Accountant, Station Manager). Required as certain endpoints require specific roles.', required=True),
+        dict(scope='esi-characters.read_corporation_roles.v1', desc='Allows for reading of your roles within your corporation (e.g., Accountant, Station Manager). This is needed to determine which endpoints you have permission to access.', required=False),
         dict(scope='esi-contracts.read_corporation_contracts.v1', desc='Allows for reading of corporation contracts.', required=False),
         dict(scope='esi-corporations.read_structures.v1', desc='Allows for retrieval of information about corporation structures (requires Station Manager role).', required=False),
         dict(scope='esi-universe.read_structures.v1', desc='Allows for retrieval of public structure information.', required=False),
