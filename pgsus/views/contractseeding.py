@@ -22,7 +22,13 @@ def contractseedlist(request):
 
     char = Character.objects.filter(id=charid).first()
 
+<<<<<<< HEAD
     public_lists = ContractSeeding.objects.filter(is_private=False).order_by('name')
+=======
+    role = CharacterRole.objects.filter(character_id=charid, role='contracts').first()
+
+    public_lists = ContractSeeding.objects.filter(is_private=False)
+>>>>>>> bf8d37be17337afadd357a09b47715a4c525f16b
 
     station_lists = dict()
 
@@ -37,6 +43,7 @@ def contractseedlist(request):
         dict(
             char_id=charid,
             station_lists=station_lists,
+            is_admin=role is not None,
         ),
         request
     )
@@ -51,6 +58,8 @@ def contractseededit(request):
     char_id = request.session['char']['id']
 
     char = Character.objects.filter(id=char_id).first()
+
+    role = CharacterRole.objects.filter(character_id=char_id, role='contracts').first()
 
     parse_results = None
     seed_input = ''
@@ -74,7 +83,12 @@ def contractseededit(request):
         try:
             list_id = int(request.GET.get('id'))
 
-            list = ContractSeeding.objects.filter(id=list_id, char_id=char_id).first()
+            list = ContractSeeding.objects.filter(id=list_id)
+
+            if role is None:
+                list = list.filter(char_id=char_id)
+
+            list = list.first()
 
             min_qty = list.min_qty
 
@@ -218,8 +232,11 @@ def contractseededit(request):
 def contractseedview(request):
     if 'char' in request.session:
         char_id = request.session['char']['id']
+
+        role = CharacterRole.objects.filter(character_id=char_id, role='contracts').first()
     else:
         char_id = None
+        role = None
 
     list_id = request.GET.get('id')
 
@@ -278,6 +295,7 @@ def contractseedview(request):
             current_page=page,
             related_contracts=related_contracts,
             char_id=char_id,
+            is_admin=role is not None,
         ),
         request
     )

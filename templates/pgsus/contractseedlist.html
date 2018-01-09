@@ -43,7 +43,7 @@
                                         <tr>
                                             <td>
                                                 <a href="{{url('pgsus.views.contractseedview')}}?id={{list.id}}">{{ list.name }}</a>
-                                                {% if list.char_id == char_id %}
+                                                {% if list.char_id == char_id or is_admin %}
                                                 (<a href="{{url('pgsus.views.contractseededit')}}?id={{list.id}}">Edit</a>)
                                                 {% endif %}
                                             </td>
