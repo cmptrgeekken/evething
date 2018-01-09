@@ -28,6 +28,9 @@ from thing.stuff import render_page, datetime  # NOPEP8
 from django.core.urlresolvers import reverse
 from django.shortcuts import redirect, render
 
+from thing.utils import dictfetchall
+from thing import queries
+
 
 def mooncomp(request):
     if 'char' not in request.session:
@@ -122,17 +125,18 @@ def extractions(request):
     max_date = datetime.datetime.utcnow() + datetime.timedelta(days=2)
 
     moon_configs = MoonConfig.objects.filter(last_chunk_time__gte=min_date, last_chunk_time__lte=max_date).order_by('last_chunk_time')
+    print('%s - Got Moon Configs' % datetime.datetime.utcnow())
 
     structures = []
     for cfg in moon_configs:
         structure = cfg.structure
 
         structure.z_extraction = MoonExtraction.objects.filter(structure_id=structure.id).first()
+        print('%s - Got Moon Extraction' % datetime.datetime.utcnow())
 
         extraction_ttl_m3 = 333 * cfg.last_chunk_minutes
         extraction_remaining_m3 = extraction_ttl_m3
         extraction_ttl_value = float()
-        extraction_remaining_value = float()
 
         ores = [
             dict(
@@ -175,8 +179,13 @@ def extractions(request):
             else:
                 ore_types.add('ABC')
 
+            ore['mined_m3'] = 0
+            ore['mined_qty'] = 0
+            ore['mined_value'] = float()
+            ore['is_jackpot'] = False
             ore['total_quantity'] = ore['total_m3'] / ore['ore'].volume
-            ore['total_value'] = float(ore['total_quantity']) * ore['ore'].get_history_avg(reprocess=True, reprocess_pct=.84, pct=0.9)
+            ore['value_ea'] = ore['ore'].get_history_avg(reprocess=True, reprocess_pct=.84, pct=.9)
+            ore['total_value'] = float(ore['total_quantity']) * ore['value_ea']
             ore['remaining_m3'] = ore['total_m3']
             ore['remaining_value'] = ore['total_value']
             extraction_ttl_value += ore['total_value']
@@ -184,33 +193,33 @@ def extractions(request):
         extraction_remaining_value = extraction_ttl_value
 
         structure.z_is_jackpot = False
-
+        print('%s - Getting Moon Observer' % datetime.datetime.utcnow())
         observer = MoonObserver.objects.filter(observer_id=structure.station_id).first()
+        print('%s - Got Moon Observer' % datetime.datetime.utcnow())
         if observer is not None:
-            for ore in ores:
-                mining_log = MoonObserverEntry.objects.filter(observer_id=observer.id, last_updated__gte=min_date, type__name__endswith=ore['ore'].name)
+            mining_log = dictfetchall(queries.moonobserver_getentries % observer.id)
 
-                ore['mined_m3'] = 0
-                ore['mined_qty'] = 0
-                ore['mined_value'] = float()
-                ore['is_jackpot'] = False
+            for log in mining_log:
+                for ore in ores:
+                    if not log['ore_name'].endswith(ore['ore'].name):
+                        continue
 
-                for log in mining_log:
-                    ore['is_jackpot'] = 'Twinkling' in log.type.name or 'Shining' in log.type.name \
-                                        or 'Glowing' in log.type.name or 'Glistening' in log.type.name \
-                                        or 'Shimmering' in log.type.name
-                    ore['mined_m3'] += log.quantity * log.type.volume
-                    ore['mined_quantity'] = log.quantity
-                    ore['mined_value'] += float(log.quantity) * log.type.get_history_avg(reprocess=True, reprocess_pct=.84, pct=0.9)
+                    ore['mined_m3'] += log['mined_m3']
+                    ore['mined_qty'] += log['quantity']
+                    ore['mined_value'] += float(log['quantity']) * ore['value_ea'] * 2 if log['is_jackpot'] else 1
 
-                ore['remaining_m3'] = ore['total_m3'] - ore['mined_m3']
-                ore['remaining_value'] = ore['ttl_value'] = ore['mined_value']
+                    if log['is_jackpot']:
+                        ore['is_jackpot'] = True
+                        extraction_ttl_value += ore['total_value']
+                        extraction_remaining_value += ore['total_value']
+                        ore['total_value'] *= 2
+                        ore['remaining_value'] *= 2
 
-                if ore['is_jackpot']:
-                    structure.z_is_jackpot = True
+                    ore['remaining_value'] -= ore['mined_value']
+                    ore['remaining_m3'] -= log['mined_m3']
 
-                extraction_remaining_m3 -= ore['mined_m3']
-                extraction_remaining_value -= ore['mined_value']
+                    extraction_remaining_value -= ore['mined_value']
+                    extraction_remaining_m3 -= ore['mined_m3']
 
         structure.z_config = cfg
         structure.z_ore_types = list(ore_types)
@@ -277,10 +286,56 @@ def refinerylist(request):
 
     systems_missing_repros = System.objects.filter(id__in=system_ids_missing_repros)
 
+    region_list = set()
+    constellation_list = set()
+    system_list = set()
+
+    type_list = ['N64', 'R64', 'D64', 'R32', 'R4', 'ABC']
+
+    region_filter = request.GET.get('region')
+    constellation_filter = request.GET.get('constellation')
+    system_filter = request.GET.get('system')
+    type_filter = request.GET.get('type')
+    search_filter = request.GET.get('search')
+
+    total_structures = 0
+    filtered_structures = 0
+
     for service in struct_services:
         structure = service.structure
         structure.z_online = service.state == 'online'
         structure.z_moon_info = MoonExtraction.objects.filter(structure_id=structure.station_id).first()
+
+        region_list.add(structure.station.system.constellation.region.name)
+        constellation_list.add(structure.station.system.constellation.name)
+        system_list.add(structure.station.system.name)
+
+        total_structures += 1
+
+        if region_filter and structure.station.system.constellation.region.name != region_filter:
+            continue
+
+        if constellation_filter and structure.station.system.constellation.name != constellation_filter:
+            continue
+
+        if system_filter and structure.station.system.name != system_filter:
+            continue
+
+        if search_filter and search_filter not in structure.station.name:
+            continue
+
+        if type_filter is not None:
+            if type_filter == 'D64':
+                try:
+                    if structure.station.system.alliance.name == 'Pandemic Horde':
+                        if type_filter not in structure.station.name:
+                            continue
+                except:
+                    pass
+            elif type_filter not in structure.station.name:
+                continue
+
+        filtered_structures += 1
 
         structure.z_not_extracting = structure.z_moon_info is None\
             or structure.z_moon_info.chunk_arrival_time < datetime.datetime.utcnow()
@@ -344,6 +399,15 @@ def refinerylist(request):
         request.session['comp_errors'] = None
         request.session['moon_comps'] = None
 
+
+    region_list = list(region_list)
+    constellation_list = list(constellation_list)
+    system_list = list(system_list)
+
+    region_list.sort()
+    constellation_list.sort()
+    system_list.sort()
+
     out = render_page(
         'pgsus/refinerylist.html',
         dict(
@@ -352,6 +416,17 @@ def refinerylist(request):
             systems_missing_repros=systems_missing_repros,
             error_lines=error_lines,
             moon_comps=moon_comps,
+            regions=region_list,
+            constellations=constellation_list,
+            systems=system_list,
+            types=type_list,
+            region=region_filter,
+            constellation=constellation_filter,
+            system=system_filter,
+            type=type_filter,
+            search=search_filter,
+            ttl_structure_count=total_structures,
+            filtered_structure_count=filtered_structures,
         ),
         request,
     )
