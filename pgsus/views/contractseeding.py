@@ -22,9 +22,8 @@ def contractseedlist(request):
 
     char = Character.objects.filter(id=charid).first()
 
+    public_lists = ContractSeeding.objects.filter(is_private=False).order_by('name')
     role = CharacterRole.objects.filter(character_id=charid, role='contracts').first()
-
-    public_lists = ContractSeeding.objects.filter(is_private=False)
 
     station_lists = dict()
 
@@ -104,7 +103,7 @@ def contractseededit(request):
         if updateMethod == 'update':
             list.name = request.POST.get('list_name')
             list.char_id = char_id
-            list.corp_id = char.corporation_id
+            list.corp_id = 98388312 # TODO: Don't hard-code
             list.station_id = request.POST.get('station_id')
             list.min_qty = request.POST.get('min_qty')
             list.is_private = request.POST.get('private') == 'Y'
