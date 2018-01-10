@@ -87,7 +87,7 @@ class Item(models.Model):
 
         return items
 
-    def get_max_order_volume(self, buy=False, item_ids=None, station_ids=None):
+    def get_max_order_volume(self, buy=False, item_ids=None, station_ids=None, max_deviation=None):
         from thing.models.stationorder import StationOrder
 
         if item_ids is None:
@@ -97,6 +97,9 @@ class Item(models.Model):
 
         if station_ids is not None:
             orders = orders.filter(station_id__in=station_ids)
+
+        #if max_deviation is not None:
+        #    orders = orders.
 
         return orders.aggregate(total_volume=Sum('volume_remaining'))['total_volume']
 
@@ -189,10 +192,6 @@ SELECT price * SUM(im.quantity) /
 
                 station_orders[order.station_id].add_order(order)
 
-            else:
-                # Do not display orders beyond what is needed
-                break
-
         if quantity is not None:
             self.z_qty_remaining = qty_remaining
             self.z_qty = quantity - qty_remaining
@@ -261,3 +260,20 @@ SELECT price * SUM(im.quantity) /
         volume = sum([h.movement for h in history])
 
         return volume
+
+    def get_ore_category(self):
+        if 'Exceptional' in self.item_group.name:
+            return 'R64'
+        if 'Rare' in self.item_group.name:
+            return 'R32'
+        if 'Uncommon' in self.item_group.name:
+            return 'R16'
+        if 'Common' in self.item_group.name:
+            return 'R8'
+        if 'Ubiquitous' in self.item_group.name:
+            return 'R4'
+        else:
+            return 'ABC'
+
+    def get_ore_display(self, moon_pct):
+        return "%s (%d%%, %s)" % (self.name, moon_pct*100, self.get_ore_category())

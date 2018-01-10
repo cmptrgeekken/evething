@@ -141,6 +141,14 @@
                                 {% endif %}
                                 <div><b>Next Chunk:</b> {{ s.z_next_chunk_time|date('%Y-%m-%d %H:%M') }} ({{ s.z_cycle_time }} days)</div>
                             {% endif %}
+                            <div><small>
+                                <a role="button" data-toggle="collapse" aria-expanded="false" aria-controls="#composition-{{ s.id }}" href="#composition-{{ s.id }}">
+                                    <b>Composition</b>
+                                </a>
+                                <div class="collapse" id="composition-{{ s.id }}">
+                                    {{ s.z_config.get_composition()|safe }}
+                                </div>
+                            </small></div>
                             <small>
                                 <a role="button" data-toggle="collapse" aria-expanded="false" aria-controls="#chunk-form-{{ s.id }}" href="#chunk-form-{{ s.id }}">
                                     Configure

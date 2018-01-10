@@ -36,16 +36,16 @@ class MoonConfig(models.Model):
     is_nationalized = models.BooleanField(default=False)
     ignore_refire = models.BooleanField(default=False)
 
-    first_ore = models.ForeignKey(Item, on_delete=models.DO_NOTHING, related_name='first_ore')
+    first_ore = models.ForeignKey(Item, on_delete=models.DO_NOTHING, related_name='first_ore_id')
     first_ore_pct = models.DecimalField(decimal_places=2, max_digits=2)
 
-    second_ore = models.ForeignKey(Item, on_delete=models.DO_NOTHING, related_name='second_ore')
+    second_ore = models.ForeignKey(Item, on_delete=models.DO_NOTHING, related_name='second_ore_id')
     second_ore_pct = models.DecimalField(decimal_places=2, max_digits=2)
 
-    third_ore = models.ForeignKey(Item, on_delete=models.DO_NOTHING, related_name='third_ore')
+    third_ore = models.ForeignKey(Item, on_delete=models.DO_NOTHING, related_name='third_ore_id')
     third_ore_pct = models.DecimalField(decimal_places=2, max_digits=2)
 
-    fourth_ore = models.ForeignKey(Item, on_delete=models.DO_NOTHING, related_name='fourth_ore')
+    fourth_ore = models.ForeignKey(Item, on_delete=models.DO_NOTHING, related_name='fourth_ore_id')
     fourth_ore_pct = models.DecimalField(decimal_places=2, max_digits=2)
 
     last_chunk_time = models.DateTimeField(null=True)
@@ -57,3 +57,23 @@ class MoonConfig(models.Model):
 
     def __unicode__(self):
         return self.structure.name
+
+    def get_composition(self):
+        try:
+            comp = "<ul><li>%s</li><li>%s</li>" % (self.first_ore.get_ore_display(self.first_ore_pct), self.second_ore.get_ore_display(self.second_ore_pct))
+            try:
+                comp += "<li>%s</li>" % (self.third_ore.get_ore_display(self.third_ore_pct))
+            except:
+                pass
+
+            try:
+                comp += "<li>%s</li>" % (self.fourth_ore.get_ore_display(self.fourth_ore_pct))
+            except:
+                pass
+            comp += "</ul>"
+        except:
+            comp = "** UNKNOWN **"
+
+        return comp
+
+
