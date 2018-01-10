@@ -122,6 +122,9 @@
                     {% for s in structures %}
                     <tr>
                         <td>
+                            {% if s.z_config.is_nationalized %}
+                            <small><sup><abbr style="color: white;background-color: black;padding:2px;" title="Nationalized">N</abbr></sup></small>
+                            {% endif %}
                             {{ s.station.name }}
                             <button class="btn btn-xs" type="button" data-clipboard-text="{{ s.station.name }}">
                                 <img src="{{ STATIC_URL }}pgsus/img/clippy.svg" width="13" title="Copy Day">
@@ -130,10 +133,17 @@
                             <small><a href="javascript:void(0)" class="js-addWaypoint" data-waypoint="{{ s.station.id }}">Add Waypoint</a></small>
                             {% endif %}
                             <br/>
+                            {% if s.z_config.ignore_refire %}
+                                <div><i>Do Not Refire</i></div>
+                            {% else %}
+                                {% if s.z_chunk_start_time %}
+                            <div><b><abbr title="Wait to fire to ensure proper scheduling.">Wait Until:</abbr> </b> <time class="timeago" datetime="{{s.z_chunk_start_time|timeago}}">{{ s.z_chunk_start_time}}</time></div>
+                                {% endif %}
+                                <div><b>Next Chunk:</b> {{ s.z_next_chunk_time|date('%Y-%m-%d %H:%M') }} ({{ s.z_cycle_time }} days)</div>
+                            {% endif %}
                             <small>
                                 <a role="button" data-toggle="collapse" aria-expanded="false" aria-controls="#chunk-form-{{ s.id }}" href="#chunk-form-{{ s.id }}">
-                                    Next Chunk: {{ s.z_next_chunk_time }}
-                                    ({{ s.z_cycle_time }} days)
+                                    Configure
                                 </a>
 
                                 <div class="collapse" id="chunk-form-{{ s.id }}">
@@ -152,6 +162,15 @@
                                                 <input class="form-control" id="chunk_time_override_{{s.id}}" type="number" min="1" max="56" step="1" name="chunk_time" value="{{ s.z_config.chunk_days }}" />
                                             </div>
                                         </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" id="is_nationalized_{{s.id}}" type="checkbox" name="is_nationalized" value="1"{% if s.z_config.is_nationalized %} checked{% endif %} />
+                                            <label class="form-check-label" for="is_nationalized_{{s.id}}">National?</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" id="ignore_refire_{{s.id}}" type="checkbox" name="ignore_refire" value="1"{% if s.z_config.ignore_refire %} checked{% endif %} />
+                                            <label class="form-check-label" for="ignore_refire_{{s.id}}">Ignore?</label>
+                                        </div>
+
 
                                         <button type="submit" class="btn btn_primary">Save</button>
                                     </form>

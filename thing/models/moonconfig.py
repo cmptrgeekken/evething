@@ -34,6 +34,7 @@ class MoonConfig(models.Model):
     chunk_days = models.IntegerField(default=28)
     next_date_override = models.DateTimeField()
     is_nationalized = models.BooleanField(default=False)
+    ignore_refire = models.BooleanField(default=False)
 
     first_ore = models.ForeignKey(Item, on_delete=models.DO_NOTHING, related_name='first_ore')
     first_ore_pct = models.DecimalField(decimal_places=2, max_digits=2)
