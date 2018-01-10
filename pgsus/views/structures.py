@@ -258,6 +258,8 @@ def refinerylist(request):
         structure_id = request.POST.get('structure_id')
         next_date_override = request.POST.get('next_date_override') or None
         chunk_time = request.POST.get('chunk_time') or None
+        is_nationalized = request.POST.get('is_nationalized') == '1'
+        ignore_refire = request.POST.get('ignore_refire') == '1'
 
         config = MoonConfig.objects.filter(structure_id=structure_id).first()
         if config is None:
@@ -265,8 +267,10 @@ def refinerylist(request):
                 structure_id=structure_id
             )
 
+        config.is_nationalized = is_nationalized
         config.next_date_override=next_date_override
         config.chunk_days = chunk_time
+        config.ignore_refire = ignore_refire
 
         config.save()
 
@@ -369,6 +373,12 @@ def refinerylist(request):
             structure.z_next_chunk_time = next_date_override
 
         structure.z_cycle_time = cycle_time
+
+        if structure.z_next_chunk_time < datetime.datetime.utcnow() + datetime.timedelta(days=6):
+            structure.z_chunk_start_time = structure.z_next_chunk_time
+            structure.z_next_chunk_time += datetime.timedelta(days=cycle_time)
+        else:
+            structure.z_chunk_start_time = None
 
         if service.structure.id not in struct_list:
             struct_list[service.structure.id] = service.structure
