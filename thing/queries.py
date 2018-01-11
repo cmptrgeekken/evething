@@ -1059,15 +1059,18 @@ WHERE
 """
 
 assetlist_query = """
-       select ea1.item_id AS asset_id,
-       i.id AS item_id,
-	   i.name AS item_name,
-       ea1.quantity,
-       ea1.location_flag,
-	   i2.name AS parent_name,
-	   ea2.item_id AS parent_id,
-       s.name AS station_name,
+SELECT
+       ea1.item_id AS asset_id,
        COALESCE(sy1.name, sy2.name) AS system_name,
+       COALESCE(sy1.id, sy2.id) AS system_id,
+	   s.name AS station_name,
+       s.id AS station_id,
+       ea1.location_flag,
+       ea1.is_singleton,
+	   i2.name AS parent_name,
+       ea1.location_id as parent_id,
+       i.name AS item_name,
+       ea1.quantity,
        ea1.quantity * (SELECT MIN(so.price) FROM thing_stationorder so where so.buy_order=0 AND so.item_id=i.id AND so.station_id=60003760) AS rough_value,
        ea1.quantity * i.volume AS m3
 	from thing_esiasset ea1 
@@ -1084,3 +1087,37 @@ assetlist_query = """
 assetlist_corporation_query = assetlist_query % "ea1.corporation_id=%s"
 
 assetlist_character_query = assetlist_query % "ea1.character_id=%s"
+
+
+blueprint_getcomponents = """
+SELECT 
+	bpci.id AS component_id, 
+    bpci.name, 
+    bpc.count,
+    IF(bpcp.id IS NOT NULL,1,0) AS has_bp
+    FROM evedb.thing_blueprint bp 
+	inner join thing_blueprintcomponent bpc ON bpc.blueprint_id=bp.id
+    inner join thing_item bpci on bpc.item_id=bpci.id
+    inner join thing_blueprintproduct bpp on bp.id=bpp.blueprint_id
+    inner join thing_item bppi on bpp.item_id=bppi.id
+    left join thing_blueprintproduct bpcp ON bpc.item_id=bpcp.item_id
+    where bppi.name = %s AND bpc.activity IN (1,11) AND bpp.activity IN (1,11)
+"""
+
+moonobserver_getentries = """
+select moe.type_id,
+       i.name AS ore_name, 
+       SUM(moe.quantity) AS quantity,
+       SUM(moe.quantity * i.volume) AS mined_m3,
+       CASE WHEN 
+			i.name LIKE 'Twinkling%%' 
+            OR i.name LIKE 'Shining%%' 
+            OR i.name LIKE 'Glowing%%' 
+            OR i.name LIKE 'Shimmering%%' 
+		THEN 1 ELSE 0 END AS is_jackpot
+FROM thing_moonobserverentry moe
+	INNER JOIN thing_item i on i.id=moe.type_id
+where moe.last_updated >= DATE_ADD(NOW(), INTERVAL -2 DAY)
+    AND moe.observer_id=%s
+GROUP BY moe.observer_id, i.name
+"""

@@ -120,121 +120,202 @@ def mooncomp(request):
 
     return redirect(reverse(refinerylist))
 
+
+class MoonOreEntry:
+    def __init__(self, ore, pct, total_volume):
+        self.ore = ore
+        self.pct = pct
+        self.total_volume = total_volume
+
+        self.name = self.ore.name
+
+        self.total_value = 0
+
+        self.value_ea = 0
+
+        self.remaining_volume = 0
+        self.remaining_value = 0
+
+        self.mined_volume = 0
+        self.mined_value = 0
+
+        self.is_jackpot = False
+
+        self.type = None
+
+class MoonDetails:
+
+    def __init__(self, structure, extraction, config, observer_log, ore_values):
+        self.name = structure.station.name
+        self.is_jackpot = False
+        self.is_popped = False
+        self.is_poppable = extraction.chunk_arrival_time <= datetime.datetime.utcnow()
+
+        self.structure = structure
+        self.extraction = extraction
+        self.config = config
+        self.log = observer_log
+        self.ore_values = ore_values
+
+        self.ore_types = list()
+
+        self.total_volume = self.remaining_volume = extraction.chunk_minutes * 333
+        self.total_value = 0
+
+        self.remaining_value = 0
+
+        self.remaining_isk_per_m3 = 0
+
+        self.ores = list()
+
+        self.parse_log()
+
+    def parse_log(self):
+        self.ores.append(
+            MoonOreEntry(
+                ore=self.config.first_ore,
+                pct=self.config.first_ore_pct,
+                total_volume=self.config.first_ore_pct*self.total_volume,
+            )
+        )
+
+        self.ores.append(
+            MoonOreEntry(
+                ore=self.config.second_ore,
+                pct=self.config.second_ore_pct,
+                total_volume=self.config.second_ore_pct*self.total_volume,
+            )
+        )
+
+        if self.config.third_ore_id is not None:
+            self.ores.append(
+                MoonOreEntry(
+                    ore=self.config.third_ore,
+                    pct=self.config.third_ore_pct,
+                    total_volume=self.config.third_ore_pct*self.total_volume,
+                )
+            )
+
+        if self.config.fourth_ore_id is not None:
+            self.ores.append(
+                MoonOreEntry(
+                    ore=self.config.fourth_ore,
+                    pct=self.config.fourth_ore_pct,
+                    total_volume=self.config.fourth_ore_pct * self.total_volume,
+                )
+            )
+
+        ore_types = set()
+
+        for ore in self.ores:
+
+            ore.remaining_volume = ore.total_volume = ore.pct * self.total_volume
+            if ore.ore.id not in self.ore_values:
+                self.ore_values[ore.ore.id] = ore.ore.get_history_avg(reprocess=True, reprocess_pct=.84, pct=.9)
+
+            ore.value_ea = self.ore_values[ore.ore.id]
+
+            ore.total_value = ore.remaining_value = float(ore.total_volume / ore.ore.volume) * ore.value_ea
+
+            if self.log is not None:
+                for l in self.log:
+                    if ore.name not in l.type.name:
+                        continue
+
+                    if 'Twinkling' in l.type.name or 'Shining' in l.type.name\
+                            or 'Glowing' in l.type.name or 'Shimmering' in l.type.name:
+                        self.is_jackpot = True
+                        ore.is_jackpot = True
+
+                        ore.total_value *= 2
+                        ore.value_ea *= 2
+
+                    ore.mined_volume += l.quantity * l.type.volume
+
+                    self.is_popped = True
+
+            self.total_value += ore.total_value
+            self.remaining_value += ore.total_value
+
+            ore.remaining_volume -= ore.mined_volume
+            ore.remaining_value = float(ore.remaining_volume / ore.ore.volume) * ore.value_ea
+
+            self.remaining_volume -= ore.mined_volume
+            self.remaining_value -= float(ore.mined_volume / ore.ore.volume) * ore.value_ea
+
+            ore.isk_per_m3 = ore.remaining_value / float(ore.remaining_volume)
+
+            ore_type = ore.ore.item_group.name
+
+            if 'Exceptional' in ore_type:
+                ore_types.add('1R64')
+                ore.type = 'R64'
+            elif 'Rare' in ore_type:
+                ore_types.add('2R32')
+                ore.type = 'R32'
+            elif 'Uncommon' in ore_type:
+                ore_types.add('3R16')
+                ore.type = 'R16'
+            elif 'Common' in ore_type:
+                ore_types.add('4R8')
+                ore.type = 'R8'
+            elif 'Ubiquitous' in ore_type:
+                ore_types.add('5R4')
+                ore.type = 'R4'
+            else:
+                ore_types.add('6ABC')
+                ore.type = 'ABC'
+
+        self.remaining_isk_per_m3 = self.remaining_value / float(self.remaining_volume)
+
+        self.remaining_pct = self.remaining_value / self.total_value
+
+        self.ore_types = list(ore_types)
+
+        self.ore_types.sort()
+        for i in range(0, len(self.ore_types)):
+            self.ore_types[i] = self.ore_types[i][1:]
+
+
 def extractions(request):
     min_date = datetime.datetime.utcnow() + datetime.timedelta(days=-2)
     max_date = datetime.datetime.utcnow() + datetime.timedelta(days=2)
 
-    moon_configs = MoonConfig.objects.filter(last_chunk_time__gte=min_date, last_chunk_time__lte=max_date).order_by('last_chunk_time')
-    print('%s - Got Moon Configs' % datetime.datetime.utcnow())
+    moon_extractions = MoonExtractionHistory.objects.filter(chunk_arrival_time__gte=min_date, chunk_arrival_time__lte=max_date).order_by('chunk_arrival_time')
 
-    structures = []
-    for cfg in moon_configs:
-        structure = cfg.structure
+    ore_values = dict()
 
-        structure.z_extraction = MoonExtraction.objects.filter(structure_id=structure.id).first()
-        print('%s - Got Moon Extraction' % datetime.datetime.utcnow())
+    moon_list = []
+    for e in moon_extractions:
+        structure = e.structure
+        cfg = MoonConfig.objects.filter(structure_id=e.structure.id).first()
 
-        extraction_ttl_m3 = 333 * cfg.last_chunk_minutes
-        extraction_remaining_m3 = extraction_ttl_m3
-        extraction_ttl_value = float()
+        # TODO: Enable Nationalized moons based off roles?
+        if cfg is None or cfg.is_nationalized:
+            continue
 
-        ores = [
-            dict(
-                ore=cfg.first_ore,
-                total_m3=cfg.first_ore_pct*extraction_ttl_m3,
-            ),
-            dict(
-                ore=cfg.second_ore,
-                total_m3=cfg.second_ore_pct*extraction_ttl_m3
-            )
-        ]
-
-        if cfg.third_ore_id is not None:
-            ores.append(dict(
-                ore=cfg.third_ore,
-                total_m3=cfg.third_ore_pct*extraction_ttl_m3,
-            ))
-
-        if cfg.fourth_ore_id is not None:
-            ores.append(dict(
-                ore=cfg.fourth_ore,
-                total_m3=cfg.fourth_ore_pct*extraction_ttl_m3,
-            ))
-
-        ore_types = set()
-
-        for ore in ores:
-            ore_type = ore['ore'].item_group.name
-
-            if 'Exceptional' in ore_type:
-                ore_types.add('R64')
-            elif 'Rare' in ore_type:
-                ore_types.add('R32')
-            elif 'Uncommon' in ore_type:
-                ore_types.add('R16')
-            elif 'Common' in ore_type:
-                ore_types.add('R8')
-            elif 'Ubiquitous' in ore_type:
-                ore_types.add('R4')
-            else:
-                ore_types.add('ABC')
-
-            ore['mined_m3'] = 0
-            ore['mined_qty'] = 0
-            ore['mined_value'] = float()
-            ore['is_jackpot'] = False
-            ore['total_quantity'] = ore['total_m3'] / ore['ore'].volume
-            ore['value_ea'] = ore['ore'].get_history_avg(reprocess=True, reprocess_pct=.84, pct=.9)
-            ore['total_value'] = float(ore['total_quantity']) * ore['value_ea']
-            ore['remaining_m3'] = ore['total_m3']
-            ore['remaining_value'] = ore['total_value']
-            extraction_ttl_value += ore['total_value']
-
-        extraction_remaining_value = extraction_ttl_value
-
-        structure.z_is_jackpot = False
-        print('%s - Getting Moon Observer' % datetime.datetime.utcnow())
         observer = MoonObserver.objects.filter(observer_id=structure.station_id).first()
-        print('%s - Got Moon Observer' % datetime.datetime.utcnow())
+
+        observer_log = None
         if observer is not None:
-            mining_log = dictfetchall(queries.moonobserver_getentries % observer.id)
+            observer_log = MoonObserverEntry.objects.filter(
+                observer_id=observer.id,
+                last_updated__gte=e.chunk_arrival_time,
+                last_updated__lte=e.chunk_arrival_time + datetime.timedelta(days=2))
 
-            for log in mining_log:
-                for ore in ores:
-                    if not log['ore_name'].endswith(ore['ore'].name):
-                        continue
+        details = MoonDetails(structure, e, cfg, observer_log, ore_values)
 
-                    ore['mined_m3'] += log['mined_m3']
-                    ore['mined_qty'] += log['quantity']
-                    ore['mined_value'] += float(log['quantity']) * ore['value_ea'] * 2 if log['is_jackpot'] else 1
+        moon_list.append(details)
 
-                    if log['is_jackpot']:
-                        ore['is_jackpot'] = True
-                        extraction_ttl_value += ore['total_value']
-                        extraction_remaining_value += ore['total_value']
-                        ore['total_value'] *= 2
-                        ore['remaining_value'] *= 2
-
-                    ore['remaining_value'] -= ore['mined_value']
-                    ore['remaining_m3'] -= log['mined_m3']
-
-                    extraction_remaining_value -= ore['mined_value']
-                    extraction_remaining_m3 -= ore['mined_m3']
-
-        structure.z_config = cfg
-        structure.z_ore_types = list(ore_types)
-        structure.z_ores = ores
-        structure.z_ttl_m3 = extraction_ttl_m3
-        structure.z_ttl_value = extraction_ttl_value
-        structure.z_remaining_m3 = extraction_remaining_m3
-        structure.z_remaining_value = extraction_remaining_value
-
-        structures.append(structure)
+    ship_m3_per_hour = [
+        dict(name='Venture', m3=9*60*60),
+        dict(name='Procurer', m3=32*60*60),
+    ]
 
     out = render_page(
         'pgsus/extractions.html',
         dict(
-            structures=structures,
+            moon_list=moon_list,
         ),
         request,
     )

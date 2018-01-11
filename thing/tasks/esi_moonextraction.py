@@ -28,7 +28,7 @@ import datetime
 from .apitask import APITask
 import json
 
-from thing.models import CharacterApiScope, MoonConfig, MoonExtraction, Station, Structure, StructureService
+from thing.models import CharacterApiScope, MoonExtraction, MoonExtractionHistory, Station, Structure, StructureService
 from thing import queries
 from thing.utils import dictfetchall
 
@@ -90,21 +90,26 @@ class EsiMoonExtraction(APITask):
                         moon_id=info['moon_id'],
                     )
 
-                db_moonconfig = MoonConfig.objects.filter(structure__station_id=info['structure_id']).first()
-
-                if db_moonconfig is not None:
-                    if db_moonextract.chunk_arrival_time < self.parse_api_date(info['chunk_arrival_time'], True)\
-                            or db_moonconfig.last_chunk_time is None:
-                        chunk_diff = (
-                                     db_moonextract.chunk_arrival_time - db_moonextract.extraction_start_time).total_seconds() / 60.0
-                        db_moonconfig.last_chunk_time = db_moonextract.chunk_arrival_time
-                        db_moonconfig.last_chunk_minutes = chunk_diff
-                        db_moonconfig.save()
-
                 db_moonextract.extraction_start_time = self.parse_api_date(info['extraction_start_time'], True)
                 db_moonextract.chunk_arrival_time = self.parse_api_date(info['chunk_arrival_time'], True)
                 db_moonextract.natural_decay_time = self.parse_api_date(info['natural_decay_time'], True)
                 db_moonextract.structure_id = info['structure_id']
+
+                db_extracthistory = MoonExtractionHistory.objects.filter(structure_id=info['structure_id'], extraction_start_time=db_moonextract.extraction_start_time).first()
+
+                if db_extracthistory is None:
+                    chunk_minutes = (db_moonextract.chunk_arrival_time - db_moonextract.extraction_start_time).total_seconds() / 60.0
+
+                    db_extracthistory = MoonExtractionHistory(
+                        moon_id=info['moon_id'],
+                        structure_id=info['structure_id'],
+                        extraction_start_time=db_moonextract.extraction_start_time,
+                        chunk_arrival_time=db_moonextract.chunk_arrival_time,
+                        natural_decay_time=db_moonextract.natural_decay_time,
+                        chunk_minutes=chunk_minutes,
+                    )
+
+                    db_extracthistory.save()
 
                 db_moonextract.save()
         except Exception, e:

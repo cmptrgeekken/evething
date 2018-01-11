@@ -3,7 +3,36 @@
   
 {% block title %}Upcoming Extractions{% endblock %}
 
+{% block extra_css %}
+<style type="text/css">
+    .ore-type {
+        border-radius:0.25em;
+        padding: 0.2em 0.6em 0.3em;
+        font-weight: bold;
+        font-size: 75%;
+        text-align: center;
+        color: #fff;
+    }
+    .ore-type-r64 {
+        background-color: #ee5f5b;
+    }
+
+    .ore-type-r32 {
+        background-color: #62c462;
+    }
+    .ore-type-r16,
+    .ore-type-r8,
+    .ore-type-r4 {
+        background-color: #5bc0de
+    }
+
+    .ore-type-abc {
+        background-color: #3a3f44;
+    }
+</style>
+{% endblock %}
 {% block content %}
+
 <section class="bg-19 bg-center bg-cover">
     <div>
         <div class="container section-sm">
@@ -16,33 +45,74 @@
       <div class="row">
         <div class="col-lg-12">
             <div class="row">
-            {% for s in structures %}
+            {% for m in moon_list %}
                 <div class="col-md-4">
-                    <h4>{{ s.station.name }} - {{ s.closest_celestial.item_name }}</h4>
-                    <ul class="list-inline">
-                        {% for type in s.z_ore_types %}
-                        <li>{{ type }}</li>
-                        {% endfor %}
-                    </ul>
-                    <div>Is Jackpot: {{ s.z_is_jackpot }}</div>
-                    <div>Total M3: {{ s.z_ttl_m3|humanize }}</div>
-                    <div>Remaining M3: {{ s.z_remaining_m3|humanize }}</div>
-                    <div>Total Value: {{ s.z_ttl_value|humanize }}</div>
-                    <div>Remaining Value: {{ s.z_remaining_value|humanize }}</div>
+                    <div class="panel panel-default">
+                        <div class="panel-heading bg-primary" style="text-align: center;">
+                            <h4 class="name">{{ m.name }}</h4>
+                        </div>
+                        <div class="panel-body" style="position: relative; text-align: center;">
+                            {% if m.is_jackpot %}
+                                <div class="ribbon bg-warning" style="text-align: center;">¡¡JACKPOT!!</div>
+                            {% endif %}
+                            {% if m.is_popped %}
+                            <div class="success">
+                                Ready to Mine!
+                            </div>
+                            {% elif m.is_poppable %}
+                            <div class="info">
+                                Ready to Pop!
+                            </div>
+                            {% else %}
+                            <div class="error">
+                                Ready <time class="timeago" datetime="{{ m.extraction.chunk_arrival_time|timeago }}">{{ m.extraction.chunk_arrival_time }}</time>
+                            </div>
+                            {% endif %}
 
-                    <h4>Ores:</h4>
-                    <ul>
-                        {% for ore in s.z_ores %}
-                        <li>
-                            <div>{{ ore.ore.name }}</div>
-                            <div>{{ ore.total_m3|humanize }}</div>
-                            <div>{{ ore.remaining_m3|humanize }}</div>
-                            <div>{{ ore.total_value|humanize }}</div>
-                            <div>{{ ore.remaining_value|humanize }}</div>
-                        </li>
-                        {% endfor %}
-                    </ul>
+                            <ul class="list-inline">
+                                {% for type in m.ore_types %}
+                                <li class="ore-type ore-type-{{type|slugify}}">{{ type }}</li>
+                                {% endfor %}
+                            </ul>
+                            <ul class="info-list md-list primary info-list-border">
+                                {% if m.is_popped %}
+                                <li>
+                                    {% if m.remaining_pct > 0.75 %}
+                                    <button class="btn btn-success">Tons of ores!</button>
+                                    {% elif m.remaining_pct > 0.5 %}
+                                    <button class="btn btn-info">Lots of ores!</button>
+                                    {% elif m.remaining_pct > 0.25 %}
+                                    <button class="btn btn-warning">Running low!</button>
+                                    {% else %}
+                                    <button class="btn btn-danger">Almost out!</button>
+                                    {% endif %}
+                                </li>
+                                {% endif %}
+                                <li>
+                                    <span>{{ m.remaining_value|humanize }} ISK</span> remaining
+                                </li>
+                                <li>
+                                    Avg. of <span>{{ m.remaining_isk_per_m3|commas(0) }} ISK/m<sup>3</sup></span></i>
+                                </li>
+                                {% for ore in m.ores %}
+                                <li style="text-align: left;">
+                                    <span style="color: #FFF;" class="ore-type ore-type-{{ ore.type|slugify }}">{{ ore.type }}</span>
+                                    {{ (ore.pct*100)|commas(0) }}% {{ ore.ore.name }}
+                                    {% if m.is_popped %}
+                                    <span>({{ (ore.remaining_volume / ore.total_volume * 100)|commas(0) }}% left)</span>
+                                    {% endif %}
+                                    <div><small><span>{{ ore.isk_per_m3|commas(0) }} isk/m<sup>3</sup></span> {{ ore.remaining_value|humanize }} ISK left</small></div>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
                 </div>
+                {% if loop.index and loop.index % 3 == 0 %}
+                    <div class="clearfix">
+
+                    </div>
+                {% endif %}
             {% endfor %}
             </div>
         </div>
