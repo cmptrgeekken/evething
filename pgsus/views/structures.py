@@ -159,6 +159,8 @@ class MoonDetails:
 
         self.ore_types = list()
 
+        self.chunk_days = extraction.chunk_minutes / 60 / 24
+
         self.total_volume = self.remaining_volume = extraction.chunk_minutes * 333
         self.total_value = 0
 
