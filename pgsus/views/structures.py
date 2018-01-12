@@ -30,6 +30,7 @@ from django.shortcuts import redirect, render
 
 from thing.utils import dictfetchall
 from thing import queries
+from thing.helpers import commas
 
 
 def mooncomp(request):
@@ -139,16 +140,18 @@ class MoonOreEntry:
         self.mined_volume = 0
         self.mined_value = 0
 
+        self.remaining_isk_per_m3 = 0
+
         self.is_jackpot = False
 
         self.type = None
 
 class MoonDetails:
 
-    def __init__(self, structure, extraction, config, observer_log, ore_values):
+    def __init__(self, structure, extraction, config, observer_log, ore_values, ship_m3_per_hour):
         self.name = structure.station.name
         self.is_jackpot = False
-        self.is_popped = False
+        self.is_popped = datetime.datetime.utcnow() > extraction.natural_decay_time
         self.is_poppable = extraction.chunk_arrival_time <= datetime.datetime.utcnow()
 
         self.structure = structure
@@ -173,6 +176,27 @@ class MoonDetails:
         self.ores = list()
 
         self.parse_log()
+
+        for ore in self.ores:
+            tooltip = ''
+            for ship in ship_m3_per_hour:
+                if tooltip:
+                    tooltip += ' / '
+
+                tooltip += '%s: %s ISK' % (ship['name'], commas(float(ship['m3'])*ore.remaining_isk_per_m3, 0))
+
+            tooltip = 'Hourly - ' + tooltip
+
+            ore.ship_m3_tooltip = tooltip
+
+        tooltip = ''
+        for ship in ship_m3_per_hour:
+            if tooltip:
+                tooltip += ' / '
+
+            tooltip += '%s: %s ISK' % (ship['name'], commas(float(ship['m3']) * self.remaining_isk_per_m3, 0))
+
+        self.ship_m3_tooltip = 'Hourly - ' + tooltip
 
     def parse_log(self):
         self.ores.append(
@@ -241,13 +265,14 @@ class MoonDetails:
             self.total_value += ore.total_value
             self.remaining_value += ore.total_value
 
-            ore.remaining_volume -= ore.mined_volume
+            ore.remaining_volume = max(0, ore.remaining_volume - ore.mined_volume)
             ore.remaining_value = float(ore.remaining_volume / ore.ore.volume) * ore.value_ea
 
-            self.remaining_volume -= ore.mined_volume
-            self.remaining_value -= float(ore.mined_volume / ore.ore.volume) * ore.value_ea
+            self.remaining_volume = max(0, self.remaining_volume - ore.mined_volume)
+            self.remaining_value = max(0.0, self.remaining_value-float(ore.mined_volume / ore.ore.volume) * ore.value_ea)
 
-            ore.isk_per_m3 = ore.remaining_value / float(ore.remaining_volume)
+            if ore.remaining_volume > 0:
+                ore.remaining_isk_per_m3 = ore.remaining_value / float(ore.remaining_volume)
 
             ore_type = ore.ore.item_group.name
 
@@ -270,7 +295,8 @@ class MoonDetails:
                 ore_types.add('6ORE')
                 ore.type = 'ORE'
 
-        self.remaining_isk_per_m3 = self.remaining_value / float(self.remaining_volume)
+        if self.remaining_volume > 0:
+            self.remaining_isk_per_m3 = self.remaining_value / float(self.remaining_volume)
 
         self.remaining_pct = self.remaining_value / self.total_value
 
@@ -295,6 +321,11 @@ def extractions(request):
     else:
         waypoint_scope = None
 
+    ship_m3_per_hour = [
+        dict(name='Venture', m3=9*60*60),
+        dict(name='Procurer', m3=32*60*60),
+    ]
+
     moon_list = []
     for e in moon_extractions:
         structure = e.structure
@@ -313,14 +344,9 @@ def extractions(request):
                 last_updated__gte=e.chunk_arrival_time,
                 last_updated__lte=e.chunk_arrival_time + datetime.timedelta(days=2))
 
-        details = MoonDetails(structure, e, cfg, observer_log, ore_values)
+        details = MoonDetails(structure, e, cfg, observer_log, ore_values, ship_m3_per_hour)
 
         moon_list.append(details)
-
-    ship_m3_per_hour = [
-        dict(name='Venture', m3=9*60*60),
-        dict(name='Procurer', m3=32*60*60),
-    ]
 
     out = render_page(
         'pgsus/extractions.html',

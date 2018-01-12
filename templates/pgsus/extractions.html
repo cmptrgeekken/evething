@@ -148,7 +148,7 @@
                                     <span>{{ m.remaining_value|humanize }} ISK</span> remaining
                                 </li>
                                 <li>
-                                    Avg. of <span>{{ m.remaining_isk_per_m3|commas(0) }} ISK/m<sup>3</sup></span></i>
+                                    Avg. of <abbr title="{{ m.ship_m3_tooltip}}"><span>{{ m.remaining_isk_per_m3|commas(0) }} ISK/m<sup>3</sup></span></abbr></i>
                                 </li>
                                 {% for ore in m.ores %}
                                 <li style="text-align: left;">
@@ -157,7 +157,7 @@
                                     {% if m.is_popped %}
                                     <span>({{ (ore.remaining_volume / ore.total_volume * 100)|commas(0) }}% left)</span>
                                     {% endif %}
-                                    <div><small><span>{{ ore.isk_per_m3|commas(0) }} isk/m<sup>3</sup></span> {{ ore.remaining_value|humanize }} ISK left</small></div>
+                                    <div><abbr title="{{ ore.ship_m3_tooltip }}"><small><span>{{ ore.remaining_isk_per_m3|commas(0) }} isk/m<sup>3</sup></span></abbr> {{ ore.remaining_value|humanize }} ISK left</small></div>
                                 </li>
                                 {% endfor %}
                             </ul>
