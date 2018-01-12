@@ -26,12 +26,14 @@
         background-color: #5bc0de
     }
 
-    .ore-type-abc {
+    .ore-type-ore {
         background-color: #3a3f44;
     }
 
     body {
         background-color: #BBB;
+        font-weight: bold;
+        color: #333;
     }
 
     .panel-default {
@@ -43,6 +45,10 @@
         border-color: transparent;
      }
 
+     h4.name {
+        font-weight: bold;
+     }
+
      .primary span {
         color: #000;
         font-weight: bold;
@@ -50,6 +56,21 @@
 
      .info-list-border>li {
         border-bottom: 1px solid #555;
+     }
+
+     .warning {
+        background-color: #ecd06f;
+        padding:1em;
+        margin-bottom:0.75rem;
+        font-weight: bold;
+        border-radius:2px
+     }
+
+     .waypoint {
+        position: absolute;
+        top: 2px;
+        left: 20px;
+        color: orange;
      }
 
 </style>
@@ -72,7 +93,14 @@
                 <div class="col-md-4">
                     <div class="panel panel-default">
                         <div class="panel-heading bg-primary" style="text-align: center;">
-                            <h4 class="name">{{ m.name }}</h4>
+                            <h4 class="name">
+                                {{ m.name }}
+                                {% if show_waypoint %}
+                                <a title="Add Waypoint" href="javascript:void(0)" class="waypoint js-addWaypoint" data-waypoint="{{ m.structure.station_id }}">
+                                    <i class="fa fa-map-marker" aria-hidden="true"></i>
+                                </a>
+                                {% endif %}
+                            </h4>
                             <small><i>Chunk Time: <span>{{ m.chunk_days }} days</span></i></small>
                         </div>
                         <div class="panel-body" style="position: relative; text-align: center;">
@@ -81,24 +109,28 @@
                             {% endif %}
                             {% if m.is_popped %}
                             <div class="success">
-                                Ready to Mine!
+                                Mining Active!
+                                <br/>
+                                <small><i>Expiration: <time class="timeago" datetime="{{ m.expiration_time|timeago }}">{{ m.expiration_time }}</time></i></small>
                             </div>
                             {% elif m.is_poppable %}
-                            <div class="info">
+                            <div class="warning">
                                 Ready to Pop!
+                                <br/><small><i>Contact a Landscaper to 'splode.</i></small>
                             </div>
                             {% else %}
                             <div class="error">
                                 Ready <time class="timeago" datetime="{{ m.extraction.chunk_arrival_time|timeago }}">{{ m.extraction.chunk_arrival_time }}</time>
                             </div>
                             {% endif %}
-
-                            <ul class="list-inline">
-                                {% for type in m.ore_types %}
-                                <li class="ore-type ore-type-{{type|slugify}}">{{ type }}</li>
-                                {% endfor %}
-                            </ul>
                             <ul class="info-list md-list primary info-list-border">
+                                <li>
+                                    <ul class="list-inline">
+                                    {% for type in m.ore_types %}
+                                        <li class="ore-type ore-type-{{type|slugify}}">{{ type }}</li>
+                                    {% endfor %}
+                                    </ul>
+                                </li>
                                 {% if m.is_popped %}
                                 <li>
                                     {% if m.remaining_pct > 0.75 %}

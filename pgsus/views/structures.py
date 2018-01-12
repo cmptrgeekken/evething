@@ -161,6 +161,8 @@ class MoonDetails:
 
         self.chunk_days = extraction.chunk_minutes / 60 / 24
 
+        self.expiration_time = extraction.natural_decay_time + datetime.timedelta(days=2)
+
         self.total_volume = self.remaining_volume = extraction.chunk_minutes * 333
         self.total_value = 0
 
@@ -265,8 +267,8 @@ class MoonDetails:
                 ore_types.add('5R4')
                 ore.type = 'R4'
             else:
-                ore_types.add('6ABC')
-                ore.type = 'ABC'
+                ore_types.add('6ORE')
+                ore.type = 'ORE'
 
         self.remaining_isk_per_m3 = self.remaining_value / float(self.remaining_volume)
 
@@ -286,6 +288,12 @@ def extractions(request):
     moon_extractions = MoonExtractionHistory.objects.filter(chunk_arrival_time__gte=min_date, chunk_arrival_time__lte=max_date).order_by('chunk_arrival_time')
 
     ore_values = dict()
+
+    if 'char' in request.session:
+        charid = request.session['char']['id']
+        waypoint_scope = CharacterApiScope.objects.filter(character_id=charid, scope='esi-ui.write_waypoint.v1').first()
+    else:
+        waypoint_scope = None
 
     moon_list = []
     for e in moon_extractions:
@@ -318,6 +326,7 @@ def extractions(request):
         'pgsus/extractions.html',
         dict(
             moon_list=moon_list,
+            show_waypoint=waypoint_scope is not None,
         ),
         request,
     )
