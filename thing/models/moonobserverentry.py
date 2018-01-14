@@ -38,6 +38,7 @@ class MoonObserverEntry(models.Model):
     last_updated = models.DateField()
     type = models.ForeignKey(Item, on_delete=models.DO_NOTHING)
     quantity = models.IntegerField()
+    times_updated = models.IntegerField()
 
     class Meta:
         app_label = 'thing'

@@ -79,6 +79,8 @@ class EsiMoonObserver(APITask):
                 for observer in observers:
                     db_observer = MoonObserver.objects.filter(observer_id=observer['observer_id']).first()
 
+                    do_import = True
+
                     if db_observer is None:
                         db_observer = MoonObserver(
                             observer_id=observer['observer_id'],
@@ -86,10 +88,7 @@ class EsiMoonObserver(APITask):
                             last_updated=observer['last_updated'],
                         )
 
-                        do_import = True
                         db_observer.save()
-                    else:
-                        do_import = db_observer.last_updated != observer['last_updated']
 
                     if do_import:
                         inner_page = 1
@@ -130,7 +129,10 @@ class EsiMoonObserver(APITask):
                                     character_id=detail['character_id'],
                                     recorded_corporation_id=detail['recorded_corporation_id'],
                                     type_id=detail['type_id'],
+                                    times_updated=0
                                 )
+                            elif db_entry.quantity != detail['quantity']:
+                                db_entry.times_updated += 1
 
                             db_entry.last_updated = detail['last_updated']
                             db_entry.quantity = detail['quantity']
