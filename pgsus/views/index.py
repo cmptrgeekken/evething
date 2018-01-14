@@ -127,7 +127,7 @@ def add_waypoint(request):
 
             access_token, expires = helper.get_access_token(refresh_token)
 
-            response = helper.fetch_esi_url(waypoint_url % dest_station.id, access_token)
+            response = helper.fetch_esi_url(waypoint_url % dest_station.id, access_token, method='post')
 
     return HttpResponse('')
 
