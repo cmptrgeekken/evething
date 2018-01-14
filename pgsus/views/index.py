@@ -894,6 +894,7 @@ def perms(request):
         dict(scope='esi-characters.read_corporation_roles.v1', desc='Allows for reading of your roles within your corporation (e.g., Accountant, Station Manager). This is needed to determine which endpoints you have permission to access.', required=False),
         dict(scope='esi-contracts.read_corporation_contracts.v1', desc='Allows for reading of corporation contracts.', required=False),
         dict(scope='esi-corporations.read_structures.v1', desc='Allows for retrieval of information about corporation structures (requires Station Manager role).', required=False),
+        dict(scope='esi-corporations.write_structures.v1', desc='Allows for updating vulnerability schedules for structures you have access to.', required=False),
         dict(scope='esi-universe.read_structures.v1', desc='Allows for retrieval of public structure information.', required=False),
         dict(scope='esi-industry.read_corporation_mining.v1', desc='Allows for reading of moon extraction schedule (requires Station Manager role) and mining ledger (requires Accountant role).', required=False),
         dict(scope='esi-ui.open_window.v1', desc='Allows for opening of Contract, Market or Info windows in-game.', required=False),
