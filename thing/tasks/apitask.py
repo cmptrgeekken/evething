@@ -373,7 +373,7 @@ class APITask(Task):
 
         return data
 
-    def fetch_esi_url(self, url, access_token):
+    def fetch_esi_url(self, url, access_token, method='get', body=None):
         """
         Fetch an ESI URL
         """
@@ -391,11 +391,13 @@ class APITask(Task):
             start = time.time()
             while retry > 0:
                 try:
+
                     if access_token is not None:
-                        r = self._session.get(url + '&token=' + access_token)
+                        r = self._session.request(method, url + '&token=' + access_token, json=body)
                     else:
-                        r = self._session.get(url)
+                        r = self._session.request(method, url, json=body)
                     data = r.text
+
                     current = self.parse_esi_date(r.headers['date'])
                     if 'expires' in r.headers:
                         until = self.parse_esi_date(r.headers['expires'])
@@ -443,6 +445,9 @@ class APITask(Task):
                         return False
         else:
             data = cached_data
+
+        if method == 'put':
+            return True
 
         if data:
             try:

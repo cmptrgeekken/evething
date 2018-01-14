@@ -51,6 +51,9 @@ class MoonConfig(models.Model):
     last_chunk_time = models.DateTimeField(null=True)
     last_chunk_minutes = models.IntegerField(null=True)
 
+    configured_vuln_date = models.IntegerField(null=True)
+    configured_vuln_hour = models.IntegerField(null=True)
+
 
     class Meta:
         app_label = 'thing'

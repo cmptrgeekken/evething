@@ -28,7 +28,7 @@ import datetime
 from .apitask import APITask
 import json
 
-from thing.models import CharacterApiScope, MoonExtraction, MoonExtractionHistory, Station, Structure, StructureService
+from thing.models import CharacterApiScope, MoonConfig, MoonExtraction, MoonExtractionHistory, Station, Structure, StructureService
 from thing import queries
 from thing.utils import dictfetchall
 
@@ -40,13 +40,14 @@ class EsiMoonExtraction(APITask):
     mining_url = 'https://esi.tech.ccp.is/latest/corporation/%s/mining/extractions/?datasource=tranquility'
     structure_url = 'https://esi.tech.ccp.is/latest/universe/structures/%s/?datasource=tranquility'
     corp_structures_url = 'https://esi.tech.ccp.is/latest/corporations/%s/structures/?datasource=tranquility&language=en-us&page=%s'
+    write_structure_url = 'https://esi.tech.ccp.is/latest/corporations/%s/structures/%s/?datasource=tranquility&language=en-us'
 
     def run(self, base_url):
         self.init()
 
         extract_scopes = CharacterApiScope.objects.filter(scope='esi-industry.read_corporation_mining.v1')
-
         structure_scopes = CharacterApiScope.objects.filter(scope='esi-corporations.read_structures.v1')
+        write_struct_scopes = CharacterApiScope.objects.filter(scope='esi-corporations.write_structures.v1')
 
         seen_corps = set()
 
@@ -55,7 +56,6 @@ class EsiMoonExtraction(APITask):
 
             if 'Station_Manager' in char.get_apiroles():
                 if char.corporation_id not in seen_corps:
-
                     self.import_structures(char)
                     seen_corps.add(char.corporation_id)
 
@@ -68,6 +68,61 @@ class EsiMoonExtraction(APITask):
                 if char.corporation_id not in seen_corps:
                     self.import_moon(char)
                     seen_corps.add(char.corporation_id)
+
+        seen_corps = set()
+
+        for scope in write_struct_scopes:
+            char = scope.character
+
+            if 'Station_Manager' in char.get_apiroles():
+                if char.corporation_id not in seen_corps:
+                    self.update_vuln_schedule(char)
+                    seen_corps.add(char.corporation_id)
+
+    def update_vuln_schedule(self, character):
+        corp_id = character.corporation_id
+        refresh_token = character.sso_refresh_token
+
+        access_token, expires = self.get_access_token(refresh_token)
+
+        extractions = MoonExtraction.objects.filter(structure__station__corporation_id=corp_id)
+
+        old_vuln_times = []
+
+        for i in range(0, 4):
+            for j in range(7, 12):
+                old_vuln_times.append(dict(day=i, hour=j))
+
+        for e in extractions:
+            day_of_week = e.chunk_arrival_time.weekday()
+            hour_of_day = e.chunk_arrival_time.hour
+
+            cfg = MoonConfig.objects.filter(structure_id=e.structure.id).exclude(configured_vuln_date=day_of_week, configured_vuln_hour=hour_of_day).first()
+            if cfg is None:
+                continue
+
+            vuln_times = []
+
+            for i in range(0, 20):
+                hour = (hour_of_day + i) % 24
+                day = (day_of_week + ((hour_of_day + i) / 24)) % 7
+
+                vuln_times.append(dict(day=day, hour=hour))
+
+            try:
+                print(e.structure.station.name)
+                print(e.chunk_arrival_time)
+                print(vuln_times)
+                result = self.fetch_esi_url(self.write_structure_url % (corp_id, e.structure_id), access_token, method='put', body=vuln_times)
+
+                if result:
+                    cfg.configured_vuln_date = day_of_week
+                    cfg.configured_vuln_hour = hour_of_day
+
+                    cfg.save()
+            except Exception, e:
+                print(e)
+                pass
 
     def import_moon(self, character):
         corp_id = character.corporation.id
