@@ -168,11 +168,11 @@
                                     {% if m.is_popped %}
                                         <small>
                                             {% if ore.remaining_pct >= 0.6 %}
-                                            <button title="Lots of ores remaining" class="ore-type btn btn-success" style="font-size: 10px;margin-right:3px;cursor: default;">Lots</button>
+                                            <button title="{{ ore.remaining_volume|humanize }} m3" class="ore-type btn btn-success" style="font-size: 10px;margin-right:3px;cursor: default;">Lots</button>
                                             {% elif ore.remaining_pct >= 0.3 %}
-                                            <button title="Running low on ores" class="ore-type btn btn-warning" style="font-size: 10px;margin-right:3px;cursor: default;">Low</button>
+                                            <button title="{{ ore.remaining_volume|humanize }} m3" class="ore-type btn btn-warning" style="font-size: 10px;margin-right:3px;cursor: default;">Low</button>
                                             {% else %}
-                                            <button title="Out of ores" class="ore-type btn btn-danger" style="font-size: 10px;margin-right:3px;cursor: default;">Out</button>
+                                            <button title="{{ ore.remaining_volume|humanize }} m3" class="ore-type btn btn-danger" style="font-size: 10px;margin-right:3px;cursor: default;">Out</button>
                                             {% endif %}
                                         </small>
                                     {% endif %}
