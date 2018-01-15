@@ -94,7 +94,7 @@
                     <div class="panel panel-default">
                         <div class="panel-heading bg-primary" style="text-align: center;">
                             <h4 class="name">
-                                {{ m.name }}
+                                <a style="color: #FFF;text-decoration:underline;" target="_blank" href="{{ m.structure.station.system.evemaps() }}">{{ m.name }}</a>
                                 {% if show_waypoint %}
                                 <a title="Add Waypoint" href="javascript:void(0)" class="waypoint js-addWaypoint" data-waypoint="{{ m.structure.station_id }}">
                                     <i class="fa fa-map-marker" aria-hidden="true"></i>
@@ -116,8 +116,8 @@
                                 Mining Active!
                                 <br/>
                                 <small><i>
-                                    Expiration: <time class="timeago" datetime="{{ m.expiration_time|timeago }}">{{ m.expiration_time }}</time>
-                                    <br/>Fired: <time class="timeago" datetime="{{ m.extraction.chunk_arrival_time|timeago }}">{{ m.chunk_arrival_time }}</time>
+                                    Fired: <time class="timeago" datetime="{{ m.extraction.chunk_arrival_time|timeago }}">{{ m.chunk_arrival_time }}</time>
+                                    <br/>Expiration: <time class="timeago" datetime="{{ m.expiration_time|timeago }}">{{ m.expiration_time }}</time>
                                 </i></small>
                             </div>
                             {% elif m.is_poppable %}

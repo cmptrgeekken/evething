@@ -44,3 +44,6 @@ class System(models.Model):
 
     def __unicode__(self):
         return self.name
+
+    def evemaps(self):
+        return 'http://evemaps.dotlan.net/map/%s/%s' % (self.constellation.region.name.replace(' ', '_'), self.name.replace(' ', '_'))

@@ -36,3 +36,6 @@ class Region(models.Model):
     class Meta:
         app_label = 'thing'
         ordering = ('name'),
+
+    def evemaps(self):
+        return 'http://evemaps.dotlan.net/map/%s' % (self.name.replace(' ', '_'))
