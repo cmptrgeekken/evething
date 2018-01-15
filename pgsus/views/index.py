@@ -922,6 +922,8 @@ def perms(request):
     char_scopes = char.get_scopes()
     roles = char.get_apiroles()
 
+    requested_perm = request.GET.get('perm')
+
     scopes = [
         dict(scope='esi-characters.read_corporation_roles.v1', desc='Allows for reading of your roles within your corporation (e.g., Accountant, Station Manager). This is needed to determine which endpoints you have permission to access.', required=False),
         dict(scope='esi-contracts.read_corporation_contracts.v1', desc='Allows for reading of corporation contracts.', required=False),
@@ -938,8 +940,13 @@ def perms(request):
     for scope in scopes:
         scope['active'] = scope['scope'] in char_scopes
 
-    if request.method == 'POST':
-        requested_scopes = request.POST.getlist('scope')
+    if request.method == 'POST' or requested_perm is not None:
+        if requested_perm:
+            requested_scopes = char_scopes
+            requested_scopes.add(requested_perm)
+            requested_scopes = list(char_scopes)
+        else:
+            requested_scopes = request.POST.getlist('scope')
 
         for scope in scopes:
             if scope['required']:
