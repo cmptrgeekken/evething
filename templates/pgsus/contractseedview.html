@@ -60,13 +60,19 @@
                       {% for contract in related_contracts -%}
                       <tr>
                         <td>
+                          {% if open_window %}
+                          <small><i>
+                            <a title="Open Contract In game" href="javascript:void(0)" class="js-openWindow" data-id="{{ contract.contract_id }}" data-type="contract">
+                                <i class="fa fa-external-link" aria-hidden="true"></i> &nbsp;
+                            </a>
+                          </i></small>
+                          {% endif %}
                           <a href="#" data-toggle="modal" data-target="#modal-{{ contract.contract_id }}">
                               {% if contract.title %}
                                 {{ contract.title }}
                               {% else %}
                                 <i>No Title</i>
                               {% endif %}
-
                           </a>
                         </td>
                           <td>

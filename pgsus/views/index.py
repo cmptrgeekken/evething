@@ -131,6 +131,38 @@ def add_waypoint(request):
 
     return HttpResponse('')
 
+def open_window(request):
+    window_url = 'https://esi.tech.ccp.is/latest/ui/openwindow/%s/?datasource=tranquility&%s=%s'
+
+    if 'char' in request.session:
+        charid = request.session['char']['id']
+
+        scope = CharacterApiScope.objects.filter(character_id=charid, scope='esi-ui.open_window.v1').first()
+
+        id = request.GET.get('id')
+        type = request.GET.get('type')
+
+        if id is not None and scope is not None:
+            refresh_token = scope.character.sso_refresh_token
+
+            helper = ApiHelper()
+
+            access_token, expires = helper.get_access_token(refresh_token)
+
+            if type == 'contract':
+                url = window_url % (type, 'contract_id', id)
+            elif type == 'information':
+                url = window_url % (type, 'target_id', id)
+            elif type == 'marketdetails':
+                url = window_url % (type, 'type_id', id)
+            else:
+                url = None
+
+            if url is not None:
+                response = helper.fetch_esi_url(url, access_token, method='post')
+
+    return HttpResponse('')
+
 
 def buyback(request):
     buyback_items = PriceWatch.objects.filter(

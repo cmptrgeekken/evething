@@ -229,9 +229,13 @@ def contractseedview(request):
         char_id = request.session['char']['id']
 
         role = CharacterRole.objects.filter(character_id=char_id, role='contracts').first()
+        open_window_scope = CharacterApiScope.objects.filter(character_id=char_id, scope='esi-ui.open_window.v1').first()
     else:
         char_id = None
         role = None
+        open_window_scope = None
+
+
 
     list_id = request.GET.get('id')
 
@@ -291,6 +295,7 @@ def contractseedview(request):
             related_contracts=related_contracts,
             char_id=char_id,
             is_admin=role is not None,
+            open_window=open_window_scope is not None,
         ),
         request
     )

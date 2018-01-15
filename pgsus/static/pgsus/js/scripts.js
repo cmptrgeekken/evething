@@ -652,4 +652,13 @@ $(document).ready(function() {
 
         $.get('/api/waypoint', {waypoint: waypoint});
     });
+
+    $('.js-openWindow').on('click', function(){
+        var elem = $(this);
+
+        var id = elem.data('id');
+        var type = elem.data('type')
+
+        $.get('/api/window', {id: id, type:type});
+    });
 });
