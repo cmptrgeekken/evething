@@ -141,6 +141,7 @@ class MoonOreEntry:
         self.mined_value = 0
 
         self.remaining_isk_per_m3 = 0
+        self.remaining_pct = 0
 
         self.is_jackpot = False
 
@@ -268,6 +269,15 @@ class MoonDetails:
             ore.remaining_volume = max(0, ore.remaining_volume - ore.mined_volume)
             ore.remaining_value = float(ore.remaining_volume / ore.ore.volume) * ore.value_ea
 
+            ore.remaining_pct = float(ore.remaining_volume / ore.total_volume)
+
+            if ore.remaining_pct > .6:
+                ore.remaining_pct = .6
+            elif ore.remaining_pct > .3:
+                ore.remaining_pct = .3
+            else:
+                ore.remaining_pct = 0
+
             self.remaining_volume = max(0, self.remaining_volume - ore.mined_volume)
             self.remaining_value = max(0.0, self.remaining_value-float(ore.mined_volume / ore.ore.volume) * ore.value_ea)
 
@@ -298,13 +308,27 @@ class MoonDetails:
         if self.remaining_volume > 0:
             self.remaining_isk_per_m3 = self.remaining_value / float(self.remaining_volume)
 
-        self.remaining_pct = self.remaining_value / self.total_value
+        self.remaining_pct = float(self.remaining_value / self.total_value)
+
+        if self.remaining_pct > 0.9:
+            self.remaining_pct = 1
+        elif self.remaining_pct > 0.6:
+            self.remaining_pct = 0.6
+        elif self.remaining_pct > 0.3:
+            self.remaining_pct = 0.3
+        else:
+            self.remaining_pct = 0
 
         self.ore_types = list(ore_types)
 
         self.ore_types.sort()
         for i in range(0, len(self.ore_types)):
             self.ore_types[i] = self.ore_types[i][1:]
+
+        def sort_ores(a, b):
+            return -1 if a.remaining_isk_per_m3 > b.remaining_isk_per_m3 else 1
+
+        self.ores.sort(sort_ores)
 
 
 def extractions(request):

@@ -101,7 +101,11 @@
                                 </a>
                                 {% endif %}
                             </h4>
-                            <small><i>Chunk Time: <span>{{ m.chunk_days }} days</span></i></small>
+                            <small><i>
+                                <b>Chunk Time:</b> <span>{{ m.chunk_days }} days</span>
+                                <br/><b>Chunk Arrival:</b> <span>{{ m.extraction.chunk_arrival_time }} UTC</span>
+                                <br/><b>Self-Destructs:</b> <span>{{ m.extraction.natural_decay_time }} UTC</span>
+                            </i></small>
                         </div>
                         <div class="panel-body" style="position: relative; text-align: center;">
                             {% if m.is_jackpot %}
@@ -111,16 +115,25 @@
                             <div class="success">
                                 Mining Active!
                                 <br/>
-                                <small><i>Expiration: <time class="timeago" datetime="{{ m.expiration_time|timeago }}">{{ m.expiration_time }}</time></i></small>
+                                <small><i>
+                                    Expiration: <time class="timeago" datetime="{{ m.expiration_time|timeago }}">{{ m.expiration_time }}</time>
+                                    <br/>Fired: <time class="timeago" datetime="{{ m.extraction.chunk_arrival_time|timeago }}">{{ m.chunk_arrival_time }}</time>
+                                </i></small>
                             </div>
                             {% elif m.is_poppable %}
                             <div class="warning">
                                 Ready to Pop!
-                                <br/><small><i>Contact a Landscaper to 'splode.</i></small>
+                                <small><i>
+                                    <br/>Contact a Landscaper to 'splode.
+                                    <br/>Self-Destructs <time class="timeago" datetime="{{ m.extraction.natural_decay_time|timeago }}">{{ m.extraction.natural_decay_time}}</time>
+                                </i></small>
                             </div>
                             {% else %}
                             <div class="error">
                                 Ready <time class="timeago" datetime="{{ m.extraction.chunk_arrival_time|timeago }}">{{ m.extraction.chunk_arrival_time }}</time>
+                                <small><i>
+                                    <br/>Self-Destructs <time class="timeago" datetime="{{ m.extraction.natural_decay_time|timeago }}">{{ m.extraction.natural_decay_time}}</time>
+                                </i></small>
                             </div>
                             {% endif %}
                             <ul class="info-list md-list primary info-list-border">
@@ -133,31 +146,38 @@
                                 </li>
                                 {% if m.is_popped %}
                                 <li>
-                                    {% if m.remaining_pct > 0.75 %}
-                                    <button class="btn btn-success">Tons of ores!</button>
-                                    {% elif m.remaining_pct > 0.5 %}
-                                    <button class="btn btn-info">Lots of ores!</button>
-                                    {% elif m.remaining_pct > 0.25 %}
-                                    <button class="btn btn-warning">Running low!</button>
+                                    {% if m.remaining_pct >= 0.6 %}
+                                    <button class="btn btn-success" style="cursor: default;">Lots of ores!</button>
+                                    {% elif m.remaining_pct >= 0.3 %}
+                                    <button class="btn btn-warning" style="cursor: default;">Running low!</button>
                                     {% else %}
-                                    <button class="btn btn-danger">Almost out!</button>
+                                    <button class="btn btn-danger" style="cursor: default;">Almost out!</button>
                                     {% endif %}
                                 </li>
                                 {% endif %}
                                 <li>
                                     <span>{{ m.remaining_value|humanize }} ISK</span> remaining
                                 </li>
+                                <!--
                                 <li>
                                     Avg. of <abbr title="{{ m.ship_m3_tooltip}}"><span>{{ m.remaining_isk_per_m3|commas(0) }} ISK/m<sup>3</sup></span></abbr></i>
-                                </li>
+                                </li>-->
                                 {% for ore in m.ores %}
                                 <li style="text-align: left;">
                                     <span style="color: #FFF;" class="ore-type ore-type-{{ ore.type|slugify }}">{{ ore.type }}</span>
-                                    {{ (ore.pct*100)|commas(0) }}% {{ ore.ore.name }}
                                     {% if m.is_popped %}
-                                    <span>({{ (ore.remaining_volume / ore.total_volume * 100)|commas(0) }}% left)</span>
+                                        <small>
+                                            {% if ore.remaining_pct >= 0.6 %}
+                                            <button title="Lots of ores remaining" class="ore-type btn btn-success" style="font-size: 10px;margin-right:3px;cursor: default;">Lots</button>
+                                            {% elif ore.remaining_pct >= 0.3 %}
+                                            <button title="Running low on ores" class="ore-type btn btn-warning" style="font-size: 10px;margin-right:3px;cursor: default;">Low</button>
+                                            {% else %}
+                                            <button title="Out of ores" class="ore-type btn btn-danger" style="font-size: 10px;margin-right:3px;cursor: default;">Out</button>
+                                            {% endif %}
+                                        </small>
                                     {% endif %}
-                                    <div><abbr title="{{ ore.ship_m3_tooltip }}"><small><span>{{ ore.remaining_isk_per_m3|commas(0) }} isk/m<sup>3</sup></span></abbr> {{ ore.remaining_value|humanize }} ISK left</small></div>
+                                    {{ ore.ore.name }}
+                                    <abbr title="{{ ore.ship_m3_tooltip }}"><small><span>{{ ore.remaining_isk_per_m3|commas(0) }} isk/m<sup>3</sup></span></small></abbr>
                                 </li>
                                 {% endfor %}
                             </ul>
