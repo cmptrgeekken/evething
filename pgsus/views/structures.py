@@ -281,7 +281,9 @@ class MoonDetails:
             self.remaining_volume = max(0, self.remaining_volume - ore.mined_volume)
             self.remaining_value = max(0.0, self.remaining_value-float(ore.mined_volume / ore.ore.volume) * ore.value_ea)
 
-            if ore.remaining_volume > 0:
+            if ore.remaining_pct == 0:
+                ore.remaining_isk_per_m3 = 0
+            elif ore.remaining_volume > 0:
                 ore.remaining_isk_per_m3 = ore.remaining_value / float(ore.remaining_volume)
 
             ore_type = ore.ore.item_group.name
