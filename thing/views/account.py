@@ -75,6 +75,12 @@ def account_oauth_callback(request):
 
         char = None
 
+        if 'redirect' in request.session:
+            redir = request.session['redirect']
+            request.session.delete('redirect')
+        else:
+            redir = '/'
+
         try:
             user_info = json.loads(results)
             char = Character.objects.filter(id=user_info['CharacterID']).first()
@@ -107,7 +113,7 @@ def account_oauth_callback(request):
 
             request.session.delete('scopes')
 
-            return redirect('/perms?updated=1')
+            return redirect(redir)
 
         if not user_info:
             return redirect('/')
@@ -118,7 +124,7 @@ def account_oauth_callback(request):
                 id=user_info['CharacterID']
             )
 
-        return redirect('/')
+        return redirect(redir)
 
 
 def account_sso_remove(request):

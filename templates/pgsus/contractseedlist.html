@@ -37,6 +37,7 @@
                                         <tr>
                                             <th>Fit Name</th>
                                             <th width="20%">Quantity</th>
+                                            <th>Priority</th>
                                             <th>Est. Seed Price</th>
                                         </tr>
                                     {% for list in lists %}
@@ -48,6 +49,7 @@
                                                 {% endif %}
                                             </td>
                                             <td class="{% if list.get_stock_count() < list.min_qty %}error{% elif list.get_stock_count() < list.min_qty*1.2 %}warning{% else %}success{% endif %}">({{ list.get_stock_count() }} / {{ list.min_qty }})</td>
+                                            <td>{{ list.get_priority() }}</td>
                                             <td>
                                                 {% if list.estd_price > 0 %}
                                                 <abbr title="Assumes hulls are built locally.">{{ list.estd_price | humanize }} ISK</abbr>

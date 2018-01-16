@@ -35,6 +35,8 @@ from thing import queries
 import math
 
 class ContractSeeding(models.Model):
+    PRIORITIES = ['Low', 'Medium', 'High']
+
     id = models.AutoField(primary_key=True)
     char = models.ForeignKey(Character, on_delete=models.DO_NOTHING)
     corp = models.ForeignKey(Corporation, on_delete=models.DO_NOTHING)
@@ -44,6 +46,7 @@ class ContractSeeding(models.Model):
     is_private = models.BooleanField(default=True)
     raw_text = models.TextField()
     estd_price = models.DecimalField(max_digits=20, decimal_places=2)
+    priority = models.IntegerField(default=0)
 
     stock_count = None
     seed_price = None
@@ -72,6 +75,9 @@ class ContractSeeding(models.Model):
             return contracts[page_size*(page-1):page_size*page], ttl_pages
         else:
             return contracts
+
+    def get_priority(self):
+        return self.PRIORITIES[self.priority]
 
     def get_stock_count(self):
         if self.stock_count is None:

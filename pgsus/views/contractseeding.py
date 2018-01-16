@@ -22,7 +22,7 @@ def contractseedlist(request):
 
     char = Character.objects.filter(id=charid).first()
 
-    public_lists = ContractSeeding.objects.filter(is_private=False).order_by('name')
+    public_lists = ContractSeeding.objects.filter(is_private=False).order_by('-priority', 'name')
     role = CharacterRole.objects.filter(character_id=charid, role='contracts').first()
 
     station_lists = dict()
@@ -107,6 +107,7 @@ def contractseededit(request):
             list.station_id = request.POST.get('station_id')
             list.min_qty = request.POST.get('min_qty')
             list.is_private = request.POST.get('private') == 'Y'
+            list.priority = request.POST.get('priority')
 
             do_redirect = True
 
@@ -217,6 +218,7 @@ def contractseededit(request):
             min_qty=min_qty,
             parse_results=parse_results,
             multiplier=multiplier,
+            priorities=ContractSeeding.PRIORITIES,
         ),
         request
     )
@@ -230,12 +232,10 @@ def contractseedview(request):
 
         role = CharacterRole.objects.filter(character_id=char_id, role='contracts').first()
         open_window_scope = CharacterApiScope.objects.filter(character_id=char_id, scope='esi-ui.open_window.v1').first()
-        logged_in = True
     else:
         char_id = None
         role = None
         open_window_scope = None
-        logged_in = False
 
     list_id = request.GET.get('id')
 
@@ -262,7 +262,6 @@ def contractseedview(request):
 
         c_extra_items = []
         c_missing_items = []
-        c_short_items = []
 
         c_item_lookup = dict()
 
@@ -285,6 +284,11 @@ def contractseedview(request):
         c.z_missing_items = c_missing_items
         c.z_extra_items = c_extra_items
 
+    def contract_sort(a, b):
+        return -1 if a.price < b.price else 1
+
+    related_contracts.sort(contract_sort)
+
     out = render_page(
         'pgsus/contractseedview.html',
         dict(
@@ -296,7 +300,7 @@ def contractseedview(request):
             char_id=char_id,
             is_admin=role is not None,
             open_window=open_window_scope is not None,
-            logged_in=logged_in,
+            page_path=request.get_full_path()
         ),
         request
     )

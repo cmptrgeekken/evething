@@ -908,21 +908,23 @@ def assets(request):
 
 
 def perms(request):
-    from django.conf import settings
-    if 'char' not in request.session:
-        return redirect('/?login=1')
-
-    charid = request.session['char']['id']
-
-    char = Character.objects.filter(id=charid).first()
-
-    if char is None:
-        return redirect('/?login=1')
-
-    char_scopes = char.get_scopes()
-    roles = char.get_apiroles()
+    redir = request.GET.get('redirect')
+    if not redir or not redir.startswith('/'):
+        redir = '/perms'
 
     requested_perm = request.GET.get('perm')
+
+    char = None
+    char_scopes = set()
+    roles = set()
+
+    if 'char' in request.session:
+        charid = request.session['char']['id']
+
+        char = Character.objects.filter(id=charid).first()
+
+        char_scopes = char.get_scopes()
+        roles = char.get_apiroles()
 
     scopes = [
         dict(scope='esi-characters.read_corporation_roles.v1', desc='Allows for reading of your roles within your corporation (e.g., Accountant, Station Manager). This is needed to determine which endpoints you have permission to access.', required=False),
@@ -940,7 +942,7 @@ def perms(request):
     for scope in scopes:
         scope['active'] = scope['scope'] in char_scopes
 
-    if request.method == 'POST' or requested_perm is not None:
+    if request.method == 'POST' or requested_perm is not None or char is None:
         if requested_perm:
             requested_scopes = char_scopes
             requested_scopes.add(requested_perm)
@@ -962,6 +964,9 @@ def perms(request):
             response_type='code',
             state='request_scopes',
         )
+
+        if redir is not None:
+            request.session['redirect'] = redir
 
         return redirect(oauth_url)
 

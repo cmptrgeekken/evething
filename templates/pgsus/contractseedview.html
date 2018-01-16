@@ -23,13 +23,9 @@
             {% if list.estd_price > 0 %}
             <h4>Estd. Price: <abbr title="Assumes hulls are built locally.">{{ list.estd_price | humanize }} ISK</abbr></h4>
             {% endif %}
-            {% if not logged_in %}
+            {% if not open_window %}
             <br/>
-            <h4><i>Please <a href="{{oauth_authorize_url}}">log in</a> for additional configuration options, including the ability to open contracts in-game!</i></h4>
-            <br/>
-            {% elif not open_window %}
-            <br/>
-            <h4><i><a href="{{url('pgsus.views.perms')}}?perm=esi-ui.open_window.v1">Click here</a> to authorize us to open contracts in-game!</i></h4>
+            <h4><i><a href="{{url('pgsus.views.perms')}}?perm=esi-ui.open_window.v1&redirect={{page_path}}">Click here to authorize us to open contracts in-game!</a></i></h4>
             <br/>
             {% endif %}
             <div id="accordion" role="tablist">
@@ -98,7 +94,7 @@
                      </tr>
                       {%- else -%}
                       <tr>
-                        <td colspan="5">No items.</td>
+                        <td colspan="6">No items.</td>
                       </tr>
                       {%- endfor %}
                     </tbody>
