@@ -31,46 +31,65 @@ from decimal import Decimal
 from .apitask import APITask
 import json
 
-from thing.models import Alliance, Character, Contract, ContractItem, Corporation, Event, Item, Station, APIKey, UserProfile
+from thing.models import Alliance, Character, CharacterApiScope, Contract, ContractItem, Corporation, Event, Item, Station, APIKey, UserProfile
 
 
 class EsiContracts(APITask):
     name = 'thing.esi_contracts'
 
-    corp_contract_url = '/corporations/%d/contracts/?datasource=tranquility'
-    corp_contract_item_url = '/corporations/%d/contracts/%d/items/?datasource=tranquility'
+    corp_contract_url = 'https://esi.tech.ccp.is/latest/corporations/%d/contracts/?datasource=tranquility&page=%s'
+    corp_contract_item_url = 'https://esi.tech.ccp.is/latest/corporations/%d/contracts/%d/items/?datasource=tranquility'
 
     def run(self, base_url):
         self.init()
 
+        contract_scopes = CharacterApiScope.objects.filter(scope='esi-contracts.read_corporation_contracts.v1')
+
+        seen_corps = set()
+
+        for scope in contract_scopes:
+            char = scope.character
+
+            if 'Contract_Manager' in char.get_apiroles():
+                if char.corporation_id not in seen_corps:
+                    self.import_contracts(char)
+
+                    seen_corps.add(char.corporation_id)
+
+    def import_contracts(self, character):
+        corp_id = character.corporation_id
+        access_token, expires = self.get_access_token(character.sso_refresh_token)
+
         now = datetime.datetime.now()
-
-        character_id = 96243993
-        corp_id = 98388312
-        profile = UserProfile.objects.filter(id=1).first()
-        access_token, expires = self.get_access_token(profile.sso_refresh_token)
-
-        try:
-            character = Character.objects.select_related('details').get(pk=character_id)
-        except Character.DoesNotExist:
-            self.log_warn('Character %s does not exist!', character_id)
-            return
 
         c_filter = Contract.objects.filter(corporation=corp_id)
 
-        data = self.fetch_esi_url(base_url + (self.corp_contract_url % corp_id), access_token)
+        contracts = []
 
-        if data is False:
-            self.log_error('API returned an error for %s' % (self.corp_contract_url % corp_id))
-            return
+        page = 1
 
-        try:
-            contracts = json.loads(data)
-            if 'response' in contracts:
-                contracts = contracts['response']
-        except:
-            self.log_error('Cannot parse data: %s' % data)
-            return
+        while True:
+            data = self.fetch_esi_url(self.corp_contract_url % (corp_id, page), access_token)
+
+            if data is False:
+                break
+
+            try:
+                r_contracts = json.loads(data)
+                if 'response' in contracts:
+                    r_contracts = contracts['response']
+
+                if len(r_contracts) == 0:
+                    break
+
+                contracts.extend(r_contracts)
+                print(len(contracts))
+            except:
+                self.log_error('Cannot parse data: %s' % data)
+                print('Cannot parse data: %s' % data)
+                return
+
+            page += 1
 
         # Retrieve a list of this user's characters and corporations
         # user_chars = list(Character.objects.filter(apikeys__user=self.apikey.user).values_list('id', flat=True))
@@ -220,6 +239,31 @@ class EsiContracts(APITask):
             if type == 'ItemExchange':
                 type = 'Item Exchange'
 
+            '''
+                Contract Types:
+                  "unknown",
+                  "item_exchange",
+                  "auction",
+                  "courier",
+                  "loan"
+                Contract Statuses:
+                  "outstanding",
+                  "in_progress",
+                  "finished_issuer",
+                  "finished_contractor",
+                  "finished",
+                  "cancelled",
+                  "rejected",
+                  "failed",
+                  "deleted",
+                  "reversed"
+                Availability:
+                  "public",
+                  "personal",
+                  "corporation",
+                  "alliance"
+            '''
+
             contract = c_map.get(contract_id, None)
             # Contract exists, maybe update stuff
             if contract is not None:
@@ -301,10 +345,10 @@ class EsiContracts(APITask):
         # Apparently courier contracts don't have ContractItems support? :ccp:
         for contract in contracts_to_populate:
             if expires <= datetime.datetime.now():
-                access_token, expires = self.get_access_token(profile.sso_refresh_token)
+                access_token, expires = self.get_access_token(character.sso_refresh_token)
 
             items_url = self.corp_contract_item_url % (corp_id, contract.contract_id)
-            data = self.fetch_esi_url(base_url + items_url, access_token)
+            data = self.fetch_esi_url(items_url, access_token)
             if data is False:
                 # self.log_error('API returned an error for url %s' % url)
                 continue
@@ -322,7 +366,7 @@ class EsiContracts(APITask):
                         time.sleep(10)
                     continue
                 elif items_response['error'] == 'expired':
-                    access_token, expires = self.get_access_token(profile.sso_refresh_token)
+                    access_token, expires = self.get_access_token(character.sso_refresh_token)
 
             contract_items = dict()
 
