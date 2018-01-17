@@ -163,7 +163,7 @@
                                     Avg. of <abbr title="{{ m.ship_m3_tooltip}}"><span>{{ m.remaining_isk_per_m3|commas(0) }} ISK/m<sup>3</sup></span></abbr></i>
                                 </li>-->
                                 {% for ore in m.ores %}
-                                <li style="text-align: left;">
+                                <li style="text-align: center;">
                                     <span style="color: #FFF;" class="ore-type ore-type-{{ ore.type|slugify }}">{{ ore.type }}</span>
                                     {% if m.is_popped %}
                                         <small>
@@ -176,8 +176,17 @@
                                             {% endif %}
                                         </small>
                                     {% endif %}
-                                    {{ ore.ore.name }}
+                                    <br/>
+                                    {{ (ore.pct*100)|commas(0) }}% {{ ore.ore.name }}
                                     <abbr title="{{ ore.ship_m3_tooltip }}"><small><span>{{ ore.remaining_isk_per_m3|commas(0) }} isk/m<sup>3</sup></span></small></abbr>
+                                    <br/>
+                                    <small>
+                                    {% if m.is_popped %}
+                                        {{ ore.remaining_volume|humanize }} / {{ ore.total_volume|humanize }} m<sup>3</sup>
+                                    {% else %}
+                                        Ttl m<sup>3</sup>: {{ ore.total_volume|humanize }}
+                                    {% endif %}
+                                    </small>
                                 </li>
                                 {% endfor %}
                             </ul>
