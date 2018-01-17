@@ -240,7 +240,7 @@ class MoonDetails:
 
             ore.remaining_volume = ore.total_volume = ore.pct * self.total_volume
             if ore.ore.id not in self.ore_values:
-                self.ore_values[ore.ore.id] = ore.ore.get_history_avg(reprocess=True, reprocess_pct=.84, pct=.9)
+                self.ore_values[ore.ore.id] = ore.ore.get_history_avg(reprocess=True, reprocess_pct=.84, pct=.8)
 
             ore.value_ea = self.ore_values[ore.ore.id]
 
@@ -256,12 +256,13 @@ class MoonDetails:
                         self.is_jackpot = True
                         ore.is_jackpot = True
 
-                        ore.total_value *= 2
-                        ore.value_ea *= 2
-
                     ore.mined_volume += l.quantity * l.type.volume
 
                     self.is_popped = True
+
+            if ore.is_jackpot:
+                ore.total_value *= 2
+                ore.value_ea *= 2
 
             self.total_value += ore.total_value
             self.remaining_value += ore.total_value
