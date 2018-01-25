@@ -178,6 +178,10 @@
                                             <input class="form-check-input" id="ignore_refire_{{s.id}}" type="checkbox" name="ignore_refire" value="1"{% if s.z_config.ignore_refire %} checked{% endif %} />
                                             <label class="form-check-label" for="ignore_refire_{{s.id}}">Ignore?</label>
                                         </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" id="ignore_scheduling_{{s.id}}" type="checkbox" name="ignore_scheduling" value="1"{% if s.z_config.ignore_scheduling %} checked{% endif %} />
+                                            <label class="form-check-label" for="ignore_scheduling_{{s.id}}">Do Not Set Vulnerability?</label>
+                                        </div>
 
 
                                         <button type="submit" class="btn btn_primary">Save</button>

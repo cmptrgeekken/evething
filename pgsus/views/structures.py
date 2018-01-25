@@ -336,7 +336,7 @@ class MoonDetails:
 
 def extractions(request):
     min_date = datetime.datetime.utcnow() + datetime.timedelta(days=-2)
-    max_date = datetime.datetime.utcnow() + datetime.timedelta(days=2)
+    max_date = datetime.datetime.utcnow() + datetime.timedelta(days=7)
 
     moon_extractions = MoonExtractionHistory.objects.filter(chunk_arrival_time__gte=min_date, chunk_arrival_time__lte=max_date).order_by('chunk_arrival_time')
 
@@ -360,6 +360,11 @@ def extractions(request):
 
         # TODO: Enable Nationalized moons based off roles?
         if cfg is None or cfg.is_nationalized:
+            continue
+
+        try:
+            first_ore = cfg.first_ore
+        except:
             continue
 
         observer = MoonObserver.objects.filter(observer_id=structure.station_id).first()
@@ -405,6 +410,7 @@ def refinerylist(request):
         chunk_time = request.POST.get('chunk_time') or None
         is_nationalized = request.POST.get('is_nationalized') == '1'
         ignore_refire = request.POST.get('ignore_refire') == '1'
+        ignore_scheduling = request.POST.get('ignore_scheduling') == '1'
 
         config = MoonConfig.objects.filter(structure_id=structure_id).first()
         if config is None:
@@ -416,6 +422,7 @@ def refinerylist(request):
         config.next_date_override=next_date_override
         config.chunk_days = chunk_time
         config.ignore_refire = ignore_refire
+        config.ignore_scheduling = ignore_scheduling
 
         config.save()
 
@@ -439,7 +446,7 @@ def refinerylist(request):
     constellation_list = set()
     system_list = set()
 
-    type_list = ['N64', 'R64', 'D64', 'R32', 'R4', 'ABC']
+    type_list = ['N64', 'R64', 'D64', 'R32', 'R16', 'R4', 'ABC']
 
     region_filter = request.GET.get('region')
     constellation_filter = request.GET.get('constellation')

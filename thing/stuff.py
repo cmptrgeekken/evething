@@ -119,7 +119,8 @@ def render_page(template, data, request, character_ids=None, corporation_ids=Non
 
             data['nav_item_contracts'] = Contract.objects.filter(
                 contract_id__in=buyback_ids,
-                status='Outstanding'
+                status='Outstanding',
+                corporation__name='Penny\'s Flying Circus',
             ).aggregate(t=Count('contract_id'))['t']
 
             cursor = get_cursor()
@@ -128,6 +129,7 @@ def render_page(template, data, request, character_ids=None, corporation_ids=Non
             cursor.close()
             data['nav_courier_contracts'] = Contract.objects.filter(
                 contract_id__in=courier_ids,
+                corporation__name='Penny\'s Flying Circus',
                 status__in=['Outstanding','InProgress']
             ).aggregate(t=Count('contract_id'))['t']
 

@@ -307,12 +307,12 @@ CELERYBEAT_SCHEDULE = {
     },
     'corp_moon_observer': {
         'task': 'thing.moonobserver',
-        'schedule': timedelta(minutes=60),
+        'schedule': timedelta(minutes=20),
         'options': {
             'expires': 240 * 60,
             'queue': 'et_medium'
         },
-        'args': [''],
+        'args': [None],
     },
     'char_roles_updater': {
         'task': 'thing.characterroles',

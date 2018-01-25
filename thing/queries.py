@@ -239,7 +239,7 @@ SELECT DISTINCT c.contract_id
 FROM thing_contract c 
     INNER JOIN thing_contractitem ci ON c.contract_id=ci.contract_id
     INNER JOIN thing_item i ON ci.item_id=i.id 
-WHERE c.type = 'Item Exchange' 
+WHERE c.type IN('item_exchange', 'Item Exchange')
     AND i.name LIKE '%Fuel Block'
     AND ((c.corporation_id=c.issuer_corp_id AND ci.included=1)
           OR (c.assignee_id=c.corporation_id AND ci.included=0))
@@ -250,7 +250,7 @@ SELECT DATE_FORMAT(c.date_completed, '%m-%Y') AS month, SUM(ci.quantity) AS qty
 FROM thing_contract c 
     INNER JOIN thing_contractitem ci ON c.contract_id=ci.contract_id
     INNER JOIN thing_item i ON ci.item_id=i.id 
-WHERE c.type = 'Item Exchange' 
+WHERE c.type IN ('item_exchange', 'Item Exchange')
     AND i.name LIKE '%Fuel Block'
     AND ((c.corporation_id=c.issuer_corp_id AND ci.included=1)
           OR (c.assignee_id=c.corporation_id AND ci.included=0))
@@ -261,16 +261,20 @@ WHERE c.type = 'Item Exchange'
 courier_contracts = """
 SELECT DISTINCT c.contract_id
 FROM thing_contract c
+INNER JOIN thing_corporation co on co.id=c.corporation_id
 WHERE c.assignee_id=c.corporation_id
 AND c.type = 'Courier'
+AND co.name = 'Penny''s Flying Circus'
 """
 
 buyback_contracts = """
     SELECT DISTINCT c.contract_id	
     FROM thing_contract c
+         inner join thing_corporation co on c.corporation_id=co.id
     WHERE c.assignee_id=c.corporation_id
-        AND c.type = 'Item Exchange'
+        AND c.type in ('Item Exchange', 'item_exchange')
         AND c.issuer_corp_id != c.corporation_id
+        AND co.name = 'Penny''s Flying Circus'
     AND EXISTS (SELECT 1 FROM thing_contractitem ci INNER JOIN thing_pricewatch pw ON ci.item_id=pw.item_id WHERE ci.contract_id=c.contract_id AND ci.included=1 AND pw.active=1)
 """
 
@@ -292,7 +296,7 @@ SELECT i.name,
 FROM thing_contract c 
     INNER JOIN thing_contractitem ci ON c.contract_id=ci.contract_id
     INNER JOIN thing_item i ON ci.item_id=i.id 
-WHERE c.type = 'Item Exchange' 
+WHERE c.type IN ('item_exchange', 'Item Exchange') 
     AND c.status = 'Completed'
     AND i.name LIKE '%Fuel Block'
     AND ((c.corporation_id=c.issuer_corp_id AND ci.included=1)
@@ -310,7 +314,7 @@ SELECT i.name,
 FROM thing_contract c 
     INNER JOIN thing_contractitem ci ON c.contract_id=ci.contract_id
     INNER JOIN thing_item i ON ci.item_id=i.id 
-WHERE c.type = 'Item Exchange' 
+WHERE c.type IN ('item_exchange', 'Item Exchange') 
     AND c.status = 'Completed'
     AND i.name LIKE '%Fuel Block'
     AND ((c.corporation_id=c.issuer_corp_id AND ci.included=1)
@@ -343,7 +347,7 @@ SELECT i.name,SUM(ci.quantity) AS quantity
 FROM thing_contract c 
     INNER JOIN thing_contractitem ci ON c.contract_id=ci.contract_id
     INNER JOIN thing_item i ON ci.item_id=i.id 
-WHERE c.type = 'Item Exchange' 
+WHERE c.type IN ('item_exchange', 'Item Exchange') 
     AND c.status = 'Outstanding'
     AND i.name LIKE '%Fuel Block'
     AND ((c.corporation_id=c.issuer_corp_id AND ci.included=1)
@@ -402,7 +406,7 @@ SELECT
 FROM thing_contract c
 WHERE c.assignee_id=c.corporation_id
 AND c.status = 'Completed'
-AND c.type = 'Item Exchange'
+AND c.type IN ('item_exchange', 'Item Exchange')
 AND c.issuer_corp_id != c.corporation_id
 AND EXISTS
 	(SELECT 1 
@@ -420,7 +424,7 @@ SELECT
 FROM thing_contract c
 WHERE c.assignee_id=c.corporation_id
 AND c.status = 'Outstanding'
-AND c.type = 'Item Exchange'
+AND c.type IN ('item_exchange', 'Item Exchange')
 AND c.issuer_corp_id != c.corporation_id
 AND EXISTS
 	(SELECT 1 
@@ -447,7 +451,7 @@ FROM thing_contract
 WHERE contract_id IN (SELECT DISTINCT c.contract_id
    FROM thing_contract c
    WHERE c.assignee_id=c.corporation_id
-   AND c.type = 'Item Exchange'
+   AND c.type IN ('item_exchange', 'Item Exchange')
    AND c.issuer_corp_id != c.corporation_id
    AND EXISTS (SELECT 1 FROM thing_contractitem ci INNER JOIN thing_pricewatch pw ON ci.item_id=pw.item_id WHERE ci.contract_id=c.contract_id AND ci.included=1 AND pw.active=1)
 ) and price = 0
@@ -975,7 +979,7 @@ FROM thing_contract c
 WHERE c.contract_id IN (SELECT DISTINCT c.contract_id
    FROM thing_contract c
    WHERE c.assignee_id=c.corporation_id
-   AND c.type = 'Item Exchange'
+   AND c.type IN ('item_exchange', 'Item Exchange')
    AND c.issuer_corp_id != c.corporation_id
    AND c.status = 'Completed'
    AND EXISTS (SELECT 1 FROM thing_contractitem ci INNER JOIN thing_pricewatch pw ON ci.item_id=pw.item_id WHERE ci.contract_id=c.contract_id AND ci.included=1 AND pw.active=1)
