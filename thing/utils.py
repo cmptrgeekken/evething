@@ -133,12 +133,11 @@ class ApiHelper:
 
         cache_key = self._get_cache_key(url, {})
         cached_data = cache.get(cache_key)
+        headers = cache.get('%s_headers' % cache_key) or dict()
 
         retry = 3
 
         data = None
-
-        headers = dict()
 
         if cached_data is None:
             sleep_for = self._get_backoff()
@@ -195,6 +194,7 @@ class ApiHelper:
 
                 if cache_expires >= 0:
                     cache.set(cache_key, data, cache_expires)
+                    cache.set('%s_headers' % cache_key, headers, cache_expires)
 
         if headers_to_return is not None:
             return data, headers

@@ -35,6 +35,7 @@ class MoonExtraction(models.Model):
     extraction_start_time = models.DateTimeField()
     chunk_arrival_time = models.DateTimeField()
     natural_decay_time = models.DateTimeField()
+    manually_fired = models.BooleanField(default=False)
 
     class Meta:
         app_label = 'thing'

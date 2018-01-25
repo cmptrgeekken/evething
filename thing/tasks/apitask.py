@@ -373,13 +373,14 @@ class APITask(Task):
 
         return data
 
-    def fetch_esi_url(self, url, access_token, method='get', body=None):
+    def fetch_esi_url(self, url, access_token, method='get', body=None, headers_to_return=None):
         """
         Fetch an ESI URL
         """
 
         cache_key = self._get_cache_key(url, {})
         cached_data = cache.get(cache_key)
+        headers = cache.get('%s_headers' % cache_key) or dict()
 
         retry = 3
 
@@ -405,10 +406,17 @@ class APITask(Task):
                         until = datetime.datetime.now() + datetime.timedelta(hours=1)
 
                     self._cache_delta = until - current
+
+                    if headers_to_return is not None:
+                        for header in headers_to_return:
+                            headers[header] = r.headers[header] if header in r.headers else None
+
                     break
                 except Exception, e:
                     # self._increment_backoff(e)
                     retry -= 1
+                    if headers_to_return:
+                        return False, headers
                     return False
 
             self._api_log.append((url, time.time() - start))
@@ -417,6 +425,8 @@ class APITask(Task):
                 if r.status_code == '400' or r.status_code == 400:
                     self._cache_delta = datetime.timedelta(hours=4)
                     self.log_warn('400 error, caching for 2 hours')
+                    if headers_to_return:
+                        return False, headers
                     return False
                 else:
                     self.json = json.loads(data)
@@ -434,25 +444,35 @@ class APITask(Task):
                                 self.log_warn('Rate Limit Hit: Sleeping for 60 seconds!')
                                 print('Rate Limit Hit: Sleeping for 60 seconds!')
                                 time.sleep(60)
+                                if headers_to_return:
+                                    return False, headers
                                 return False
                             else:
                                 self.log_warn('Unknown error: %s' % data)
                                 print('Unknown error: %s' % data)
+                                if headers_to_return:
+                                    return data, headers
                                 return data
 
                     if 'response' not in self.json or len(self.json['response']) == 0:
                         print('Unknown error: %s' % data)
+                        if headers_to_return:
+                            return False, headers
                         return False
         else:
             data = cached_data
 
         if method == 'put':
+            if headers_to_return:
+                return False, headers
             return True
 
         if data:
             try:
                 self.json = json.loads(data)
             except Exception:
+                if headers_to_return:
+                    return False, headers
                 return False
 
             if cached_data is None:
@@ -460,7 +480,10 @@ class APITask(Task):
 
                 if cache_expires >= 0:
                     cache.set(cache_key, data, cache_expires)
+                    cache.set('%s_headers' % cache_key, headers, cache_expires)
 
+        if headers_to_return:
+            return data, headers
         return data
 
     # -----------------------------------------------------------------------

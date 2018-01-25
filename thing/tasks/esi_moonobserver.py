@@ -81,6 +81,8 @@ class EsiMoonObserver(APITask):
 
                     do_import = True
 
+                    current_time = datetime.datetime.utcnow()
+
                     if db_observer is None:
                         db_observer = MoonObserver(
                             observer_id=observer['observer_id'],
@@ -92,8 +94,16 @@ class EsiMoonObserver(APITask):
 
                     if do_import:
                         inner_page = 1
-                        results = self.fetch_esi_url(self.observer_detail_url % (corp_id, db_observer.observer_id, inner_page), access_token)
+                        results, headers = self.fetch_esi_url(
+                            url=self.observer_detail_url % (corp_id, db_observer.observer_id, inner_page),
+                            access_token=access_token,
+                            headers_to_return=['Last-Modified'])
                         inner_page += 1
+
+                        if headers['Last-Modified']:
+                            observer_time = self.parse_esi_date(headers['Last-Modified'])
+                        else:
+                            observer_time = datetime.datetime.utcnow()
 
                         observer_details = json.loads(results)
 
@@ -129,10 +139,14 @@ class EsiMoonObserver(APITask):
                                     character_id=detail['character_id'],
                                     recorded_corporation_id=detail['recorded_corporation_id'],
                                     type_id=detail['type_id'],
-                                    times_updated=0
+                                    times_updated=0,
+                                    start_time=observer_time,
+                                    end_time=observer_time,
+
                                 )
                             elif db_entry.quantity != detail['quantity']:
                                 db_entry.times_updated += 1
+                                db_entry.end_time = observer_time
 
                             db_entry.last_updated = detail['last_updated']
                             db_entry.quantity = detail['quantity']
