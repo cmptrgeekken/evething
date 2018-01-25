@@ -413,7 +413,7 @@ class APITask(Task):
 
             self._api_log.append((url, time.time() - start))
 
-            if not r.status_code == requests.codes.ok:
+            if not r.status_code == requests.codes.ok and not r.status_code == '204' and not r.status_code == 204:
                 if r.status_code == '400' or r.status_code == 400:
                     self._cache_delta = datetime.timedelta(hours=4)
                     self.log_warn('400 error, caching for 2 hours')

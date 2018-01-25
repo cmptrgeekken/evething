@@ -83,7 +83,6 @@ class EsiContracts(APITask):
                     break
 
                 contracts.extend(r_contracts)
-                print(len(contracts))
             except:
                 self.log_error('Cannot parse data: %s' % data)
                 print('Cannot parse data: %s' % data)

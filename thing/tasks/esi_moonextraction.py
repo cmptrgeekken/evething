@@ -97,7 +97,7 @@ class EsiMoonExtraction(APITask):
             day_of_week = e.chunk_arrival_time.weekday()
             hour_of_day = e.chunk_arrival_time.hour
 
-            cfg = MoonConfig.objects.filter(structure_id=e.structure.id).exclude(configured_vuln_date=day_of_week, configured_vuln_hour=hour_of_day).first()
+            cfg = MoonConfig.objects.filter(structure_id=e.structure.id, ignore_scheduling=0).exclude(configured_vuln_date=day_of_week, configured_vuln_hour=hour_of_day).first()
             if cfg is None:
                 continue
 
@@ -110,15 +110,11 @@ class EsiMoonExtraction(APITask):
                 vuln_times.append(dict(day=day, hour=hour))
 
             try:
-                print(e.structure.station.name)
-                print(e.chunk_arrival_time)
-                print(vuln_times)
                 result = self.fetch_esi_url(self.write_structure_url % (corp_id, e.structure_id), access_token, method='put', body=vuln_times)
 
                 if result:
                     cfg.configured_vuln_date = day_of_week
                     cfg.configured_vuln_hour = hour_of_day
-
                     cfg.save()
             except Exception, e:
                 print(e)
@@ -150,21 +146,21 @@ class EsiMoonExtraction(APITask):
                 db_moonextract.natural_decay_time = self.parse_api_date(info['natural_decay_time'], True)
                 db_moonextract.structure_id = info['structure_id']
 
-                db_extracthistory = MoonExtractionHistory.objects.filter(structure_id=info['structure_id'], extraction_start_time=db_moonextract.extraction_start_time).first()
+                db_extracthistory = MoonExtractionHistory.objects.filter(structure_id=info['structure_id'], chunk_arrival_time__gt=datetime.datetime.utcnow()).first()
+                chunk_minutes = (db_moonextract.chunk_arrival_time - db_moonextract.extraction_start_time).total_seconds() / 60.0
 
                 if db_extracthistory is None:
-                    chunk_minutes = (db_moonextract.chunk_arrival_time - db_moonextract.extraction_start_time).total_seconds() / 60.0
-
                     db_extracthistory = MoonExtractionHistory(
                         moon_id=info['moon_id'],
                         structure_id=info['structure_id'],
-                        extraction_start_time=db_moonextract.extraction_start_time,
-                        chunk_arrival_time=db_moonextract.chunk_arrival_time,
-                        natural_decay_time=db_moonextract.natural_decay_time,
-                        chunk_minutes=chunk_minutes,
                     )
 
-                    db_extracthistory.save()
+                extraction_start_time=db_moonextract.extraction_start_time
+                chunk_arrival_time=db_moonextract.chunk_arrival_time
+                natural_decay_time=db_moonextract.natural_decay_time
+                chunk_minutes=chunk_minutes
+
+                db_extracthistory.save()
 
                 db_moonextract.save()
         except Exception, e:
@@ -184,7 +180,7 @@ class EsiMoonExtraction(APITask):
             while True:
                 if expires <= datetime.datetime.now():
                     access_token, expires = self.get_access_token(refresh_token)
-
+                
                 results = self.fetch_esi_url(self.corp_structures_url % (corp_id, page), access_token)
                 page += 1
                 structure_info = json.loads(results)
@@ -211,7 +207,10 @@ class EsiMoonExtraction(APITask):
                         if expires <= datetime.datetime.now():
                             access_token, expires = self.get_access_token(refresh_token)
 
-                        results = self.fetch_esi_url(self.structure_url % struct['structure_id'], access_token)
+                        try:
+                            results = self.fetch_esi_url(self.structure_url % struct['structure_id'], access_token)
+                        except:
+                            continue
 
                         info = None
 
