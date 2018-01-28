@@ -287,6 +287,16 @@ CELERYBEAT_SCHEDULE = {
         'args': ['https://esi.tech.ccp.is/latest/markets/%d/history/?datasource=tranquility&type_id=%d'],
     },
 
+    'notifications_updater': {
+        'task': 'thing.esi_notifications',
+        'schedule': timedelta(minutes=10),
+        'options': {
+            'expires': 240 * 60,
+            'queue': 'et_medium'
+        },
+        'args': [None],
+    },
+
     'corp_contract_updater': {
         'task': 'thing.esi_contracts',
         'schedule': timedelta(hours=1),

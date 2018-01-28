@@ -29,11 +29,10 @@ from .apitask import APITask
 import json
 
 from thing.models import CharacterApiScope, Character, Notification, MoonExtractionHistory
-from django.db.models import Max
 
 
 class EsiNotifications(APITask):
-    name = 'thing.notifications'
+    name = 'thing.esi_notifications'
 
     notifications_url = 'https://esi.tech.ccp.is/latest/characters/%s/notifications/?datasource=tranquility'
 
