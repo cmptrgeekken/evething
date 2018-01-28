@@ -24,27 +24,19 @@
 # ------------------------------------------------------------------------------
 
 from django.db import models
-
-from thing.models.structure import Structure
-from thing.models.mapdenormalize import MapDenormalize
 from thing.models.character import Character
 
 
-class MoonExtractionHistory(models.Model):
-    structure = models.ForeignKey(Structure, on_delete=models.DO_NOTHING, to_field='station_id', db_column='structure_id')
-    moon = models.ForeignKey(MapDenormalize, on_delete=models.DO_NOTHING, to_field='item_id', db_column='moon_id')
-    extraction_start_time = models.DateTimeField()
-    chunk_arrival_time = models.DateTimeField()
-    natural_decay_time = models.DateTimeField()
-    chunk_minutes = models.IntegerField()
-
-    laser_fire_time = models.DateTimeField()
-    laser_fired_by = models.ForeignKey(Character, on_delete=models.DO_NOTHING, to_field='id', related_name='laser_fired_by_id')
-    extraction_started_by = models.ForeignKey(Character, on_delete=models.DO_NOTHING, to_field='id', related_name='extraction_started_by_id')
+class Notification(models.Model):
+    id = models.BigIntegerField(primary_key=True)
+    notification_id = models.BigIntegerField()
+    character = models.ForeignKey(Character, on_delete=models.DO_NOTHING)
+    type = models.CharField(max_length=250)
+    sender_id = models.IntegerField()
+    sender_type = models.CharField(max_length=250)
+    timestamp = models.DateTimeField()
+    is_read = models.BooleanField()
+    text = models.TextField()
 
     class Meta:
         app_label = 'thing'
-
-    def __unicode__(self):
-        return self.moon.item_name
-

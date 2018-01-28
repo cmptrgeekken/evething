@@ -53,3 +53,4 @@ from esi_moonextraction import EsiMoonExtraction
 from esi_assets import EsiAssets
 from esi_characterroles import EsiCharacterRoles
 from esi_moonobserver import EsiMoonObserver
+from esi_notifications import EsiNotifications
