@@ -152,7 +152,13 @@ class MoonDetails:
     def __init__(self, structure, extraction, config, observer_log, ore_values, ship_m3_per_hour):
         self.name = structure.station.name
         self.is_jackpot = False
-        self.is_popped = datetime.datetime.utcnow() > extraction.natural_decay_time
+
+        if datetime.datetime.utcnow() > extraction.natural_decay_time \
+                or extraction.laser_fire_time is not None:
+            self.is_popped = True
+        else:
+            self.is_popped = False
+
         self.is_poppable = extraction.chunk_arrival_time <= datetime.datetime.utcnow()
 
         self.structure = structure
@@ -406,17 +412,25 @@ def refinerylist(request):
 
     if request.method == 'POST':
         structure_id = request.POST.get('structure_id')
+        extraction_id = request.POST.get('extraction_id')
         next_date_override = request.POST.get('next_date_override') or None
         chunk_time = request.POST.get('chunk_time') or None
         is_nationalized = request.POST.get('is_nationalized') == '1'
         ignore_refire = request.POST.get('ignore_refire') == '1'
         ignore_scheduling = request.POST.get('ignore_scheduling') == '1'
+        manually_fired = request.POST.get('manually_fired') == '1'
 
         config = MoonConfig.objects.filter(structure_id=structure_id).first()
         if config is None:
             config = MoonConfig(
                 structure_id=structure_id
             )
+
+        if extraction_id is not None:
+            extraction = MoonExtraction.objects.filter(id=extraction_id).first()
+            if extraction is not None:
+                extraction.manually_fired = manually_fired
+                extraction.save()
 
         config.is_nationalized = is_nationalized
         config.next_date_override=next_date_override
@@ -461,6 +475,17 @@ def refinerylist(request):
         structure = service.structure
         structure.z_online = service.state == 'online'
         structure.z_moon_info = MoonExtraction.objects.filter(structure_id=structure.station_id).first()
+        structure.z_last_extraction = MoonExtractionHistory.objects.filter(structure_id=structure.station_id, chunk_arrival_time__lte=datetime.datetime.utcnow()).order_by('-chunk_arrival_time').first()
+
+        structure.z_last_exploder = None
+        structure.z_last_firer = None
+
+        if structure.z_last_extraction is not None:
+            if structure.z_last_extraction.laser_fired_by_id:
+                structure.z_last_exploder = structure.z_last_extraction.laser_fired_by.name
+
+            if structure.z_last_extraction.extraction_started_by_id:
+                structure.z_last_firer = structure.z_last_extraction.extraction_started_by.name
 
         region_list.add(structure.station.system.constellation.region.name)
         constellation_list.add(structure.station.system.constellation.name)
@@ -526,9 +551,11 @@ def refinerylist(request):
 
         structure.z_cycle_time = cycle_time
 
-        if structure.z_next_chunk_time < datetime.datetime.utcnow() + datetime.timedelta(days=6):
-            structure.z_chunk_start_time = structure.z_next_chunk_time
+        # If we're under 6 days for this chunk, set chunk to the next cycle time
+        if structure.z_next_chunk_time >= datetime.datetime.utcnow() + datetime.timedelta(days=6):
             structure.z_next_chunk_time += datetime.timedelta(days=cycle_time)
+            if cycle_time > 50:
+                structure.z_chunk_start_time = structure.z_next_chunk_time
         else:
             structure.z_chunk_start_time = None
 

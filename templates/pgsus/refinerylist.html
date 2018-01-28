@@ -141,7 +141,15 @@
                                 {% endif %}
                                 <div><b>Next Chunk:</b> {{ s.z_next_chunk_time|date('%Y-%m-%d %H:%M') }} ({{ s.z_cycle_time }} days)</div>
                             {% endif %}
-                            <div><small>
+                            <div>
+                            {% if s.z_last_exploder or s.z_last_firer %}
+                                <b><abbr title="Last one to detonate the moon belt">Last Exploder:</abbr> </b> {{ s.z_last_exploder }}<br/>
+                                <b><abbr title="Last one to recycle the laser">Last Firer:</abbr> </b> {{ s.z_last_firer }}
+                            {% endif %}
+                            <div>
+
+                            </div>
+                            <small>
                                 <a role="button" data-toggle="collapse" aria-expanded="false" aria-controls="#composition-{{ s.id }}" href="#composition-{{ s.id }}">
                                     <b>Composition</b>
                                 </a>
@@ -158,6 +166,9 @@
                                     <form method="post">
                                         <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
                                         <input type="hidden" name="structure_id" value="{{ s.id }}"/>
+                                        {% if s.z_moon_info %}
+                                        <input type="hidden" name="extraction_id" value="{{ s.z_moon_info.id }}"/>
+                                        {% endif %}
                                         <div class="form-group row">
                                             <div class="col-sm-12">
                                                 <label for="next_date_override_{{s.id}}">Next Date Override</label>
@@ -182,7 +193,10 @@
                                             <input class="form-check-input" id="ignore_scheduling_{{s.id}}" type="checkbox" name="ignore_scheduling" value="1"{% if s.z_config.ignore_scheduling %} checked{% endif %} />
                                             <label class="form-check-label" for="ignore_scheduling_{{s.id}}">Do Not Set Vulnerability?</label>
                                         </div>
-
+                                        <div class="form-check">
+                                            <input class="form-check-input" id="manually_fired_{{s.id}}" type="checkbox" name="manually_fired" value="1"{% if s.z_moon_info.manually_fired %} checked{% endif %} />
+                                            <label class="form-check-label" for="manually_fired_{{s.id}}">Manually Fired?</label>
+                                        </div>
 
                                         <button type="submit" class="btn btn_primary">Save</button>
                                     </form>

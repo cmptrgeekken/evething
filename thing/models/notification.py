@@ -35,7 +35,7 @@ class Notification(models.Model):
     sender_id = models.IntegerField()
     sender_type = models.CharField(max_length=250)
     timestamp = models.DateTimeField()
-    is_read = models.BooleanField()
+    is_read = models.BooleanField(default=False)
     text = models.TextField()
 
     class Meta:
