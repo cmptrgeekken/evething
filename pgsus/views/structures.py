@@ -553,9 +553,11 @@ def refinerylist(request):
 
         # If we're under 6 days for this chunk, set chunk to the next cycle time
         if structure.z_next_chunk_time < datetime.datetime.utcnow() + datetime.timedelta(days=6):
-            structure.z_next_chunk_time += datetime.timedelta(days=cycle_time)
-            if cycle_time > 50:
+            if cycle_time > 50 and structure.z_moon_info.chunk_arrival_time < structure.z_next_chunk_time:
                 structure.z_chunk_start_time = structure.z_next_chunk_time
+
+            structure.z_next_chunk_time += datetime.timedelta(days=cycle_time)
+
         else:
             structure.z_chunk_start_time = None
 
