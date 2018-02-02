@@ -144,7 +144,7 @@
                                     {% endfor %}
                                     </ul>
                                 </li>
-                                {% if m.is_popped %}
+                                {% if m.is_popped and m.remaining_value %}
                                 <li>
                                     {% if m.remaining_pct >= 0.6 %}
                                     <button class="btn btn-success" style="cursor: default;">Lots of ores!</button>
@@ -156,7 +156,14 @@
                                 </li>
                                 {% endif %}
                                 <li>
-                                    <span>{{ m.remaining_value|humanize }} ISK</span> remaining
+                                    <span>
+                                        {% if m.remaining_value %}
+                                        {{ m.remaining_value|humanize }}
+                                        {% else %}
+                                        <i>Unknown</i>
+                                        {% endif %}
+                                        ISK
+                                    </span> remaining
                                 </li>
                                 <!--
                                 <li>

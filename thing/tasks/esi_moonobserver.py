@@ -64,12 +64,16 @@ class EsiMoonObserver(APITask):
         access_token, expires = self.get_access_token(refresh_token)
 
         page = 1
+        max_pages = None
         try:
-            while True:
+            while max_pages is None or page < max_pages:
                 if expires <= datetime.datetime.now():
                     access_token, expires = self.get_access_token(refresh_token)
 
-                results = self.fetch_esi_url(self.observer_url % (corp_id, page), access_token)
+                results, headers = self.fetch_esi_url(self.observer_url % (corp_id, page), access_token, headers_to_return=['X-Pages'])
+                if headers and 'X-Pages' in headers:
+                    max_pages = int(headers['X-Pages'])
+                
                 page += 1
                 observers = json.loads(results)
 

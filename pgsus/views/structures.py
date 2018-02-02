@@ -166,6 +166,7 @@ class MoonDetails:
         self.config = config
         self.log = observer_log
         self.ore_values = ore_values
+        self.remaining_pct = 0
 
         self.ore_types = list()
 
@@ -206,6 +207,12 @@ class MoonDetails:
         self.ship_m3_tooltip = 'Hourly - ' + tooltip
 
     def parse_log(self):
+        try:
+            first_ore = self.config.first_ore
+        except:
+            return
+
+
         self.ores.append(
             MoonOreEntry(
                 ore=self.config.first_ore,
@@ -368,11 +375,6 @@ def extractions(request):
         if cfg is None or cfg.is_nationalized:
             continue
 
-        try:
-            first_ore = cfg.first_ore
-        except:
-            continue
-
         observer = MoonObserver.objects.filter(observer_id=structure.station_id).first()
 
         observer_log = None
@@ -474,8 +476,9 @@ def refinerylist(request):
     for service in struct_services:
         structure = service.structure
         structure.z_online = service.state == 'online'
-        structure.z_moon_info = MoonExtraction.objects.filter(structure_id=structure.station_id).first()
-        structure.z_last_extraction = MoonExtractionHistory.objects.filter(structure_id=structure.station_id, chunk_arrival_time__lte=datetime.datetime.utcnow()).order_by('-chunk_arrival_time').first()
+        structure.z_moon_info = MoonExtractionHistory.objects.filter(structure_id=structure.station_id).order_by('-chunk_arrival_time').first()
+        structure.z_last_extraction = MoonExtractionHistory.objects.filter(structure_id=structure.station_id).exclude(laser_fired_by_id__isnull=True).order_by('-chunk_arrival_time').first()
+        structure.z_current_extraction = MoonExtractionHistory.objects.filter(structure_id=structure.station_id).exclude(extraction_started_by_id__isnull=True).order_by('-chunk_arrival_time').first()
 
         structure.z_last_exploder = None
         structure.z_last_firer = None
@@ -484,8 +487,9 @@ def refinerylist(request):
             if structure.z_last_extraction.laser_fired_by_id:
                 structure.z_last_exploder = structure.z_last_extraction.laser_fired_by.name
 
-            if structure.z_last_extraction.extraction_started_by_id:
-                structure.z_last_firer = structure.z_last_extraction.extraction_started_by.name
+        if structure.z_current_extraction is not None:
+            if structure.z_current_extraction.extraction_started_by_id:
+                structure.z_last_firer = structure.z_current_extraction.extraction_started_by.name
 
         region_list.add(structure.station.system.constellation.region.name)
         constellation_list.add(structure.station.system.constellation.name)

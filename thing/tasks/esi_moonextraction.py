@@ -146,7 +146,7 @@ class EsiMoonExtraction(APITask):
                 db_moonextract.natural_decay_time = self.parse_api_date(info['natural_decay_time'], True)
                 db_moonextract.structure_id = info['structure_id']
 
-                db_extracthistory = MoonExtractionHistory.objects.filter(structure_id=info['structure_id'], chunk_arrival_time__gt=datetime.datetime.utcnow()).first()
+                db_extracthistory = MoonExtractionHistory.objects.filter(structure_id=info['structure_id'], chunk_arrival_time__gte=db_moonextract.chunk_arrival_time-datetime.timedelta(minutes=10), chunk_arrival_time__lte=db_moonextract.chunk_arrival_time+datetime.timedelta(minutes=10)).first()
                 chunk_minutes = (db_moonextract.chunk_arrival_time - db_moonextract.extraction_start_time).total_seconds() / 60.0
 
                 if db_extracthistory is None:
@@ -155,10 +155,10 @@ class EsiMoonExtraction(APITask):
                         structure_id=info['structure_id'],
                     )
 
-                extraction_start_time=db_moonextract.extraction_start_time
-                chunk_arrival_time=db_moonextract.chunk_arrival_time
-                natural_decay_time=db_moonextract.natural_decay_time
-                chunk_minutes=chunk_minutes
+                db_extracthistory.extraction_start_time=db_moonextract.extraction_start_time
+                db_extracthistory.chunk_arrival_time=db_moonextract.chunk_arrival_time
+                db_extracthistory.natural_decay_time=db_moonextract.natural_decay_time
+                db_extracthistory.chunk_minutes=chunk_minutes
 
                 db_extracthistory.save()
 

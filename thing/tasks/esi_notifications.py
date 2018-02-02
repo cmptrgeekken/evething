@@ -28,8 +28,10 @@ import datetime
 from .apitask import APITask
 import json
 
-from thing.models import CharacterApiScope, Character, Notification, MoonExtractionHistory
+from thing.models import CharacterApiScope, Character, Notification, MoonExtractionHistory, Structure, MoonConfig
+import re
 
+from thing.filetimes import filetime_to_dt, dt_to_filetime
 
 class EsiNotifications(APITask):
     name = 'thing.esi_notifications'
@@ -88,6 +90,41 @@ class EsiNotifications(APITask):
 
         return True
 
+    def update_moon_comp(self, lookup, structure):
+        cfg = MoonConfig.objects.filter(structure_id=structure.id).first()
+
+        if cfg is None:
+            cfg = MoonConfig(structure_id=structure.id)
+
+        ores = list()
+        ttl_m3 = float(0)
+
+        for key in lookup.keys():
+            if key.isdigit():
+            	ores.append(dict(id=key, m3=float(lookup[key])))
+                ttl_m3 += float(lookup[key])
+
+        if len(ores) > 0:
+            cfg.first_ore_id = ores[0]['id']
+            cfg.first_ore_pct = ores[0]['m3'] / ttl_m3
+
+        if len(ores) > 1:
+            cfg.second_ore_id = ores[1]['id']
+            cfg.second_ore_pct = ores[1]['m3'] / ttl_m3
+
+        if len(ores) > 2:
+            cfg.third_ore_id = ores[2]['id']
+            cfg.third_ore_pct = ores[2]['m3'] / ttl_m3
+         
+        if len(ores) > 3:
+            cfg.fourth_ore_id = ores[3]['id']
+            cfg.fourth_ore_pct = ores[3]['m3'] / ttl_m3
+
+        if cfg.first_ore_id is not None:
+            cfg.save()
+
+
+
     def handle_notification(self, n):
         lookup = dict()
 
@@ -96,7 +133,7 @@ class EsiNotifications(APITask):
             kvp = l.split(': ')
 
             if len(kvp) == 2:
-                lookup[kvp[0]] = kvp[1]
+                lookup[kvp[0].strip()] = kvp[1].strip()
 
         if n.type == 'MoonminingExtractionFinished':
             """
@@ -116,6 +153,12 @@ structureName: Y-C3EQ - DRILL R64 P2M2
 structureTypeID: 35835
 
             """
+
+            structure = Structure.objects.filter(station_id=lookup['structureID']).first()
+
+            if structure is not None:
+                self.update_moon_comp(lookup, structure)
+
             return
         elif n.type == 'MoonminingLaserFired':
             """
@@ -137,7 +180,12 @@ structureTypeID: 35835
 
             """
 
-            history = MoonExtractionHistory.objects.filter(structure_id=lookup['structureID'], natural_decay_time__lte=n.timestamp).order_by('-chunk_arrival_time').first()
+            structure = Structure.objects.filter(station_id=lookup['structureID']).first()
+
+            if structure is not None:
+                self.update_moon_comp(lookup, structure)
+
+            history = MoonExtractionHistory.objects.filter(structure_id=lookup['structureID'], chunk_arrival_time__lte=n.timestamp).order_by('-chunk_arrival_time').first()
 
             if history is not None:
                 char = Character.objects.filter(id=lookup['firedBy']).first()
@@ -174,8 +222,25 @@ structureLink: <a href=\"showinfo:35835//1025921067683\">HPS5-C - DRILL R64 P4M1
 structureName: HPS5-C - DRILL R64 P4M1 Refinery
 structureTypeID: 35835
             """
+            structure = Structure.objects.filter(station_id=lookup['structureID']).first()
 
-            history = MoonExtractionHistory.objects.filter(structure_id=lookup['structureID'], natural_decay_time__lte=n.timestamp).order_by('-chunk_arrival_time').first()
+            if structure is not None:
+		self.update_moon_comp(lookup, structure)
+
+            natural_decay_time = filetime_to_dt(int(lookup['autoTime']))
+            chunk_arrival_time = filetime_to_dt(int(lookup['readyTime']))
+
+            history = MoonExtractionHistory.objects.filter(structure_id=lookup['structureID'], chunk_arrival_time__lte=n.timestamp+datetime.timedelta(minutes=10), chunk_arrival_time_gte=n.timestamp-datetime.timedelta(minutes=10)).order_by('-chunk_arrival_time').first()
+
+            if history is None:
+                history = MoonExtractionHistory(
+                    structure_id=lookup['structureID'],
+                    moon_id=lookup['moonID'],
+                    extraction_start_time=n.timestamp,
+                    chunk_arrival_time=chunk_arrival_time,
+                    natural_decay_time=natural_decay_time,
+                    chunk_minutes=(chunk_arrival_time-n.timestamp).total_seconds()/60.0
+                )
 
             if history is not None:
                 char = Character.objects.filter(id=lookup['startedBy']).first()

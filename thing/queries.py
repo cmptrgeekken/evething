@@ -491,15 +491,15 @@ select name, group_name,
 FROM
 (SELECT c.name,
 		(select ak.group_name from thing_apikey_characters akc inner join thing_apikey ak ON  akc.apikey_id=ak.id WHERE akc.character_id=c.id limit 1) AS group_name,
-	   COALESCE(1+lo.level+alo.level,0) AS research_slots_max,
+	   if(alo.level=0,0,COALESCE(1+lo.level+alo.level,0)) AS research_slots_max,
 	   (SELECT COUNT(*) FROM thing_industryjob ij WHERE ij.installer_id=c.id AND ij.activity IN(3,4,5,8) AND ij.status=1) AS research_slots_active,
 	   (SELECT COUNT(*) FROM thing_industryjob ij WHERE ij.installer_id=c.id AND ij.activity IN(3,4,5,8) AND ij.status=1 AND ij.end_date <= NOW()) AS research_slots_deliverable,
-	   COALESCE(1+mp.level+amp.level,0) AS mfg_slots_max,
+	   if(amp.level=0,0,COALESCE(1+mp.level+amp.level,0)) AS mfg_slots_max,
 	   (SELECT COUNT(*) FROM thing_industryjob ij WHERE ij.installer_id=c.id AND ij.activity=1 AND ij.status=1) AS mfg_slots_active,
 	   (SELECT COUNT(*) FROM thing_industryjob ij WHERE ij.installer_id=c.id AND ij.activity=1 AND ij.status=1 AND ij.end_date <= NOW()) AS mfg_slots_deliverable,
            (SELECT COUNT(*) FROM thing_industryjob ij WHERE ij.installer_id=c.id AND ij.activity=9 AND ij.status=1) AS reaction_slots_active,
            (SELECT COUNT(*) FROM thing_industryjob ij WHERE ij.installer_id=c.id AND ij.activity=9 AND ij.status=1 AND ij.end_date <= NOW()) AS reaction_slots_deliverable,
-           COALESCE(1+mr.level+amr.level,0) AS reaction_slots_max,
+           if(mr.level<4,0,COALESCE(1+mr.level+amr.level,0)) AS reaction_slots_max,
            COALESCE(r.level, 0) AS reaction_level, -- *.04
 	   COALESCE(ind.level,0) AS industry_level, -- *.04
 	   COALESCE(ai.level,0) AS adv_industry_level, -- *.03
@@ -537,7 +537,7 @@ FROM
                 LEFT JOIN thing_characterskill mr ON mr.character_id=c.id AND mr.skill_id=45748 -- Mass Reactions
                 LEFT JOIN thing_characterskill amr ON amr.character_id=c.id AND amr.skill_id=45749 -- Advanced Mass Reactions
                 LEFT JOIN thing_characterskill r ON r.character_id=c.id AND r.skill_id=45746 -- Reactions
-	WHERE lo.level > 0 OR mp.level > 0 OR mr.level > 0
+	WHERE alo.level > 0 OR amp.level > 0 OR amr.level > 0
     ORDER BY group_name, name) details
     ORDER BY details.group_name, details.name;
 """

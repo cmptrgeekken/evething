@@ -193,6 +193,9 @@ class IndustryJobs(APITask):
         ).update(
             status=IndustryJob.UNKNOWN_STATUS
         )
+
+        ij_filter.filter(status=1, end_date__lte=datetime.datetime.utcnow()).exclude(job_id__in=seen_jobs).update(status=IndustryJob.DELIVERED_STATUS)
+
         if unknowns > 0:
             self.log_warn('%d jobs set to UNKNOWN state.' % unknowns)
 
