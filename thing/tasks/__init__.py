@@ -54,3 +54,4 @@ from esi_assets import EsiAssets
 from esi_characterroles import EsiCharacterRoles
 from esi_moonobserver import EsiMoonObserver
 from esi_notifications import EsiNotifications
+from esi_structures import EsiStructures

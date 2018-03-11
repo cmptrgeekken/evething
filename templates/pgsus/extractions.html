@@ -124,7 +124,7 @@
                             <div class="warning">
                                 Ready to Pop!
                                 <small><i>
-                                    <br/>Contact a Landscaper to 'splode.
+                                    <br/>Ping @moonbeans in Discord to 'splode.
                                     <br/>Self-Destructs <time class="timeago" datetime="{{ m.extraction.natural_decay_time|timeago }}">{{ m.extraction.natural_decay_time}}</time>
                                 </i></small>
                             </div>
@@ -174,10 +174,12 @@
                                     <span style="color: #FFF;" class="ore-type ore-type-{{ ore.type|slugify }}">{{ ore.type }}</span>
                                     {% if m.is_popped %}
                                         <small>
-                                            {% if ore.remaining_pct >= 0.6 %}
+                                            {% if ore.remaining_pct >= 0.5 %}
                                             <button title="{{ ore.remaining_volume|humanize }} m3" class="ore-type btn btn-success" style="font-size: 10px;margin-right:3px;cursor: default;">Lots</button>
-                                            {% elif ore.remaining_pct >= 0.3 %}
-                                            <button title="{{ ore.remaining_volume|humanize }} m3" class="ore-type btn btn-warning" style="font-size: 10px;margin-right:3px;cursor: default;">Low</button>
+                                            {% elif ore.remaining_pct >= 0.15 %}
+                                            <button title="{{ ore.remaining_volume|humanize }} m3" class="ore-type btn btn-warning" style="font-size: 10px;margin-right:3px;cursor: default;">Some</button>
+                                            {% elif ore.remaining_pct > 0 %}
+                                            <button title="{{ ore.remaining_volume|humanize }} m3" class="ore-type btn btn-danger" style="font-size: 10px;margin-right:3px;cursor: default;">Low!</button>
                                             {% else %}
                                             <button title="{{ ore.remaining_volume|humanize }} m3" class="ore-type btn btn-danger" style="font-size: 10px;margin-right:3px;cursor: default;">Out</button>
                                             {% endif %}

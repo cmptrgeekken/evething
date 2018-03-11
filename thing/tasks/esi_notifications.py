@@ -230,7 +230,7 @@ structureTypeID: 35835
             natural_decay_time = filetime_to_dt(int(lookup['autoTime']))
             chunk_arrival_time = filetime_to_dt(int(lookup['readyTime']))
 
-            history = MoonExtractionHistory.objects.filter(structure_id=lookup['structureID'], chunk_arrival_time__lte=n.timestamp+datetime.timedelta(minutes=10), chunk_arrival_time_gte=n.timestamp-datetime.timedelta(minutes=10)).order_by('-chunk_arrival_time').first()
+            history = MoonExtractionHistory.objects.filter(structure_id=lookup['structureID'], chunk_arrival_time__lte=n.timestamp+datetime.timedelta(minutes=10), chunk_arrival_time__gte=n.timestamp-datetime.timedelta(minutes=10)).order_by('-chunk_arrival_time').first()
 
             if history is None:
                 history = MoonExtractionHistory(

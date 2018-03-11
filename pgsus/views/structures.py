@@ -27,6 +27,7 @@ from thing.models import *  # NOPEP8
 from thing.stuff import render_page, datetime  # NOPEP8
 from django.core.urlresolvers import reverse
 from django.shortcuts import redirect, render
+from django.http import JsonResponse
 
 from thing.utils import dictfetchall
 from thing import queries
@@ -289,15 +290,11 @@ class MoonDetails:
                 ore.remaining_pct = .6
             elif ore.remaining_pct > .3:
                 ore.remaining_pct = .3
-            else:
-                ore.remaining_pct = 0
 
             self.remaining_volume = max(0, self.remaining_volume - ore.mined_volume)
             self.remaining_value = max(0.0, self.remaining_value-float(ore.mined_volume / ore.ore.volume) * ore.value_ea)
 
-            if ore.remaining_pct == 0:
-                ore.remaining_isk_per_m3 = 0
-            elif ore.remaining_volume > 0:
+            if ore.remaining_volume > 0:
                 ore.remaining_isk_per_m3 = ore.remaining_value / float(ore.remaining_volume)
 
             ore_type = ore.ore.item_group.name
@@ -366,9 +363,15 @@ def extractions(request):
         dict(name='Procurer', m3=32*60*60),
     ]
 
+    ticker = request.GET.get('ticker') or 'REKTD'
+
     moon_list = []
     for e in moon_extractions:
         structure = e.structure
+        if structure.station.corporation_id is None\
+            or structure.station.corporation.alliance.short_name != ticker:
+            continue
+
         cfg = MoonConfig.objects.filter(structure_id=e.structure.id).first()
 
         # TODO: Enable Nationalized moons based off roles?
@@ -397,6 +400,9 @@ def extractions(request):
         request,
     )
 
+    if 'format' in request.GET and request.GET.get('format') == 'json':
+        return JsonResponse(moon_list, safe=False)
+
     return out
 
 def refinerylist(request):
@@ -411,6 +417,9 @@ def refinerylist(request):
         return redirect('/?perm=1')
 
     corpid = role.character.corporation.id
+
+    allianceid = role.character.corporation.alliance_id
+
 
     if request.method == 'POST':
         structure_id = request.POST.get('structure_id')
@@ -444,13 +453,13 @@ def refinerylist(request):
 
     waypoint_scope = CharacterApiScope.objects.filter(character_id=charid, scope='esi-ui.write_waypoint.v1').first()
 
-    struct_services = StructureService.objects.filter(name='Moon Drilling', structure__station__corporation_id=corpid)
+    struct_services = StructureService.objects.filter(name='Moon Drilling', structure__station__corporation__alliance_id=allianceid)
 
     struct_list = dict()
 
     moon_system_ids = set([s.structure.station.system_id for s in struct_services.filter(state='online')])
 
-    repro_services = StructureService.objects.filter(name='Reprocessing', structure__station__name__iregex='DRILL', structure__station__corporation_id=corpid)
+    repro_services = StructureService.objects.filter(name='Reprocessing', structure__station__name__iregex='DRILL', structure__station__corporation__alliance_id=allianceid)
 
     repro_system_ids = set([s.structure.station.system_id for s in repro_services])
 
@@ -482,6 +491,12 @@ def refinerylist(request):
 
         structure.z_last_exploder = None
         structure.z_last_firer = None
+
+        if 'Horde' in structure.station.corporation.name\
+                and (structure.station.system.constellation.region.name == 'Pure Blind' or structure.station.system.constellation.region.name == 'Fade'\
+                or structure.station.system.constellation.region.name == 'Cloud Ring'):
+            continue
+
 
         if structure.z_last_extraction is not None:
             if structure.z_last_extraction.laser_fired_by_id:

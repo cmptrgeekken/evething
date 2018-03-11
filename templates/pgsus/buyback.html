@@ -27,7 +27,7 @@
             </div>
             {% endif %}
             <div class="alert alert-warning" role="alert">
-                <h4 class="alert-heading">Until further notice, the moon ore buyback is limited to <b>Cheeki Breeki Syndicate</b>. All non-Cheeki Breeki contracts will be rejected. We recommend <a href="http://karkinos.ga/">Karkinos</a> for your current moon ore needs. Thank you for understanding!</h4>
+                <h4 class="alert-heading">Penny's Buyback will be inactive during the move to Geminate. We will resume service as soon as possible once we settle in.</h4>
             </div>
             {% if parse_results and parse_results['results']|length > 0 %}
             <div class="row">
@@ -74,6 +74,7 @@
                 </div>
             </div>
             {% endif %}
+            <div style="display: none">
             <h2>What would you like to sell?</h2>
             <form id="formEntry" class="form-horizontal" method="post" action="{{ url('pgsus.views.buyback') }}">
                 <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
@@ -90,6 +91,7 @@
                     </div>
                 </div>
             </form>
+            </div>
         </div>
         <div class="col-md-5 col-md-push-1">
             <h2>Accepted Items</h2>

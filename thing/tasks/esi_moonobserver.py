@@ -53,12 +53,12 @@ class EsiMoonObserver(APITask):
 
         for char in extract_scope_chars:
             if 'Accountant' in char.get_apiroles():
-                if char.corporation_id not in seen_corps:
+                if char.corporation_id is not None and char.corporation_id not in seen_corps:
                     seen_corps.add(char.corporation_id)
                     self.import_observers(char)
 
     def import_observers(self, character):
-        corp_id = character.corporation.id
+        corp_id = character.corporation_id
         refresh_token = character.sso_refresh_token
 
         access_token, expires = self.get_access_token(refresh_token)

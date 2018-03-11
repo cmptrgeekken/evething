@@ -38,26 +38,13 @@ class EsiMoonExtraction(APITask):
     name = 'thing.moonextraction'
 
     mining_url = 'https://esi.tech.ccp.is/latest/corporation/%s/mining/extractions/?datasource=tranquility'
-    structure_url = 'https://esi.tech.ccp.is/latest/universe/structures/%s/?datasource=tranquility'
-    corp_structures_url = 'https://esi.tech.ccp.is/latest/corporations/%s/structures/?datasource=tranquility&language=en-us&page=%s'
     write_structure_url = 'https://esi.tech.ccp.is/latest/corporations/%s/structures/%s/?datasource=tranquility&language=en-us'
 
     def run(self, base_url):
         self.init()
 
         extract_scopes = CharacterApiScope.objects.filter(scope='esi-industry.read_corporation_mining.v1')
-        structure_scopes = CharacterApiScope.objects.filter(scope='esi-corporations.read_structures.v1')
         write_struct_scopes = CharacterApiScope.objects.filter(scope='esi-corporations.write_structures.v1')
-
-        seen_corps = set()
-
-        for scope in structure_scopes:
-            char = scope.character
-
-            if 'Station_Manager' in char.get_apiroles():
-                if char.corporation_id not in seen_corps:
-                    self.import_structures(char)
-                    seen_corps.add(char.corporation_id)
 
         seen_corps = set()
 
@@ -65,10 +52,11 @@ class EsiMoonExtraction(APITask):
             char = scope.character
 
             if 'Director' in char.get_apiroles():
-                if char.corporation_id not in seen_corps:
+                if char.corporation_id is not None and char.corporation_id not in seen_corps:
                     self.import_moon(char)
                     seen_corps.add(char.corporation_id)
 
+        '''
         seen_corps = set()
 
         for scope in write_struct_scopes:
@@ -78,6 +66,7 @@ class EsiMoonExtraction(APITask):
                 if char.corporation_id not in seen_corps:
                     self.update_vuln_schedule(char)
                     seen_corps.add(char.corporation_id)
+        '''
 
     def update_vuln_schedule(self, character):
         corp_id = character.corporation_id
@@ -118,10 +107,11 @@ class EsiMoonExtraction(APITask):
                     cfg.save()
             except Exception, e:
                 print(e)
+                print(e.structure_id)
                 pass
 
     def import_moon(self, character):
-        corp_id = character.corporation.id
+        corp_id = character.corporation_id
         refresh_token = character.sso_refresh_token
 
         access_token, expires = self.get_access_token(refresh_token)
@@ -164,107 +154,6 @@ class EsiMoonExtraction(APITask):
 
                 db_moonextract.save()
         except Exception, e:
-            traceback.print_exc(e)
-            return True
-
-        return True
-
-    def import_structures(self, character):
-        corp_id = character.corporation.id
-        refresh_token = character.sso_refresh_token
-
-        access_token, expires = self.get_access_token(refresh_token)
-
-        page = 1
-        try:
-            while True:
-                if expires <= datetime.datetime.now():
-                    access_token, expires = self.get_access_token(refresh_token)
-                
-                results = self.fetch_esi_url(self.corp_structures_url % (corp_id, page), access_token)
-                page += 1
-                structure_info = json.loads(results)
-
-                if len(structure_info) == 0:
-                    break
-
-                for struct in structure_info:
-                    db_station = Station.objects.filter(id=struct['structure_id']).first()
-
-                    db_struct = Structure.objects.filter(station_id=struct['structure_id']).first()
-
-                    if db_struct is None\
-                            or db_station is None\
-                            or db_station.corporation_id is None\
-                            or db_station.is_unknown:
-
-                        if db_struct is None:
-                            db_struct = Structure(
-                                station_id=struct['structure_id'],
-                                profile_id=struct['profile_id'],
-                            )
-
-                        if expires <= datetime.datetime.now():
-                            access_token, expires = self.get_access_token(refresh_token)
-
-                        try:
-                            results = self.fetch_esi_url(self.structure_url % struct['structure_id'], access_token)
-                        except:
-                            continue
-
-                        info = None
-
-                        try:
-                            info = json.loads(results)
-                        except:
-                            self.log_debug("Cannot find info on structure: %s" % struct['structure_id'])
-                            continue
-
-                        if info is None:
-                            continue
-
-                        if db_station is None:
-                            db_station = Station(
-                                id=struct['structure_id'],
-                            )
-
-                        db_station.name = info['name']
-                        db_station.type_id = struct['type_id']
-                        db_station.corporation_id = struct['corporation_id']
-                        db_station.is_citadel = True
-                        db_station.is_unknown = False
-                        db_station.system_id = info['solar_system_id']
-                        db_station.save()
-
-                        db_struct.x = info['position']['x']
-                        db_struct.y = info['position']['y']
-                        db_struct.z = info['position']['z']
-
-                        closest_celestial_id = dictfetchall(queries.closest_celestial % (
-                            info['solar_system_id'], db_struct.x,
-                            db_struct.y, db_struct.z))[0]['item_id']
-
-                        db_struct.closest_celestial_id = closest_celestial_id
-
-                    if 'fuel_expires' in struct:
-                        db_struct.fuel_expires=self.parse_api_date(struct['fuel_expires'], True)
-
-                    db_struct.state_timer_start=self.parse_api_date(struct['state_timer_start'], True)
-                    db_struct.state_timer_end=self.parse_api_date(struct['state_timer_end'], True)
-
-                    db_struct.save()
-
-                    StructureService.objects.filter(structure_id=db_struct.station_id).delete()
-                    if 'services' in struct:
-                        for service in struct['services']:
-                            db_service = StructureService(
-                                structure_id=struct['structure_id'],
-                                name=service['name'],
-                                state=service['state'],
-                            )
-
-                            db_service.save()
-        except Exception,e:
             traceback.print_exc(e)
             return True
 

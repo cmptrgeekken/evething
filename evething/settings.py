@@ -315,6 +315,15 @@ CELERYBEAT_SCHEDULE = {
         },
         'args': ['https://esi.tech.ccp.is/latest'],
     },
+    'corp_struct_updater': {
+        'task': 'thing.structures',
+        'schedule': timedelta(hours=1),
+        'options': {
+            'expires': 240 * 60,
+            'queue': 'et_medium'
+        },
+        'args': [None],
+    },
     'corp_moon_observer': {
         'task': 'thing.moonobserver',
         'schedule': timedelta(minutes=20),
