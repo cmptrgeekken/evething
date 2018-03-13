@@ -64,7 +64,7 @@
                   {% if contract.z_shipping_invalid %}
                   <div><b class="neg">Invalid!</b></div>
                   {% else %}
-                    {{ contract.z_price_model.name }}
+                    <div><b>{{ contract.z_price_model }}</b> ({{ contract.z_shipping_method }})</div>
                   {% endif %}
                   {% if contract.z_has_station %}
                   <div><b class="neg">!! Station !!</b></div>

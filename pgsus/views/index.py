@@ -36,6 +36,7 @@ from thing.stuff import render_page, datetime  # NOPEP8
 from thing.helpers import humanize
 from thing.utils import ApiHelper
 
+from django.db.models import Q
 from django.shortcuts import redirect, render
 
 from django.http import HttpResponse
@@ -297,9 +298,16 @@ def fuel(request):
 def freighter(request):
     all_price_models = FreighterPriceModel.objects.filter(is_thirdparty=0).distinct()
 
-    all_systems = defaultdict(list)
-    for result in FreighterSystem.objects.filter(price_model__is_thirdparty=0).values('system__constellation__region__name', 'system__name').distinct().order_by('system__constellation__region__name', 'system__name'):
-        all_systems[result['system__constellation__region__name']].append(result['system__name'])
+    all_systems = defaultdict(set)
+
+    for fpm in FreighterPriceModel.objects.filter(is_thirdparty=0):
+        pm_systems = fpm.supported_systems()
+
+        for r in pm_systems.keys():
+            all_systems[r].update(pm_systems[r])
+
+    for region in all_systems.keys():
+        all_systems[region] = sorted(all_systems[region])
 
     start_system_name = ''
     end_system_name = ''
@@ -343,11 +351,15 @@ def freighter(request):
             errors.append('Please select a valid end system.')
 
         start_systems = FreighterSystem.objects.filter(
-            system__name=start_system_name
+            Q(system__name=start_system.id)
+            | Q(constellation_id=start_system.constellation_id)
+            | Q(region_id=start_system.constellation.region_id)
         )
 
         end_systems = FreighterSystem.objects.filter(
-            system__name=end_system_name
+            Q(system_id=end_system.id)
+            | Q(constellation_id=end_system.constellation_id)
+            | Q(region_id=end_system.constellation.region_id)
         )
 
         if len(errors) == 0:
@@ -362,11 +374,12 @@ def freighter(request):
                 max_collateral_exceeded=False,
                 max_m3_exceeded=False,
                 max_collateral=None,
+                ttl_lys=0,
                 max_m3=None,
                 method=None
             )
             for price_model in price_models:
-                rate, method = price_model.calc(start_system, end_system, shipping_collateral, shipping_m3)
+                rate, method, lys = price_model.calc(start_system, end_system, shipping_collateral, shipping_m3)
                 trips = ceil(shipping_m3 / price_model.max_m3)
 
                 rate = rate * int(trips)
@@ -377,6 +390,7 @@ def freighter(request):
                     shipping_info['max_collateral_exceeded'] = price_model.max_collateral < shipping_collateral
                     shipping_info['max_collateral'] = price_model.max_collateral
                     shipping_info['max_m3'] = price_model.max_m3
+                    shipping_info['ttl_lys'] = lys
                     shipping_info['rate'] = rate
                     shipping_info['method'] = '<b>%s</b> (%s)' % (price_model.name, method)
                     shipping_info['trips'] = trips

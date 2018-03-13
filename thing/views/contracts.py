@@ -188,13 +188,11 @@ def courier_contracts(request):
 
     contract_list, char_map, corp_map, alliance_map = populate_contracts(contracts_to_display)
 
-    freighter_systems = FreighterSystem.objects.distinct()
-
-    freighter_map = defaultdict()
-    for system in freighter_systems:
-        if system.system_id not in freighter_map:
-            freighter_map[system.system_id] = list()
-        freighter_map[system.system_id].append(system.price_model)
+    freighter_map = defaultdict(list)
+    for fpm in FreighterPriceModel.objects.filter(is_thirdparty=False).select_related():
+        for region, systems in fpm.supported_systems().items():
+            for system in systems:
+                freighter_map[system].append(fpm)
 
     for contract in contract_list:
         contract.z_price_model = None
@@ -208,13 +206,14 @@ def courier_contracts(request):
         contract.z_reward_diff = 0
         contract.z_has_station = False
 
-        start_system_id = contract.start_station.system_id
-        end_system_id = contract.end_station.system_id
+        start_system_name = contract.start_station.system.name
+        end_system_name = contract.end_station.system.name
 
-        if start_system_id in freighter_map and end_system_id in freighter_map:
-            start_systems = freighter_map[contract.start_station.system.id]
-            end_systems = freighter_map[contract.end_station.system.id]
+        if start_system_name in freighter_map and end_system_name in freighter_map:
+            start_systems = freighter_map[start_system_name]
+            end_systems = freighter_map[end_system_name]
         else:
+            contract.z_shipping_invalid = True
             continue
 
         price_models = []
@@ -225,7 +224,7 @@ def courier_contracts(request):
                         price_models.append(start)
 
             for price_model in price_models:
-                rate, method = price_model.calc(contract.start_station.system, contract.end_station.system,
+                rate, method, ly = price_model.calc(contract.start_station.system, contract.end_station.system,
                                                 contract.collateral, contract.volume)
                 if rate > 0 and (contract.z_shipping_rate is None or contract.z_shipping_rate > rate):
                     contract.z_shipping_rate = rate

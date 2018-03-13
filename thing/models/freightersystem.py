@@ -25,17 +25,36 @@
 
 from django.db import models
 
-from thing.models.system import System
 from thing.models.freighterpricemodel import FreighterPriceModel
+from thing.models.system import System
+from thing.models.constellation import Constellation
+from thing.models.region import Region
 
 
 class FreighterSystem(models.Model):
     price_model = models.ForeignKey(FreighterPriceModel, on_delete=models.DO_NOTHING)
-    system = models.ForeignKey(System, on_delete=models.DO_NOTHING)
+    system = models.ForeignKey(System, on_delete=models.DO_NOTHING, null=True, default=None, blank=True)
+    constellation = models.ForeignKey(Constellation, on_delete=models.DO_NOTHING, null=True, default=None, blank=True)
+    region = models.ForeignKey(Region, on_delete=models.DO_NOTHING, null=True, default=None, blank=True)
+    excluded = models.BooleanField()
 
     class Meta:
         app_label = 'thing'
         ordering = ('system__name',)
 
+    def get_systems(self):
+        if self.system_id is not None:
+            return System.objects.filter(id=self.system_id)
+        elif self.constellation_id is not None:
+            return System.objects.filter(constellation_id=self.constellation_id)
+        elif self.region_id is not None:
+            return System.objects.filter(constellation__region_id=self.region_id)
+
     def __unicode__(self):
-        return self.system.name
+        if self.system_id is not None:
+            return self.system.name
+        elif self.constellation_id is not None:
+            return self.constellation.name
+        elif self.region_id is not None:
+            return self.region.name
+        return 'Unknown'

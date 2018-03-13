@@ -47,6 +47,10 @@
                     <p>{{ shipping_info['method']|safe }}</p>
                 </div>
                 <div class="col-md-6">
+                    <h3>Total LYs:</h3>
+                    <p>{{ shipping_info['ttl_lys']|commas(2) }}</p>
+                </div>
+                <div class="col-md-6">
                     <h3>Collateral:</h3>
                     <b>{{ shipping_collateral | commas }} ISK</b>
                     <!-- Trigger -->
@@ -229,6 +233,21 @@
                     {% if price_model.cross_region_collateral >0 %}
                     <div>
                         {{ price_model.cross_region_collateral*100 }}% Collateral
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+                {% if price_model.ly_base > 0 %}
+                <div class="col-sm-4">
+                    <h4>Per LY:</h4>
+                    {% if price_model.ly_base > 0 %}
+                    <div>
+                        <b>Base:</b> {{ price_model.ly_base|humanize }} ISK
+                    </div>
+                    {% endif %}
+                    {% if price_model.ly_collateral >0 %}
+                    <div>
+                        {{ price_model.ly_collateral*100 }}% Collateral
                     </div>
                     {% endif %}
                 </div>
