@@ -206,8 +206,8 @@ def courier_contracts(request):
         contract.z_reward_diff = 0
         contract.z_has_station = False
 
-        start_system_name = contract.start_station.system.name
-        end_system_name = contract.end_station.system.name
+        start_system_name = contract.start_station.system.name if contract.start_station.system else '[Unknown]'
+        end_system_name = contract.end_station.system.name if contract.end_station.system else '[Unknown]'
 
         if start_system_name in freighter_map and end_system_name in freighter_map:
             start_systems = freighter_map[start_system_name]
@@ -226,7 +226,8 @@ def courier_contracts(request):
             for price_model in price_models:
                 rate, method, ly = price_model.calc(contract.start_station.system, contract.end_station.system,
                                                 contract.collateral, contract.volume)
-                if rate > 0 and (contract.z_shipping_rate is None or contract.z_shipping_rate > rate):
+                if rate > 0 and (contract.z_shipping_rate is None or contract.z_shipping_rate > rate)\
+                        and (price_model.max_m3 > contract.volume):
                     contract.z_shipping_rate = rate
                     contract.z_shipping_method = method
                     contract.z_price_model = price_model
@@ -240,7 +241,7 @@ def courier_contracts(request):
                 contract.z_collateral_invalid = True
 
             if not contract.start_station.is_citadel or not contract.end_station.is_citadel:
-                    contract.z_shipping_rate += 5000000
+                contract.z_shipping_rate += 5000000
 
             contract.z_reward_diff = contract.z_shipping_rate - contract.reward
             if contract.reward == 0:
