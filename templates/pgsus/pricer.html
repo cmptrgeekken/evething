@@ -175,6 +175,7 @@
                                         <td class="align-right">{{ item.z_qty_needed|commas }}</td>
                                     </tr>
                                 {% endfor %}
+                                {% if compressed_minerals %}
                                 {% for m in compressed_minerals: %}
                                     {% if m.z_desired_qty > m.z_fulfilled_qty %}
                                     <tr>
@@ -184,6 +185,7 @@
                                     </tr>
                                     {% endif %}
                                 {%endfor %}
+                                {% endif %}
                             </table>
                         </div>
                         {% endif %}

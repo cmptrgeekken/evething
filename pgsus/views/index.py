@@ -587,9 +587,10 @@ def pricer(request):
             if item.z_qty_remaining > 0:
                 has_unfulfilled = True
 
-            for m in compressed_minerals:
-                if m.z_desired_qty > m.z_fulfilled_qty:
-                    has_unfulfilled = True
+            if compressed_minerals:
+                for m in compressed_minerals:
+                    if m.z_desired_qty > m.z_fulfilled_qty:
+                        has_unfulfilled = True
 
             for sid in item.z_orders:
                 order_list = item.z_orders[sid]
