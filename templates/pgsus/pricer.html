@@ -165,16 +165,25 @@
                             <table class="table table-bordered">
                                 <tr>
                                     <th>Item</th>
-                                    <th class="align-right">Qty Needed</th>
                                     <th class="align-right">Qty Missing</th>
+                                    <th class="align-right">Qty Needed</th>
                                 </tr>
                                 {% for item in items_list if item.z_qty_remaining > 0 %}
                                     <tr>
                                         <th>{{ item.name }}</th>
-                                        <td class="align-right">{{ item.z_qty_needed|commas }}</td>
                                         <td class="align-right">{{ item.z_qty_remaining|commas }}</td>
+                                        <td class="align-right">{{ item.z_qty_needed|commas }}</td>
                                     </tr>
                                 {% endfor %}
+                                {% for m in compressed_minerals: %}
+                                    {% if m.z_desired_qty > m.z_fulfilled_qty %}
+                                    <tr>
+                                        <th>{{ m.name }}</th>
+                                        <td class="align-right">{{ (m.z_desired_qty - m.z_fulfilled_qty)|commas }}</td>
+                                        <td class="align-right">{{ m.z_desired_qty|commas }}</td>
+                                    </tr>
+                                    {% endif %}
+                                {%endfor %}
                             </table>
                         </div>
                         {% endif %}
@@ -197,10 +206,11 @@
                         <button class="btn btn-xs" type="button" data-clipboard-text="{{ orders['multibuy_all'] }}">
                             Multibuy All
                         </button>
-
+                        {% if orders['multibuy_best'] %}
                         <button class="btn btn-xs" type="button" data-clipboard-text="{{ orders['multibuy_best'] }}">
                             Multibuy Only Best
                         </button>
+                        {% endif %}
                     </h3>
                     <table class="table table-bordered">
                         <tr>
@@ -213,7 +223,12 @@
 
                         {% for order_list in orders['orders'] %}
                             <tr>
-                                <th>{{ order_list.item_name }}</th>
+                                <th>
+                                    {{ order_list.item_name }}
+                                    {% if order_list.has_multi_item %}
+                                    <sup><abbr title="This order makes use of item variations">Multi</abbr></sup>
+                                    {% endif %}
+                                </th>
                                 <td class="align-right">{{ order_list.total_quantity|commas }}</td>
                                 <td class="align-right hidden-xs">{{ (order_list.total_volume)|commas }} m<sup>3</sup></td>
                                 <td class="align-right">
@@ -312,6 +327,7 @@
                             <h3>Buy-All Points</h3>
                             <table class="table table-striped">
                                 <tr>
+                                    <th class="align-left">Name</th>
                                     <th class="align-right">Quantity</th>
                                     <th class="align-right">Price</th>
                                     <th class="align-right">Total</th>
@@ -319,11 +335,12 @@
                                 </tr>
                                 {% for buy_all in o.get_buy_points() %}
                                 <tr>
+                                    <td class="align-right">{{ buy_all['item_name'] }}</td>
                                     <td class="align-right">{{ buy_all['qty']|commas }}</td>
                                     <td class="align-right">{{ buy_all['price']|commas(2) }} ISK</td>
                                     <td class="align-right">{{ buy_all['total']|commas(2) }} ISK</td>
                                     <td>
-                                        <button class="btn btn-xs" type="button" data-clipboard-text="{{ o.item_name }} x{{ buy_all['qty'] }}">
+                                        <button class="btn btn-xs" type="button" data-clipboard-text="{{ buy_all['item_name'] }} x{{ buy_all['qty'] }}">
                                             <img src="{{ STATIC_URL }}pgsus/img/clippy.svg" width="13" title="Copy to clipboard">
                                         </button>
                                     </td>
@@ -333,6 +350,7 @@
                             <h3>Orders</h3>
                             <table class="table table-striped">
                                 <tr>
+                                    <th>Name</th>
                                     <th>Quantity</th>
                                     <th>Price</th>
                                     <th>Shipping</th>
@@ -340,6 +358,7 @@
                                 </tr>
                                 {% for order in o.orders %}
                                 <tr>
+                                    <td>{{ order.item.name }}</td>
                                     <td>
                                         <div>{{ order.volume_remaining|commas }}</div>
                                         {% if order.z_order_qty > 0 %}

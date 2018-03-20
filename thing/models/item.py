@@ -61,6 +61,22 @@ class Item(models.Model):
 
     z_orders_loaded = False
 
+
+    """
+    As we can't use the ice group name to determine related ice items, we must
+    hard-code the ices and their related values
+    """
+    ICE_VARIANTS = dict([
+        (28433, [28433, 28443]),
+        (28443, [28433, 28443]),
+        (28434, [28434, 28436]),
+        (28436, [28434, 28436]),
+        (28438, [28438, 28442]),
+        (28442, [28438, 28442]),
+        (28444, [28444, 28441]),
+        (28441, [28444, 28441])
+    ])
+
     class Meta:
         app_label = 'thing'
 
@@ -111,11 +127,18 @@ class Item(models.Model):
                            dest_station_id=1021577519493,
                            item_ids=None,
                            scale_by_repro=True,
-                           buy_tolerance=.02):
+                           buy_tolerance=.02,
+                           include_variants=False):
         from thing.models.itemstationseed import ItemStationSeed
         from thing.models.stationorder import StationOrder
 
-        if item_ids is None:
+        if include_variants:
+            if int(self.id) in Item.ICE_VARIANTS:
+                item_ids = Item.ICE_VARIANTS[int(self.id)]
+            elif self.market_group.parent and self.market_group.parent.name == 'Standard Ores':
+                item_ids = [i.id for i in Item.objects.filter(market_group_id=self.market_group_id, volume=self.volume)]
+
+        if not item_ids:
             item_ids = [self.id]
 
         orders = StationOrder.objects.filter(item_id__in=item_ids)
@@ -139,14 +162,15 @@ class Item(models.Model):
         orders = orders.extra(select={
             'price_with_shipping': 'price + (%s)' % shipping_query,
             'scaled_price_with_shipping': '''
-SELECT price * SUM(im.quantity) / 
-    (SELECT SUM(im2.quantity)
-    FROM thing_itemmaterial im2  
+SELECT price / (SUM(im.quantity*i.sell_fivepct_price) /
+    (SELECT SUM(im2.quantity*i2.sell_fivepct_price)
+    FROM thing_itemmaterial im2
+    INNER JOIN thing_item i2 on im2.material_id=i2.id
     WHERE im2.item_id IN(%s)
-    GROUP BY im2.id
-    ORDER BY SUM(im2.quantity)
-    LIMIT 1) + (%s)
-    FROM thing_itemmaterial im WHERE im.item_id=thing_stationorder.item_id
+    GROUP BY im2.item_id
+    ORDER BY SUM(im2.quantity*i2.sell_fivepct_price)
+    LIMIT 1)) + (%s)
+    FROM thing_itemmaterial im INNER JOIN thing_item i on i.id=im.material_id WHERE im.item_id=thing_stationorder.item_id
             ''' % (item_id_lookup, shipping_query),
             'shipping': shipping_query
         })

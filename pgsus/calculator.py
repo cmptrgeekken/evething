@@ -91,10 +91,10 @@ class Calculator:
 
         idx = 0
         for item in items_query:
-            min_base = Item.objects.filter(name__iregex='^Compressed', item_group__name=item.item_group.name).aggregate(
-                price=Min('base_price'))['price']
+            # Cheesy way of getting the base ores
+            min_name_length = min([len(i.name) for i in Item.objects.filter(name__iregex='^Compressed', item_group__name=item.item_group.name)])
 
-            if (item.item_group.name == 'Ice' and item.id in self.COMPRESSED_ICES) or item.base_price == min_base:
+            if (item.item_group.name == 'Ice' and item.id in self.COMPRESSED_ICES) or len(item.name) == min_name_length:
                 item.z_reprocessed_items = item.get_reprocessed_items()
 
                 mineral_value = 0
@@ -197,7 +197,7 @@ class Calculator:
 
                                 full_mineral_value += mineral_qty * m.sell_fivepct_price
 
-                mineral_value_ratio = total_price / full_mineral_value
+                mineral_value_ratio = total_price / full_mineral_value if full_mineral_value > 0 else 1
 
                 return all_items, fulfilled_all, mineral_value_ratio, minerals.values(), total_price
             else:
@@ -277,7 +277,11 @@ class Calculator:
             for item in items_to_buy:
                 qty = item.z_qty_to_buy
 
-                item.get_current_orders(qty, item_ids=item.z_related_ids, source_station_ids=source_station_ids, dest_station_id=dest_station_id)
+                item.get_current_orders(qty,
+                                        source_station_ids=source_station_ids,
+                                        dest_station_id=dest_station_id,
+                                        ignore_seed_items=False,
+                                        include_variants=True)
 
                 total_price += item.z_ttl_price_with_shipping
 

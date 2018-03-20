@@ -275,10 +275,6 @@ def fuel(request):
             except ValueError:
                 qty[block.id] = 0
 
-        # TODO: Move delivery configuration to database
-        if delivery_system_name != 'B-9C24':
-            ttl_reward += ceil(ttl_blocks / 25000) * 20000000
-
     min_date = datetime.datetime.utcnow() + datetime.timedelta(days=3)
     max_date = datetime.datetime.utcnow() + datetime.timedelta(days=28)
 
@@ -543,7 +539,7 @@ def pricer(request):
                 calculator.calculate_optimal_ores(minerals_to_compress,
                                                   source_station_ids=source_stations,
                                                   dest_station_id=destination_station,
-                                                  allow_mineral_purchase=False,
+                                                  allow_mineral_purchase=True,
                                                   reprocess_pct=reprocess_pct/100)
             fulfilled_all = True
             all_items = None
@@ -575,7 +571,9 @@ def pricer(request):
                                         source_station_ids=source_stations,
                                         ignore_seed_items=False,
                                         dest_station_id=destination_station,
-                                        buy_tolerance=buy_all_tolerance/100)
+                                        buy_tolerance=buy_all_tolerance/100,
+                                        include_variants=True,
+                                        scale_by_repro=True)
 
             total_volume += item.z_ttl_volume
             total_shipping += item.z_ttl_shipping
@@ -588,6 +586,10 @@ def pricer(request):
 
             if item.z_qty_remaining > 0:
                 has_unfulfilled = True
+
+            for m in compressed_minerals:
+                if m.z_desired_qty > m.z_fulfilled_qty:
+                    has_unfulfilled = True
 
             for sid in item.z_orders:
                 order_list = item.z_orders[sid]
