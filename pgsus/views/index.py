@@ -238,9 +238,16 @@ def fuel(request):
 
     delivery_date = datetime.datetime.utcnow() + datetime.timedelta(days=14)
 
-    all_systems = defaultdict(list)
-    for result in FreighterSystem.objects.filter(price_model__is_thirdparty=0).values('system__constellation__region__name', 'system__name').distinct().order_by('system__constellation__region__name', 'system__name'):
-        all_systems[result['system__constellation__region__name']].append(result['system__name'])
+    all_systems = defaultdict(set)
+
+    for fpm in FreighterPriceModel.objects.filter(is_thirdparty=0):
+        pm_systems = fpm.supported_systems()
+
+        for r in pm_systems.keys():
+            all_systems[r].update(pm_systems[r])
+
+    for region in all_systems.keys():
+        all_systems[region] = sorted(all_systems[region])
 
     qty = dict()
 
@@ -434,7 +441,7 @@ def pricer(request):
     parse_results = None
     text_input = ''
 
-    reprocess_pct = 87.5
+    reprocess_pct = 87.6
 
     if request.method == 'POST':
         text_input = request.POST.get('text_input')
@@ -501,9 +508,7 @@ def pricer(request):
     bad_lines = dict()
     if parse_results is not None:
         for kind, parsed in parse_results['results']:
-
             for entry in iter_types(kind, parsed):
-
                 name = entry['name'].lower()
                 if name not in pricer_items:
                     pricer_items[name] = {
