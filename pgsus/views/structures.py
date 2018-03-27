@@ -28,6 +28,7 @@ from thing.stuff import render_page, datetime  # NOPEP8
 from django.core.urlresolvers import reverse
 from django.shortcuts import redirect, render
 from django.http import JsonResponse
+from collections import defaultdict
 
 from thing.utils import dictfetchall
 from thing import queries
@@ -365,7 +366,7 @@ def extractions(request):
 
     ticker = request.GET.get('ticker') or 'REKTD'
 
-    moon_list = []
+    moon_list = dict()
     for e in moon_extractions:
         structure = e.structure
         if structure.station.corporation_id is None\
@@ -380,7 +381,7 @@ def extractions(request):
 
         observer = MoonObserver.objects.filter(observer_id=structure.station_id).first()
 
-        observer_log = None
+        observer_log = []
         if observer is not None:
             observer_log = MoonObserverEntry.objects.filter(
                 observer_id=observer.id,
@@ -389,7 +390,11 @@ def extractions(request):
 
         details = MoonDetails(structure, e, cfg, observer_log, ore_values, ship_m3_per_hour)
 
-        moon_list.append(details)
+        moon_list[structure.id] = details
+
+    moon_list = moon_list.values()
+
+    moon_list.sort(key=lambda x: x.extraction.chunk_arrival_time)
 
     out = render_page(
         'pgsus/extractions.html',
