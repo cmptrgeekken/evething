@@ -416,17 +416,16 @@ def refinerylist(request):
 
     charid = request.session['char']['id']
 
-    role = CharacterRole.objects.filter(character_id=charid, role='moon').first()
+    role = CharacterRole.objects.filter(character_id=charid, role__in=['moon','moonbean']).first()
 
     if role is None:
         return redirect('/?perm=1')
 
-    corpid = role.character.corporation.id
+    is_admin = role.role == 'moon'
 
     allianceid = role.character.corporation.alliance_id
 
-
-    if request.method == 'POST':
+    if is_admin and request.method == 'POST':
         structure_id = request.POST.get('structure_id')
         extraction_id = request.POST.get('extraction_id')
         next_date_override = request.POST.get('next_date_override') or None
@@ -549,6 +548,9 @@ def refinerylist(request):
 
         structure.z_config = config or MoonConfig(chunk_days=None)
 
+        if not is_admin and structure.z_config.is_nationalized:
+            continue
+
         structure.z_next_chunk_time = None
 
         if config is None or config.chunk_days is None:
@@ -614,7 +616,6 @@ def refinerylist(request):
         request.session['comp_errors'] = None
         request.session['moon_comps'] = None
 
-
     region_list = list(region_list)
     constellation_list = list(constellation_list)
     system_list = list(system_list)
@@ -630,6 +631,7 @@ def refinerylist(request):
             add_waypoint=waypoint_scope is not None,
             systems_missing_repros=systems_missing_repros,
             error_lines=error_lines,
+            is_admin=is_admin,
             moon_comps=moon_comps,
             regions=region_list,
             constellations=constellation_list,

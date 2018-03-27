@@ -1,7 +1,7 @@
 from django.contrib import admin
 from thing.models import APIKey, BlueprintInstance, Campaign, Character, CharacterConfig, Corporation, \
     Alliance, APIKeyFailure, Asset, AssetSummary, BlueprintComponent, Blueprint, CorpWallet, \
-    TaskState, CharacterDetails, Contract, UserProfile, Transaction, JournalEntry, Colony, Pin, BlueprintProduct, \
+    TaskState, CharacterDetails, CharacterRole, Contract, UserProfile, Transaction, JournalEntry, Colony, Pin, BlueprintProduct, \
     IndustryJob, SkillPlan, FreighterPriceModel, FreighterSystem, PriceWatch, PosWatchCorpDeposit, ItemStationSeed
 
 
@@ -33,6 +33,9 @@ class CharacterDetailsAdmin(admin.ModelAdmin):
 class CharacterConfigAdmin(admin.ModelAdmin):
     raw_id_fields = ('character',)
 
+class CharacterRoleAdmin(admin.ModelAdmin):
+    list_display = ('character', 'role')
+    raw_id_fields = ('character',)
 
 class CampaignAdmin(admin.ModelAdmin):
     prepopulated_fields = {'slug': ('title',)}
@@ -139,6 +142,7 @@ class ItemStationSeedAdmin(admin.ModelAdmin):
 admin.site.register(APIKey, APIKeyAdmin)
 admin.site.register(Character, CharacterAdmin)
 admin.site.register(CharacterConfig, CharacterConfigAdmin)
+admin.site.register(CharacterRole, CharacterRoleAdmin)
 admin.site.register(BlueprintInstance, BlueprintInstanceAdmin)
 admin.site.register(Campaign, CampaignAdmin)
 admin.site.register(Corporation)

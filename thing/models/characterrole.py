@@ -29,8 +29,14 @@ from thing.models.character import Character
 
 
 class CharacterRole(models.Model):
+    ROLES = (
+        ('moon', 'moon'),
+        ('contracts', 'contracts'),
+        ('moonbean', 'moonbean')
+    )
+
     id = models.IntegerField(primary_key=True)
 
     character = models.ForeignKey(Character, on_delete=models.DO_NOTHING)
-    role = models.CharField(max_length=50)
+    role = models.CharField(max_length=50, choices=ROLES)
 
