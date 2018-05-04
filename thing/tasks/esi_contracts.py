@@ -51,7 +51,8 @@ class EsiContracts(APITask):
             char = scope.character
 
             if 'Contract_Manager' in char.get_apiroles():
-                if char.corporation_id not in seen_corps:
+                if char.corporation_id not in seen_corps\
+                        and char.corporation_id is not None:
                     self.import_contracts(char)
 
                     seen_corps.add(char.corporation_id)

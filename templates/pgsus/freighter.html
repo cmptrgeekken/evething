@@ -15,12 +15,6 @@
 <section class="container section-md">
     <div class="row">
         <div class="col-md-6">
-            <div class="alert alert-info" role="alert">
-                <h4 class="alert-heading" style="font-size: 16px">Introducing: Distance-based freighter! Moving forward, Penny's will operate on a LY-based pricing model. More info <a href="https://www.pandemic-legion.pl/forums/topic/10358-pennys-flying-freighters/?page=2&tab=comments#comment-231922">here</a></h4>
-            </div>
-            <div class="alert alert-info" role="alert">
-                <h4 class="alert-heading" style="font-size: 16px">Introducing: Blops Pricing! We've added black ops deliveries to our repertoire for any courier contract under 11k m<sup>3</sup>. This works out to be significantly cheaper than taking a jump freighter along the same route.</h4>
-            </div>
             {% if errors|length > 0 %}
             <div class="alert alert-danger" role="alert">
                 <ul>
@@ -185,7 +179,7 @@
             <div class="row">
                 {% if price_model.calc_in_system(1,1) > 0 %}
                 <div class="col-sm-4">
-                    <h4>In System:</h4>
+                    <h4>Same System:</h4>
                     {% if price_model.in_system_base >0 %}
                     <div>
                         <b>Base:</b> {{ price_model.in_system_base|commas }}
@@ -205,7 +199,7 @@
                 {% endif %}
                 {% if price_model.calc_in_region(1,1) > 0 %}
                 <div class="col-sm-4">
-                    <h4>In Region:</h4>
+                    <h4>Same Region:</h4>
                     {% if price_model.in_region_base >0 %}
                     <div>
                         <b>Base:</b> {{ price_model.in_region_base|humanize }} ISK

@@ -1,4 +1,4 @@
-# ------------------------------------------------------------------------------
+## ------------------------------------------------------------------------------
 # Copyright (c) 2010-2013, EVEthing team
 # All rights reserved.
 #
@@ -354,7 +354,7 @@ def freighter(request):
             errors.append('Please select a valid end system.')
 
         start_systems = FreighterSystem.objects.filter(
-            Q(system__name=start_system.id)
+            Q(system_id=start_system.id)
             | Q(constellation_id=start_system.constellation_id)
             | Q(region_id=start_system.constellation.region_id)
         )
@@ -383,12 +383,14 @@ def freighter(request):
             )
             for price_model in price_models:
                 rate, method, lys = price_model.calc(start_system, end_system, shipping_collateral, shipping_m3)
-                trips = ceil(shipping_m3 / price_model.max_m3)
+                trips = int(ceil(shipping_m3 / price_model.max_m3))
 
-                rate = rate * int(trips)
+                rate *= trips
 
-                if rate > 0 and ((shipping_info['rate'] is None or shipping_info['rate'] > rate)\
-                        or (price_model.max_m3 > shipping_m3 and shipping_info['max_m3'] > price_model.max_m3)):
+                if trips > 1:
+                    continue
+
+                if rate > 0 and (shipping_info['rate'] is None or shipping_info['rate'] > rate):
                     shipping_info['max_m3_exceeded'] = price_model.max_m3 < shipping_m3
                     shipping_info['max_collateral_exceeded'] = price_model.max_collateral < shipping_collateral
                     shipping_info['max_collateral'] = price_model.max_collateral
@@ -399,7 +401,8 @@ def freighter(request):
                     shipping_info['trips'] = trips
 
             if 'trips' in shipping_info and shipping_info['trips'] > 1:
-                errors.append('You need at least %d contracts to use this shipping method.' % shipping_info['trips'])
+                shipping_info['rate'] /= shipping_info['trips']
+                errors.append('You need at least %d contracts at the shown rate to use this method.' % shipping_info['trips'])
 
             if shipping_info['rate'] is None:
                 errors.append('Cannot ship between the selected systems.')
@@ -492,8 +495,10 @@ def pricer(request):
         stations[destination_station].z_destination_selected = True
     else:
         for id in stations:
-            if stations[id].name.startswith("Jita"):
+            if stations[id].name.startswith("Jita") or stations[id].name.startswith("04-LQM") or stations[id].name.startswith("O-VWPB"):
                 stations[id].z_source_selected = True
+            if stations[id].name.startswith("04-LQM"):
+                stations[id].z_destination_selected = True
 
     stations = [stations[id] for id in stations]
 

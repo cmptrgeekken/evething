@@ -527,6 +527,8 @@ def refinerylist(request):
 
         if search_filter and search_filter not in structure.station.name:
             continue
+        
+        config = structure.get_config()
 
         if type_filter is not None:
             if type_filter == 'D64':
@@ -536,6 +538,9 @@ def refinerylist(request):
                             continue
                 except:
                     pass
+            elif type_filter == 'N64':
+                if config is None or not config.is_nationalized:
+                    continue
             elif type_filter not in structure.station.name:
                 continue
 
@@ -543,8 +548,6 @@ def refinerylist(request):
 
         structure.z_not_extracting = structure.z_moon_info is None\
             or structure.z_moon_info.chunk_arrival_time < datetime.datetime.utcnow()
-
-        config = structure.get_config()
 
         structure.z_config = config or MoonConfig(chunk_days=None)
 

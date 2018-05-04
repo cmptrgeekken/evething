@@ -66,13 +66,14 @@ class FreighterPriceModel(models.Model):
 
     def calc(self, start_system, end_system, collateral, m3):
         lys = 0
+        m3 = min(m3, self.max_m3)
         if self.ly_base is not None and self.ly_base > 0:
             lys = self.calc_ttl_lys(start_system, end_system)
             return (self.calc_ly(lys, collateral), 'Per LY', lys)
         if start_system.id == end_system.id:
-            return (self.calc_in_system(collateral, m3), 'In System', lys)
+            return (self.calc_in_system(collateral, m3), 'Same System', lys)
         elif start_system.constellation.region.id == end_system.constellation.region.id:
-            return (self.calc_in_region(collateral, m3), 'In Region', lys)
+            return (self.calc_in_region(collateral, m3), 'Same Region', lys)
         else:
             return (self.calc_cross_region(collateral, m3), 'Cross Region', lys)
 
