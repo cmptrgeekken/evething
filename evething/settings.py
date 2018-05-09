@@ -213,16 +213,6 @@ from thing import queries
 
 CELERYBEAT_SCHEDULE = {
     # spawn tasks every 30 seconds
-    'task_spawner': {
-        'task': 'thing.task_spawner',
-        'schedule': timedelta(seconds=10),
-        'options': {
-            'expires': 9,
-            'queue': 'et_high',
-        },
-        'args': (),
-    },
-
     # clean up various table messes every 5 minutes
     'table_cleaner': {
         'task': 'thing.table_cleaner',

@@ -2,40 +2,39 @@
 # Internal tasks
 from purgeapikey import purge_api_key
 from tablecleaner import table_cleaner
-from taskspawner import task_spawner
 
 # APIKey tasks
-from accountbalance import AccountBalance
-from accountstatus import AccountStatus
-from apikeyinfo import APIKeyInfo
-from assetlist import AssetList
-from characterinfo import CharacterInfo
-from charactersheet import CharacterSheet
-from citadels import Citadels
+#from accountbalance import AccountBalance
+#from accountstatus import AccountStatus
+#from apikeyinfo import APIKeyInfo
+#from assetlist import AssetList
+#from characterinfo import CharacterInfo
+#from charactersheet import CharacterSheet
+#from citadels import Citadels
 from esi_contracts import EsiContracts
-from corporationsheet import CorporationSheet
-from industryjobs import IndustryJobs
-from industryjobscurrent import IndustryJobsCurrent
-from locations import Locations
-from mailinglists import MailingLists
-from mailbodies import MailBodies
-from mailmessages import MailMessages
-from marketorders import MarketOrders
+#from corporationsheet import CorporationSheet
+#from industryjobs import IndustryJobs
+#from industryjobscurrent import IndustryJobsCurrent
+#from locations import Locations
+#from mailinglists import MailingLists
+#from mailbodies import MailBodies
+#from mailmessages import MailMessages
+#from marketorders import MarketOrders
 # from membertracking import MemberTracking
 # from shareholders import Shareholders
-from skillqueue import SkillQueue
-from standings import Standings
-from walletjournal import WalletJournal
-from wallettransactions import WalletTransactions
-from planetarycolonies import PlanetaryColonies
-from planetarypins import PlanetaryPins
+#from skillqueue import SkillQueue
+#from standings import Standings
+#from walletjournal import WalletJournal
+#from wallettransactions import WalletTransactions
+#from planetarycolonies import PlanetaryColonies
+#from planetarypins import PlanetaryPins
 
 # Global API tasks
-from alliancelist import AllianceList
-from conquerablestationlist import ConquerableStationList
-from reftypes import RefTypes
-from serverstatus import ServerStatus
-from sovereignty import Sovereignty
+#from alliancelist import AllianceList
+#from conquerablestationlist import ConquerableStationList
+#from reftypes import RefTypes
+#from serverstatus import ServerStatus
+#from sovereignty import Sovereignty
 
 # Periodic tasks
 from fixnames import FixNames
@@ -45,7 +44,7 @@ from fixcontracts import FixContracts
 from avgcalculator import AvgCalculator
 from periodicqueryrunner import PeriodicQueryRunner
 
-from poswatch import PosWatch
+#from poswatch import PosWatch
 from bookmarks import Bookmarks
 
 from esi_moonextraction import EsiMoonExtraction

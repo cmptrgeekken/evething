@@ -36,13 +36,19 @@ os.environ['DJANGO_SETTINGS_MODULE'] = 'evething.settings'
 import django
 django.setup()
 from django.db import connections, transaction
-from thing.tasks import EsiMoonExtraction, EsiAssets
+from thing.tasks import EsiContracts, EsiMoonExtraction, EsiMoonObserver, EsiNotifications, EsiStructures, EsiAssets
 
 from thing.models import *  # NOPEP8
 
 
 if __name__ == '__main__':
-    task = EsiAssets()
-    #task = EsiMoonExtraction()
-    task.run('')
+    #task = EsiAssets()
+
+    #task = EsiContracts()
+    task = EsiMoonObserver()
+    task.run(None)
+    task = EsiMoonExtraction()
+    #task = EsiNotifications()
+    #task = EsiStructures()
+    task.run(None)
 
