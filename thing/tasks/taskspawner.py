@@ -36,6 +36,7 @@ from thing.models import APIKey, TaskState, Station
 API_KEY_INFO_URL = ('thing.api_key_info', '/account/APIKeyInfo.xml.aspx', 'et_low')
 
 CHAR_URLS = {
+    '''
     APIKey.CHAR_ACCOUNT_STATUS_MASK: [('thing.account_status', '/account/AccountStatus.xml.aspx', 'et_medium')],
     APIKey.CHAR_ASSET_LIST_MASK: [
         ('thing.asset_list', '/char/AssetList.xml.aspx', 'et_medium'),
@@ -53,9 +54,11 @@ CHAR_URLS = {
     APIKey.CHAR_STANDINGS_MASK: [('thing.standings', '/char/Standings.xml.aspx', 'et_medium')],
     APIKey.CHAR_WALLET_JOURNAL_MASK: [('thing.wallet_journal', '/char/WalletJournal.xml.aspx', 'et_medium')],
     APIKey.CHAR_WALLET_TRANSACTIONS_MASK: [('thing.wallet_transactions', '/char/WalletTransactions.xml.aspx', 'et_medium')],
+    '''
 }
 
 CORP_URLS = {
+    '''
     APIKey.CORP_ACCOUNT_BALANCE_MASK: ('thing.account_balance', '/corp/AccountBalance.xml.aspx', 'et_medium'),
     APIKey.CORP_ASSET_LIST_MASK: ('thing.asset_list', '/corp/AssetList.xml.aspx', 'et_medium'),
     APIKey.CORP_CORPORATION_SHEET_MASK: ('thing.corporation_sheet', '/corp/CorporationSheet.xml.aspx', 'et_medium'),
@@ -65,18 +68,21 @@ CORP_URLS = {
     APIKey.CORP_WALLET_JOURNAL_MASK: ('thing.wallet_journal', '/corp/WalletJournal.xml.aspx', 'et_medium'),
     APIKey.CORP_WALLET_TRANSACTIONS_MASK: ('thing.wallet_transactions', '/corp/WalletTransactions.xml.aspx', 'et_medium'),
     APIKey.CORP_STARBASE_LIST_MASK: ('thing.poswatch', '/corp/StarbaseList.xml.aspx', 'et_medium'),
+    '''
 }
 # APIKey.CORP_MEMBER_TRACKING_MASK: ('thing.member_tracking', '/corp/MemberTracking.xml.aspx', 'et_medium'),
 # APIKey.CORP_OUTPOST_LIST_MASK: ('outpost_list', '/corp/OutpostList.xml.aspx', 'et_medium'),
 # APIKey.CORP_SHAREHOLDERS_MASK: ('thing.shareholders', '/corp/Shareholders.xml.aspx', 'et_medium'),
 
 GLOBAL_TASKS = (
+    '''
     ('thing.alliance_list', '/eve/AllianceList.xml.aspx', 'et_medium'),
     ('thing.sovereignty', '/map/Sovereignty.xml.aspx', 'et_medium'),
     ('thing.conquerable_station_list', '/eve/ConquerableStationList.xml.aspx', 'et_medium'),
     ('thing.ref_types', '/eve/RefTypes.xml.aspx', 'et_medium'),
     ('thing.server_status', '/server/ServerStatus.xml.aspx', 'et_high'),
     ('thing.citadels', 'https://stop.hammerti.me.uk/api/structure/all', 'et_medium')
+    '''
 )
 
 
@@ -94,9 +100,11 @@ def task_spawner():
     for taskstate in TaskState.objects.filter(keyid=-1):
         g_tasks[taskstate.url] = taskstate
 
+    '''
     for taskname, url, queue in GLOBAL_TASKS:
         taskstate = g_tasks.get(url)
         _init_taskstate(taskdata, now, taskstate, -1, None, taskname, url, queue, 0)
+    '''
 
     stations = Station.objects.filter(load_market_orders=True).select_related('market_profile')
 
@@ -119,6 +127,8 @@ def task_spawner():
 
         taskstate = g_tasks.get(url)
         _init_taskstate(taskdata, now, taskstate, -1, None, 'thing.price_updater', url, 'et_prices', region)
+
+    '''
 
     # Build a magical QuerySet for APIKey objects
     apikeys = APIKey.objects.select_related('corporation')
@@ -194,6 +204,7 @@ def task_spawner():
                 taskstate = status[keyid].get((url, character.id), None)
 
                 _init_taskstate(taskdata, now, taskstate, keyid, apikey.id, func, url, queue, character.id)
+    '''
 
     # Bulk update the ready ones
     ts_ids = []

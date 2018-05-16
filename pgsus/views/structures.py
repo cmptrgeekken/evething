@@ -551,8 +551,9 @@ def refinerylist(request):
 
         structure.z_config = config or MoonConfig(chunk_days=None)
 
-        if not is_admin and structure.z_config.is_nationalized:
-            continue
+        if not is_admin:
+            if structure.z_config.is_nationalized or not structure.z_not_extracting or structure.z_config.ignore_refire or not structure.z_online:
+                continue
 
         structure.z_next_chunk_time = None
 

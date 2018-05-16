@@ -183,7 +183,7 @@ class EsiContracts(APITask):
 
         # Fetch all existing contracts
         c_map = {}
-        for contract in Contract.objects.filter(contract_id__in=contract_ids):
+        for contract in c_filter.filter(contract_id__in=contract_ids):
             c_map[contract.contract_id] = contract
 
         # Finally, after all of that other bullshit, we can actually deal with

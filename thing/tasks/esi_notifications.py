@@ -47,7 +47,10 @@ class EsiNotifications(APITask):
             notification_scopes = notification_scopes.filter(character_id=character_id)
 
         for scope in notification_scopes:
-            self.import_notifications(scope.character)
+            try:
+               self.import_notifications(scope.character)
+            except:
+                continue
 
     def import_notifications(self, character):
         refresh_token = character.sso_refresh_token

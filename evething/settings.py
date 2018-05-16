@@ -213,6 +213,15 @@ from thing import queries
 
 CELERYBEAT_SCHEDULE = {
     # spawn tasks every 30 seconds
+    'task_spawner': {
+        'task': 'thing.task_spawner',
+        'schedule': timedelta(seconds=10),
+        'options': {
+            'expires': 9,
+            'queue': 'et_high',
+        },
+        'args': (),
+    },
     # clean up various table messes every 5 minutes
     'table_cleaner': {
         'task': 'thing.table_cleaner',
@@ -246,7 +255,7 @@ CELERYBEAT_SCHEDULE = {
         'args': (),
     },
 '''
-
+'''
     'localprice_cache': {
         'task': 'thing.periodic_query_runner',
         'schedule': crontab(minute='*/30'),
@@ -256,7 +265,7 @@ CELERYBEAT_SCHEDULE = {
         },
         'args': [queries.stationorder_localprice_truncate, queries.stationorder_localprice_update],
     },
-
+'''
     'avg_calculator': {
         'task': 'thing.avg_calculator',
         'schedule': crontab(hour=0, minute=0),
