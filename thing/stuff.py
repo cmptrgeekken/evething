@@ -38,6 +38,7 @@ from requests_oauth2 import OAuth2
 
 from thing import queries
 from thing.utils import ApiHelper
+from thing.models import CharacterRole
 
 
 def render_page(template, data, request, character_ids=None, corporation_ids=None):
@@ -68,6 +69,12 @@ def render_page(template, data, request, character_ids=None, corporation_ids=Non
         response_type='code',
         state='client_authorize',
     )
+
+    if 'char' in request.session:
+        charid = request.session['char']['id']
+        data['moon_scheduler'] = CharacterRole.objects.filter(character_id=charid, role__in=['moon', 'moonbean']).first() is not None
+    else:
+        data['moon_scheduler'] = False
 
     if request.user.is_authenticated():
         # Get nav counts data

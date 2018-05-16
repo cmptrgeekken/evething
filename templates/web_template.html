@@ -83,7 +83,7 @@
                 <a class="navbar-brand" href="{{ url('pgsus.views.index') }}">Penny's <span class="text-primary">Flying Circus</span></a>
             </div>
 
-            <div class="collapse navbar-collapse" id="bs-navbar-collapse-1">
+            <ul class="collapse navbar-collapse" id="bs-navbar-collapse-1">
                 <ul class="nav navbar-nav navbar-right ">
                     <li>
                         <a href="{{ url('pgsus.views.buyback') }}">
@@ -100,17 +100,35 @@
                             Fuel Blocks
                         </a>
                     </li>
+
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                          Tools
+                          <span class="caret"></span>
+                        </a>
+
+                        <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                            {% if moon_scheduler %}
+                            <li>
+                                <a href="{{ url('pgsus.views.refinerylist') }}">Moon Scheduling</a>
+                            </li>
+                            {% endif %}
+                            <li>
+                                <a href="{{ url('pgsus.views.extractions') }}">Moon Extractions</a>
+                            </li>
+                            {% if charid %}
+                            <li class="divider"></li>
+                            <li>
+                                <a href="{{ url('pgsus.views.contractseedlist') }}">Contract Seeding</a>
+                            </li>
+                            <li>
+                                <a href="{{ url('pgsus.views.seedlist') }}">Market Seeding</a>
+                            </li>
+                            {% endif %}
+                        </ul>
+
+                      </li>
                     {% if charid %}
-                    <li>
-                        <a href="{{ url('pgsus.views.seedlist') }}">
-                            Market Seeding
-                        </a>
-                    </li>
-                    <li>
-                        <a href="{{ url('pgsus.views.contractseedlist') }}">
-                            Contract Seeding
-                        </a>
-                    </li>
                     <li>
                         <a href="{{ url('pgsus.views.perms') }}" alt="Permissions">
                             <img src="https://image.eveonline.com/Character/{{charid}}_32.jpg" alt="Permissions" title="Permissions" />

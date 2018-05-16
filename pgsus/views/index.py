@@ -122,13 +122,9 @@ def add_waypoint(request):
         dest_station = Station.objects.filter(id=dest).first()
 
         if dest_station is not None and scope is not None:
-            refresh_token = scope.character.sso_refresh_token
-
             helper = ApiHelper()
 
-            access_token, expires = helper.get_access_token(refresh_token)
-
-            response = helper.fetch_esi_url(waypoint_url % dest_station.id, access_token, method='post')
+            helper.fetch_esi_url(waypoint_url % dest_station.id, scope.character, method='post')
 
     return HttpResponse('')
 
@@ -144,11 +140,7 @@ def open_window(request):
         type = request.GET.get('type')
 
         if id is not None and scope is not None:
-            refresh_token = scope.character.sso_refresh_token
-
             helper = ApiHelper()
-
-            access_token, expires = helper.get_access_token(refresh_token)
 
             if type == 'contract':
                 url = window_url % (type, 'contract_id', id)
@@ -160,7 +152,7 @@ def open_window(request):
                 url = None
 
             if url is not None:
-                response = helper.fetch_esi_url(url, access_token, method='post')
+                helper.fetch_esi_url(url, scope.character, method='post')
 
     return HttpResponse('')
 

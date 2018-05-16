@@ -12,7 +12,8 @@ except ImportError:
 from django.conf import settings
 from django.core.cache import cache
 from django.db import connections
-import json
+import json, re
+import traceback
 
 PENALTY_TIME = 12 * 60 * 60
 PENALTY_MULT = 0.2
@@ -85,6 +86,9 @@ class ApiHelper:
 
     _taskstate = None
 
+    global_wait_until = None
+
+
     # -----------------------------------------------------------------------
 
     def __init__(self):
@@ -114,19 +118,17 @@ class ApiHelper:
                 r = self._session.get(url)
             data = r.text
         except Exception:
-            # self._increment_backoff(e)
             return False
 
         self._api_log.append((url, time.time() - start))
 
         # If the status code is bad return False
         if not r.status_code == requests.codes.ok:
-            # self._increment_backoff('Bad status code: %s' % (r.status_code))
             return False
 
         return data
 
-    def fetch_esi_url(self, url, access_token, headers_to_return=None, method='get'):
+    def fetch_esi_url(self, url, character, method='get', body=None, headers_to_return=None):
         """
         Fetch an ESI URL
         """
@@ -137,68 +139,100 @@ class ApiHelper:
 
         retry = 3
 
+        key_headers = {'expires', 'date', 'x-esi-error-limit-remain', 'x-esi-error-limit-reset'}
+
+        response = None
+
         data = None
 
-        if cached_data is None:
-            sleep_for = self._get_backoff()
-            if sleep_for > 0:
-                time.sleep(sleep_for)
+        _cache_delta = 60
 
+        if cached_data is None:
             start = time.time()
             while retry > 0:
                 try:
-                    if '?' not in url:
-                        url += '?'
+                    if ApiHelper.global_wait_until is not None\
+                            and ApiHelper.global_wait_until > datetime.datetime.now():
+                        wait_seconds = (ApiHelper.global_wait_until - datetime.datetime.now()).seconds
+                        print('Waiting out error timer for %d seconds' % wait_seconds)
+                        time.sleep(wait_seconds)
 
-                    if access_token is not None:
-                        r = self._session.request(method, url + '&token=' + access_token,
-                                           headers={'Authorization': 'Bearer %s' % access_token})
+                    if character is not None:
+                        if character.sso_access_token is None\
+                                or character.sso_token_expires <= datetime.datetime.utcnow():
+                            character.sso_access_token, character.sso_token_expires = self.get_access_token(character)
+
+                        if character.sso_access_token is None:
+                            if headers_to_return:
+                                return False, data, headers
+                            return False, data
+
+                        response = self._session.request(method, url + '&token=' + character.sso_access_token, json=body)
                     else:
-                        r = self._session.request(method, url)
+                        response = self._session.request(method, url, json=body)
 
-                    data = r.text
+                    data = response.text
 
-                    if 'date' in r.headers and 'expires' in r.headers:
-                        current = self.parse_esi_date(r.headers['date'])
-                        until = self.parse_esi_date(r.headers['expires'])
-
-                        self._cache_delta = until - current
                     if headers_to_return is not None:
                         for header in headers_to_return:
-                            headers[header] = r.headers[header] if header in r.headers else None
+                            key_headers.add(header.lower())
+
+                    for header in response.headers:
+                        lookup = header.lower()
+                        if lookup in key_headers:
+                            headers[lookup] = response.headers[header]
+
+                    if 'x-esi-error-limit-remain' in headers \
+                            and headers['x-esi-error-limit-remain'] == 1:
+                        ApiHelper.global_wait_until = datetime.datetime.now() + datetime.timedelta(seconds=int(headers['x-esi-error-limit-reset']))
+                    else:
+                        ApiHelper.global_wait_until = None
+
+                    current = self.parse_esi_date(headers['date'])
+                    if 'expires' in response.headers:
+                        until = self.parse_esi_date(headers['expires'])
+                    else:
+                        until = datetime.datetime.now() + datetime.timedelta(hours=1)
+
+                    headers['status'] = response.status_code
+
+                    _cache_delta = until - current
+
                     break
                 except Exception, e:
-                    # self._increment_backoff(e)
                     retry -= 1
-                    print("Exception! %s" % repr(e))
-                    return False
+                    traceback.print_exc(e)
 
-            if not r.status_code == requests.codes.ok:
-                if r.status_code == '400' or r.status_code == 400:
-                    self._cache_delta = datetime.timedelta(hours=4)
-                    self.log_warn('400 error, caching for 2 hours')
-                    print("400!")
-                return False
+                    if retry == 0:
+                        if headers_to_return:
+                            return False, data, headers
+                        return False, data
+
+            self._api_log.append((url, time.time() - start))
+
+            if response is None or response.status_code > 299:
+                if headers_to_return:
+                    return False, data, headers
+                return False, data
         else:
             data = cached_data
 
-        if data:
-            try:
-                self.json = json.loads(data)
-            except Exception:
-                print("Cannot Parse! %s" % data)
-                return False
+        if method == 'put':
+            if headers_to_return:
+                return True, data, headers
+            return True, data
 
-            if cached_data is None and self._cache_delta is not None:
-                cache_expires = total_seconds(self._cache_delta) + 10
+        if data:
+            if cached_data is None:
+                cache_expires = total_seconds(_cache_delta) + 10
 
                 if cache_expires >= 0:
                     cache.set(cache_key, data, cache_expires)
                     cache.set('%s_headers' % cache_key, headers, cache_expires)
 
-        if headers_to_return is not None:
-            return data, headers
-        return data
+        if headers_to_return:
+            return True, data, headers
+        return True, data
 
     # -----------------------------------------------------------------------
 
@@ -208,15 +242,25 @@ class ApiHelper:
         """
         return ET.fromstring(data.encode('utf-8'))
 
-    def get_access_token(self, refresh_token):
+    def get_access_token(self, character):
         oauth_handler = self.oauth_handler()
 
-        response = oauth_handler.get_token("", grant_type='refresh_token', refresh_token=refresh_token)
+        response = oauth_handler.get_token("", grant_type='refresh_token', refresh_token=character.sso_refresh_token)
         if response is not None and 'access_token' in response:
+            character.sso_error_count = 0
+            character.save()
             return response['access_token'], datetime.datetime.now() + datetime.timedelta(
                 seconds=response['expires_in'])
 
-        return None
+        if 'error' in response and response['error'] == 'invalid_token':
+            character.sso_error_count += 1
+            if character.sso_error_count >= 3:
+                # Deauthorize the user
+                print('Deauthorizing user %s' % character.name)
+                character.deauthorize_user()
+            character.save()
+
+        return None, None
 
     def oauth_handler(self):
         return OAuth2(
@@ -236,48 +280,6 @@ class ApiHelper:
         h = hashlib.new('md5')
         h.update(key_data)
         return h.hexdigest()
-
-    # -----------------------------------------------------------------------
-
-    def _get_backoff(self):
-        """
-        Get a time in seconds for the current backoff value. Initialises cache
-        keys to 0 if they have mysteriously disappeared.
-        """
-        backoff_count = cache.get('backoff_count')
-        # Initialise the cache value if it's missing
-        if backoff_count is None:
-            cache.set('backoff_count', 0)
-            cache.set('backoff_last', 0)
-            return 0
-
-        if backoff_count == 0:
-            return 0
-
-        # Calculate the sleep value and return it
-        return 0.5 * (2 ** min(6, backoff_count - 1))
-        # return sleep_for
-
-    def _increment_backoff(self, e):
-        """
-        Helper function to increment the backoff counter
-        """
-        # Initialise the cache value if it's missing
-        if cache.get('backoff_count') is None:
-            cache.set('backoff_count', 0)
-            cache.set('backoff_last', 0)
-
-        now = time.time()
-        # if it hasn't been 5 minutes, increment the wait value
-        backoff_last = cache.get('backoff_last')
-        if backoff_last and (now - backoff_last) < 300:
-            cache.incr('backoff_count')
-        else:
-            cache.set('backoff_count', 1)
-
-        cache.set('backoff_last', now)
-
-        self.log_warn('Backoff value increased to %.1fs: %s', self._get_backoff(), e)
 
     # -----------------------------------------------------------------------
 
