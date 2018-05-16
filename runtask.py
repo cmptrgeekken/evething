@@ -36,19 +36,42 @@ os.environ['DJANGO_SETTINGS_MODULE'] = 'evething.settings'
 import django
 django.setup()
 from django.db import connections, transaction
-from thing.tasks import EsiContracts, EsiMoonExtraction, EsiMoonObserver, EsiNotifications, EsiStructures, EsiAssets
+from thing.tasks import EsiCharacterRoles, EsiContracts, EsiMoonExtraction, EsiMoonObserver, EsiNotifications, EsiStructures, EsiAssets, FixNames
 
 from thing.models import *  # NOPEP8
+import sys
 
 
 if __name__ == '__main__':
-    #task = EsiAssets()
+    libs = set(sys.argv[1:])
 
-    #task = EsiContracts()
-    task = EsiMoonObserver()
-    task.run(None)
-    task = EsiMoonExtraction()
-    #task = EsiNotifications()
-    #task = EsiStructures()
-    task.run(None)
+    to_run = []
+
+    if 'assets' in libs:
+        to_run.append(EsiAssets())
+
+    if 'contracts' in libs:
+        to_run.append(EsiContracts())
+
+    if 'moonobserver' in libs:
+        to_run.append(EsiMoonObserver())
+
+    if 'moonextract' in libs:
+        to_run.append(EsiMoonExtraction())
+
+    if 'names' in libs:
+        to_run.append(FixNames())
+
+    if 'roles' in libs:
+        to_run.append(EsiCharacterRoles())
+
+    if 'notifications' in libs:
+        to_run.append(EsiNotifications())
+
+    if 'structures' in libs:
+        to_run.append(EsiStructures())
+
+    for run in to_run:
+        print('Running %s...' % run.__name__)
+        run.run()
 
