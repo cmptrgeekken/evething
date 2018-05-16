@@ -51,6 +51,8 @@ from django.db.models import Max
 from urlparse import urljoin
 import json
 
+from thing.utils import ApiHelper
+
 from thing.models import APIKey, APIKeyFailure, Event, TaskState
 from thing.stuff import total_seconds
 
@@ -91,6 +93,8 @@ class APITask(Task):
     _session.mount('https://', requests.adapters.HTTPAdapter(pool_connections=1, pool_maxsize=1))
 
     _taskstate = None
+
+    _helper = ApiHelper()
 
     # -----------------------------------------------------------------------
 
@@ -298,7 +302,7 @@ class APITask(Task):
         # Parse the data if there is any
         if data:
             try:
-                self.root = self.parse_xml(data)
+                self.root = self._helper.parse_xml(data)
             except Exception:
                 return False
 
@@ -350,149 +354,11 @@ class APITask(Task):
     # -----------------------------------------------------------------------
 
     def fetch_url(self, url, params):
-        """
-        Fetch a URL directly without any API magic.
-        """
-        start = time.time()
-        try:
-            if params:
-                r = self._session.post(url, params)
-            else:
-                r = self._session.get(url)
-            data = r.text
-        except Exception:
-            # self._increment_backoff(e)
-            return False
+        return self._helper.fetch_url(url, params)
 
-        self._api_log.append((url, time.time() - start))
+    def fetch_esi_url(self, url, character, method='get', body=None, headers_to_return=None):
+        return self._helper.fetch_esi_url(url, character, method, body, headers_to_return)
 
-        # If the status code is bad return False
-        if not r.status_code == requests.codes.ok:
-            # self._increment_backoff('Bad status code: %s' % (r.status_code))
-            return False
-
-        return data
-
-    def fetch_esi_url(self, url, access_token, method='get', body=None, headers_to_return=None):
-        """
-        Fetch an ESI URL
-        """
-
-        cache_key = self._get_cache_key(url, {})
-        cached_data = cache.get(cache_key)
-        headers = cache.get('%s_headers' % cache_key) or dict()
-
-        retry = 3
-
-        if cached_data is None:
-            sleep_for = self._get_backoff()
-            if sleep_for > 0:
-                time.sleep(sleep_for)
-
-            start = time.time()
-            while retry > 0:
-                try:
-
-                    if access_token is not None:
-                        r = self._session.request(method, url + '&token=' + access_token, json=body)
-                    else:
-                        r = self._session.request(method, url, json=body)
-                    data = r.text
-
-                    current = self.parse_esi_date(r.headers['date'])
-                    if 'expires' in r.headers:
-                        until = self.parse_esi_date(r.headers['expires'])
-                    else:
-                        until = datetime.datetime.now() + datetime.timedelta(hours=1)
-
-                    self._cache_delta = until - current
-
-                    if headers_to_return is not None:
-                        for header in headers_to_return:
-                            headers[header] = r.headers[header] if header in r.headers else None
-
-                    break
-                except Exception, e:
-                    # self._increment_backoff(e)
-                    retry -= 1
-                    if headers_to_return:
-                        return False, headers
-                    return False
-
-            self._api_log.append((url, time.time() - start))
-
-            if not r.status_code == requests.codes.ok and not r.status_code == '204' and not r.status_code == 204:
-                if r.status_code == '400' or r.status_code == 400:
-                    self._cache_delta = datetime.timedelta(hours=4)
-                    self.log_warn('400 error, caching for 2 hours')
-                    if headers_to_return:
-                        return False, headers
-                    return False
-                else:
-                    self.json = json.loads(data)
-                    if 'error' in self.json:
-                        '''
-                        {"error":"{'error_label': 'ConStopSpamming', 'error_dict': {'remainingTime': 141761L}}"}
-                        '''
-                        if self.json['error'] == 'Contract not found!':
-                            return data
-                        if 'error_label' in self.json['error']:
-                            error_body = self.json['error'].replace("'", '"')
-                            error_body = re.sub(r'(\d+)L', r'\1', error_body)
-                            error_msg = json.loads(error_body)
-                            if error_msg['error_label'] == 'ConStopSpamming':
-                                self.log_warn('Rate Limit Hit: Sleeping for 60 seconds!')
-                                print('Rate Limit Hit: Sleeping for 60 seconds!')
-                                time.sleep(60)
-                                if headers_to_return:
-                                    return False, headers
-                                return False
-                            else:
-                                self.log_warn('Unknown error: %s' % data)
-                                print('Unknown error: %s' % data)
-                                if headers_to_return:
-                                    return data, headers
-                                return data
-
-                    if 'response' not in self.json or len(self.json['response']) == 0:
-                        print('Unknown error: %s' % data)
-                        if headers_to_return:
-                            return False, headers
-                        return False
-        else:
-            data = cached_data
-
-        if method == 'put':
-            if headers_to_return:
-                return False, headers
-            return True
-
-        if data:
-            try:
-                self.json = json.loads(data)
-            except Exception:
-                if headers_to_return:
-                    return False, headers
-                return False
-
-            if cached_data is None:
-                cache_expires = total_seconds(self._cache_delta) + 10
-
-                if cache_expires >= 0:
-                    cache.set(cache_key, data, cache_expires)
-                    cache.set('%s_headers' % cache_key, headers, cache_expires)
-
-        if headers_to_return:
-            return data, headers
-        return data
-
-    # -----------------------------------------------------------------------
-
-    def parse_xml(self, data):
-        """
-        Parse XML and return an ElementTree.
-        """
-        return ET.fromstring(data.encode('utf-8'))
 
     # -----------------------------------------------------------------------
 
@@ -548,11 +414,15 @@ class APITask(Task):
             settings.OAUTH_CALLBACK_URL
         )
 
-        response = oauth_handler.get_token("", grant_type='refresh_token', refresh_token=refresh_token)
-        if response is not None and 'access_token' in response:
-            return response['access_token'], datetime.datetime.now() + datetime.timedelta(seconds=response['expires_in'])
+        attempts = 0
 
-        return None
+        while attempts < 3:
+            response = oauth_handler.get_token("", grant_type='refresh_token', refresh_token=refresh_token)
+            if response is not None and 'access_token' in response:
+                return response['access_token'], datetime.datetime.now() + datetime.timedelta(seconds=response['expires_in'])
+            attempts += 1
+
+        return False, None
 
     # -----------------------------------------------------------------------
 
@@ -635,17 +505,21 @@ class APITask(Task):
     def log_error(self, text, *args):
         text = '[%d/%s] %s' % (this_process, self.__class__.__name__, text)
         self._logger.error(text, *args)
+        print(text)
 
     def log_warn(self, text, *args):
         text = '[%d/%s] %s' % (this_process, self.__class__.__name__, text)
         self._logger.warn(text, *args)
+        print(text)
 
     def log_info(self, text, *args):
         text = '[%d/%s] %s' % (this_process, self.__class__.__name__, text)
         self._logger.info(text, *args)
+        print(text)
 
     def log_debug(self, text, *args):
         text = '[%d/%s] %s' % (this_process, self.__class__.__name__, text)
         self._logger.debug(text, *args)
+        print(text)
 
 # ---------------------------------------------------------------------------

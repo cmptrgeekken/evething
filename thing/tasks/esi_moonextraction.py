@@ -40,7 +40,7 @@ class EsiMoonExtraction(APITask):
     mining_url = 'https://esi.tech.ccp.is/latest/corporation/%s/mining/extractions/?datasource=tranquility'
     write_structure_url = 'https://esi.tech.ccp.is/latest/corporations/%s/structures/%s/?datasource=tranquility&language=en-us'
 
-    def run(self, base_url):
+    def run(self):
         self.init()
 
         extract_scopes = CharacterApiScope.objects.filter(scope='esi-industry.read_corporation_mining.v1')
@@ -70,9 +70,6 @@ class EsiMoonExtraction(APITask):
 
     def update_vuln_schedule(self, character):
         corp_id = character.corporation_id
-        refresh_token = character.sso_refresh_token
-
-        access_token, expires = self.get_access_token(refresh_token)
 
         extractions = MoonExtraction.objects.filter(structure__station__corporation_id=corp_id)
 
@@ -99,9 +96,9 @@ class EsiMoonExtraction(APITask):
                 vuln_times.append(dict(day=day, hour=hour))
 
             try:
-                result = self.fetch_esi_url(self.write_structure_url % (corp_id, e.structure_id), access_token, method='put', body=vuln_times)
+                success, result = self.fetch_esi_url(self.write_structure_url % (corp_id, e.structure_id), character, method='put', body=vuln_times)
 
-                if result:
+                if success:
                     cfg.configured_vuln_date = day_of_week
                     cfg.configured_vuln_hour = hour_of_day
                     cfg.save()
@@ -112,15 +109,12 @@ class EsiMoonExtraction(APITask):
 
     def import_moon(self, character):
         corp_id = character.corporation_id
-        refresh_token = character.sso_refresh_token
-
-        access_token, expires = self.get_access_token(refresh_token)
 
         try:
-            if expires <= datetime.datetime.now():
-                access_token, expires = self.get_access_token(refresh_token)
+            success, results = self.fetch_esi_url(self.mining_url % corp_id, character)
 
-            results = self.fetch_esi_url(self.mining_url % corp_id, access_token)
+            if not success:
+                return
 
             mining_info = json.loads(results)
 

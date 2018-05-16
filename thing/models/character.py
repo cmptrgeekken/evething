@@ -26,7 +26,7 @@
 from django.db import models
 from django.db.models import Sum
 
-from thing.models.corporation import Corporation
+from thing.models import Corporation
 
 
 class Character(models.Model):
@@ -35,10 +35,16 @@ class Character(models.Model):
     name = models.CharField(max_length=64)
     corporation = models.ForeignKey(Corporation, blank=True, null=True, on_delete=models.DO_NOTHING)
     sso_refresh_token = models.CharField(max_length=4000)
+    sso_error_count = models.IntegerField(default=0)
 
     class Meta:
         app_label = 'thing'
         ordering = ('name',)
+
+    def __init__(self, *args, **kwargs):
+        super(Character, self).__init__(*args, **kwargs)
+        self.sso_access_token = None
+        self.sso_token_expires = None
 
     def __unicode__(self):
         return self.name
@@ -60,3 +66,9 @@ class Character(models.Model):
         from thing.models.characterapirole import CharacterApiRole
 
         return set([r.role for r in CharacterApiRole.objects.filter(character_id=self.id)])
+
+    def deauthorize_user(self):
+        from thing.models import CharacterApiScope
+        CharacterApiScope.objects.filter(character_id=self.id, scope='esi-contracts.read_corporation_contracts.v1').delete()
+        self.sso_refresh_token = None
+        self.save()

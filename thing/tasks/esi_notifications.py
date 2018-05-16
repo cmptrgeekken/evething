@@ -53,11 +53,10 @@ class EsiNotifications(APITask):
                 continue
 
     def import_notifications(self, character):
-        refresh_token = character.sso_refresh_token
+        success, results = self.fetch_esi_url(self.notifications_url % character.id, character)
 
-        access_token, expires = self.get_access_token(refresh_token)
-
-        results = self.fetch_esi_url(self.notifications_url % character.id, access_token)
+        if not success:
+            return
 
         info = None
 

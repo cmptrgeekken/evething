@@ -40,7 +40,7 @@ class EsiStructures(APITask):
     structure_url = 'https://esi.tech.ccp.is/latest/universe/structures/%s/?datasource=tranquility'
     corp_structures_url = 'https://esi.tech.ccp.is/latest/corporations/%s/structures/?datasource=tranquility&language=en-us&page=%s'
 
-    def run(self, base_url):
+    def run(self):
         self.init()
 
         structure_scopes = CharacterApiScope.objects.filter(scope='esi-corporations.read_structures.v1')
@@ -57,20 +57,21 @@ class EsiStructures(APITask):
 
     def import_structures(self, character):
         corp_id = character.corporation_id
-        refresh_token = character.sso_refresh_token
-
-        access_token, expires = self.get_access_token(refresh_token)
 
         page = 1
         max_pages = None
         seen_ids = set()
+
+        skip_updates = False
     
         while max_pages is None or page < max_pages:
-            if expires <= datetime.datetime.now():
-                access_token, expires = self.get_access_token(refresh_token)
-            
-            results, headers = self.fetch_esi_url(self.corp_structures_url % (corp_id, page), access_token, 'get', None, ['X-Pages'])
-            max_pages = int(headers['X-Pages'])
+            success, results, headers = self.fetch_esi_url(self.corp_structures_url % (corp_id, page), character, 'get', None, ['x-pages'])
+
+            if not success:
+                skip_updates = True
+                break
+
+            max_pages = int(headers['x-pages'])
             page += 1
             structure_info = json.loads(results)
 
@@ -92,19 +93,14 @@ class EsiStructures(APITask):
                         profile_id=struct['profile_id'],
                     )
 
-                if expires <= datetime.datetime.now():
-                    access_token, expires = self.get_access_token(refresh_token)
-
                 try:
-                    results = self.fetch_esi_url(self.structure_url % struct['structure_id'], access_token)
+                    success, results = self.fetch_esi_url(self.structure_url % struct['structure_id'], character)
                 except:
                     continue
 
-                info = None
-
-                try:
+                if success:
                     info = json.loads(results)
-                except:
+                else:
                     self.log_debug("Cannot find info on structure: %s" % struct['structure_id'])
                     continue
 
@@ -155,7 +151,8 @@ class EsiStructures(APITask):
                         )
 
                         db_service.save()
-            
-        Station.objects.filter(corporation_id=corp_id).exclude(id__in=list(seen_ids)).update(corporation_id=None)
+
+        if not skip_updates:
+            Station.objects.filter(corporation_id=corp_id).exclude(id__in=list(seen_ids)).update(corporation_id=None)
 
         return True

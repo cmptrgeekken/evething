@@ -56,20 +56,17 @@ class EsiAssets(APITask):
     def import_assets(self, character, is_corporation):
         char_id = character.id
         corp_id = character.corporation.id
-        refresh_token = character.sso_refresh_token
-
-        access_token, expires = self.get_access_token(refresh_token)
 
         page = 1
         try:
             while True:
-                if expires <= datetime.datetime.now():
-                    access_token, expires = self.get_access_token(refresh_token)
-
                 if is_corporation:
-                    results = self.fetch_esi_url(self.corp_asset_url % (corp_id, page), access_token)
+                    success, results = self.fetch_esi_url(self.corp_asset_url % (corp_id, page), character)
                 else:
-                    results = self.fetch_esi_url(self.char_asset_url % (char_id, page), access_token)
+                    success, results = self.fetch_esi_url(self.char_asset_url % (char_id, page), character)
+
+                if not success:
+                    break
                 page += 1
                 asset_info = json.loads(results)
 

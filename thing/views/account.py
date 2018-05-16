@@ -71,7 +71,7 @@ def account_oauth_callback(request):
 
         helper = ApiHelper()
 
-        results = helper.fetch_esi_url('https://esi.tech.ccp.is/verify/?datasource=tranquility', access_token, method='GET')
+        success, results = helper.fetch_esi_url('https://esi.tech.ccp.is/verify/?datasource=tranquility', access_token, method='GET')
 
         char = None
 
@@ -92,6 +92,7 @@ def account_oauth_callback(request):
 
         if char is not None and state == 'request_scopes' and 'refresh_token' in response:
             char.sso_refresh_token = response['refresh_token']
+            char.sso_error_count = 0
             char.save()
 
             if 'request_scopes' in request.session:

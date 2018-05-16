@@ -61,6 +61,7 @@ class Contract(models.Model):
     collateral = models.DecimalField(max_digits=20, decimal_places=2)
     buyout = models.DecimalField(max_digits=20, decimal_places=2)
     volume = models.DecimalField(max_digits=20, decimal_places=4)
+    availability = models.CharField(max_length=50)
 
     retrieved_items = models.BooleanField(default=False)
 
@@ -83,4 +84,4 @@ class Contract(models.Model):
     def get_items(self):
         from thing.models import ContractItem
 
-        return ContractItem.objects.filter(contract_id=self.contract_id)
+        return ContractItem.objects.filter(contract_id=self.id)

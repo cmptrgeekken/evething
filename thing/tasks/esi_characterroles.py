@@ -48,11 +48,10 @@ class EsiCharacterRoles(APITask):
             self.update_roles(scope.character)
 
     def update_roles(self, character):
-        refresh_token = character.sso_refresh_token
+        success, results = self.fetch_esi_url(self.roles_url % character.id, character)
 
-        access_token, expires = self.get_access_token(refresh_token)
-
-        results = self.fetch_esi_url(self.roles_url % character.id, access_token)
+        if not success:
+            return
 
         info = None
 

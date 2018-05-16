@@ -33,6 +33,8 @@ import json
 
 from thing.models import Alliance, Character, CharacterApiScope, Contract, ContractItem, Corporation, Event, Item, Station, APIKey, UserProfile
 
+from multiprocessing import Pool, Value, Array
+
 
 class EsiContracts(APITask):
     name = 'thing.esi_contracts'
@@ -40,61 +42,61 @@ class EsiContracts(APITask):
     corp_contract_url = 'https://esi.tech.ccp.is/latest/corporations/%d/contracts/?datasource=tranquility&page=%s'
     corp_contract_item_url = 'https://esi.tech.ccp.is/latest/corporations/%d/contracts/%d/items/?datasource=tranquility'
 
-    def run(self, base_url):
+    def run(self):
         self.init()
 
-        contract_scopes = CharacterApiScope.objects.filter(scope='esi-contracts.read_corporation_contracts.v1')
+        contract_scopes = CharacterApiScope.objects.filter(
+            scope__in=['esi-contracts.read_corporation_contracts.v1']
+        )
 
         seen_corps = set()
 
         for scope in contract_scopes:
             char = scope.character
 
-            if 'Contract_Manager' in char.get_apiroles():
-                if char.corporation_id not in seen_corps\
-                        and char.corporation_id is not None:
-                    self.import_contracts(char)
+            if 'corporation' in scope.scope:
+                if 'Contract_Manager' in char.get_apiroles():
+                    if char.corporation_id not in seen_corps\
+                            and char.corporation_id is not None:
+                        self.import_contracts(char)
 
-                    seen_corps.add(char.corporation_id)
+                        seen_corps.add(char.corporation_id)
 
     def import_contracts(self, character):
         corp_id = character.corporation_id
-        access_token, expires = self.get_access_token(character.sso_refresh_token)
+
+        if corp_id is None:
+            return
 
         now = datetime.datetime.now()
 
-        c_filter = Contract.objects.filter(corporation=corp_id)
+        c_filter = Contract.objects.filter(corporation_id=corp_id)
 
         contracts = []
 
         page = 1
 
-        while True:
-            data = self.fetch_esi_url(self.corp_contract_url % (corp_id, page), access_token)
+        ttl_pages = None
 
-            if data is False:
-                break
+        while ttl_pages is None or page <= ttl_pages:
+            success, data, headers = self.fetch_esi_url(self.corp_contract_url % (corp_id, page), character, headers_to_return=['x-pages'])
 
-            try:
-                r_contracts = json.loads(data)
-                if 'response' in contracts:
-                    r_contracts = contracts['response']
-
-                if len(r_contracts) == 0:
-                    break
-
-                contracts.extend(r_contracts)
-            except:
-                self.log_error('Cannot parse data: %s' % data)
-                print('Cannot parse data: %s' % data)
+            if not success:
+                # Failed to retrieve contract information, back out
                 return
 
-            page += 1
+            ttl_pages = int(headers['x-pages'])
 
-        # Retrieve a list of this user's characters and corporations
-        # user_chars = list(Character.objects.filter(apikeys__user=self.apikey.user).values_list('id', flat=True))
-        # user_corps = list(APIKey.objects.filter(user=self.apikey.user).exclude(
-        #   corpasdasd_character=None).values_list('corpasd_character__corporation__id', flat=True))
+            r_contracts = json.loads(data)
+            if 'response' in contracts:
+                r_contracts = contracts['response']
+
+            if len(r_contracts) == 0:
+                break
+
+            contracts.extend(r_contracts)
+
+            page += 1
 
         # First we need to get all of the acceptor and assignee IDs
         contract_ids = set()
@@ -102,27 +104,22 @@ class EsiContracts(APITask):
         lookup_ids = set()
         lookup_corp_ids = set()
         contract_rows = []
-        # <row contract_id="58108507" issuer_id="2004011913" issuerCorp_id="751993277" assignee_id="401273477"
-        #      acceptor_id="0" startStation_id="60014917" endStation_id="60003760" type="Courier" status="Outstanding"
-        #      title="" forCorp="0" availability="Private" dateIssued="2012-08-02 06:50:29"
-        #      dateExpired="2012-08-09 06:50:29" dateAccepted="" numDays="7" dateCompleted="" price="0.00"
-        #      reward="3000000.00" collateral="0.00" buyout="0.00" volume="10000"/>
-        for row in contracts:
-            # corp keys don't care about non-corp orders
-            #if row['forCorp'] == '0':
-            #    continue
 
+        for row in contracts:
             # corp keys don't care about orders they didn't issue - another fun
             # bug where corp keys see alliance contracts they didn't make  :ccp:
             if corp_id not in (
-                    int(row['issuer_corporation_id']), int(row['assignee_id']), int(row['acceptor_id'])
+                int(row['issuer_corporation_id']), int(row['assignee_id']), int(row['acceptor_id'])
             ):
                 continue
 
             contract_ids.add(int(row['contract_id']))
 
-            station_ids.add(int(row['start_location_id']))
-            station_ids.add(int(row['end_location_id']))
+            if 'start_location_id' in row:
+                station_ids.add(int(row['start_location_id']))
+
+            if 'end_location_id' in row:
+                station_ids.add(int(row['end_location_id']))
 
             lookup_ids.add(int(row['issuer_id']))
             lookup_corp_ids.add(int(row['issuer_corporation_id']))
@@ -183,7 +180,7 @@ class EsiContracts(APITask):
 
         # Fetch all existing contracts
         c_map = {}
-        for contract in c_filter.filter(contract_id__in=contract_ids):
+        for contract in c_filter.filter(contract_id__in=contract_ids, corporation_id=character.corporation_id):
             c_map[contract.contract_id] = contract
 
         # Finally, after all of that other bullshit, we can actually deal with
@@ -191,11 +188,6 @@ class EsiContracts(APITask):
         new_contracts = []
         new_events = []
 
-        # <row contract_id="58108507" issuer_id="2004011913" issuerCorp_id="751993277" assignee_id="401273477"
-        #      acceptor_id="0" startStation_id="60014917" endStation_id="60003760" type="Courier" status="Outstanding"
-        #      title="" forCorp="0" availability="Private" dateIssued="2012-08-02 06:50:29" dateExpired="2012-08-09 06:50:29"
-        #      dateAccepted="" numDays="7" dateCompleted="" price="0.00" reward="3000000.00" collateral="0.00" buyout="0.00"
-        #      volume="10000"/>
         for row in contract_rows:
             contract_id = int(row['contract_id'])
 
@@ -236,8 +228,6 @@ class EsiContracts(APITask):
                 dateCompleted = None
 
             type = row['type']
-            if type == 'ItemExchange':
-                type = 'Item Exchange'
 
             '''
                 Contract Types:
@@ -287,6 +277,7 @@ class EsiContracts(APITask):
             else:
                 contract = Contract(
                     character=character,
+                    corporation=character.corporation,
                     contract_id=contract_id,
                     issuer_char=issuer_char,
                     issuer_corp=issuer_corp,
@@ -309,13 +300,13 @@ class EsiContracts(APITask):
                     collateral=Decimal(row['collateral'] if 'collateral' in row else 0),
                     buyout=Decimal(row['buyout'] if 'buyout' in row else 0),
                     volume=Decimal(row['volume']),
+                    availability=row['availability']
                 )
-                contract.corporation_id = corp_id
 
                 new_contracts.append(contract)
 
                 # If this contract is a new contract in a non-completed state, log an event
-                if contract.status in ('Outstanding', 'InProgress'):
+                if contract.status in ('outstanding', 'in_progress'):
                     # if assignee_id in user_chars or assignee_id in user_corps:
                     assignee = char_map.get(assignee_id, corp_map.get(assignee_id, alliance_map.get(assignee_id)))
                     if assignee is not None:
@@ -337,20 +328,23 @@ class EsiContracts(APITask):
 
         # # Now go fetch items for each contract
 
-        new = []
-        seen_contracts = []
-        contracts_to_populate = c_filter.filter(retrieved_items=False).exclude(type='Courier')
-        
-        ttl_count = 0
-        # Apparently courier contracts don't have ContractItems support? :ccp:
-        for contract in contracts_to_populate:
-            if expires <= datetime.datetime.now():
-                access_token, expires = self.get_access_token(character.sso_refresh_token)
+        contracts_to_populate = Contract.objects.filter(corporation_id=corp_id, retrieved_items=False).exclude(type='Courier').exclude(status='deleted')
 
+        if len(contracts_to_populate) > 100:
+            print('Populating Many Contracts (%d!!)! This will take a while!!' % len(contracts_to_populate))
+
+        ttl_count = 0
+
+        seen_contracts = []
+
+        for contract in contracts_to_populate:
             items_url = self.corp_contract_item_url % (corp_id, contract.contract_id)
-            data = self.fetch_esi_url(items_url, access_token)
-            if data is False:
-                # self.log_error('API returned an error for url %s' % url)
+            success, data, headers = self.fetch_esi_url(items_url, character, headers_to_return=['status'])
+            if not success:
+                if 'status' in headers and headers['status'] == 404:
+                    print('Fetch failed for %d: %s, %s, %s' % (contract.contract_id, data, headers, items_url))
+                    seen_contracts.append(contract.contract_id)
+                    ttl_count += 1
                 continue
 
             try:
@@ -358,21 +352,12 @@ class EsiContracts(APITask):
             except:
                 continue
 
-            if 'error' in items_response:
-                if items_response['error'] == 'Contract not found!':
-                    seen_contracts.append(contract.contract_id)
-                    ttl_count += 1
-                    if len(seen_contracts) % 10 == 0:
-                        time.sleep(10)
-                    continue
-                elif items_response['error'] == 'expired':
-                    access_token, expires = self.get_access_token(character.sso_refresh_token)
-
             contract_items = dict()
 
             for row in items_response:
                 contract_item = ContractItem(
-                    contract_id=contract.contract_id,
+                    contract_id=contract.id,
+                    record_id=row['record_id'],
                     item_id=row['type_id'],
                     quantity=int(row['quantity']),
                     raw_quantity=row.get('raw_quantity', 0),
@@ -408,12 +393,12 @@ class EsiContracts(APITask):
 
             seen_contracts.append(contract.contract_id)
 
-            if len(seen_contracts) >= 10:
+            if len(seen_contracts) >= 100:
+                print('Flushing %d-%d/%d contracts to DB...' % (ttl_count-len(seen_contracts), ttl_count, len(contracts_to_populate)))
                 ContractItem.objects.bulk_create(new)
                 c_filter.filter(contract_id__in=seen_contracts).update(retrieved_items=True)
                 new = []
                 seen_contracts = []
-                time.sleep(10)
         if new:
             ContractItem.objects.bulk_create(new)
             c_filter.filter(contract_id__in=seen_contracts).update(retrieved_items=True)

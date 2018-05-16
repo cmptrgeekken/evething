@@ -25,11 +25,14 @@
 
 from .apitask import APITask
 
+import json
+
 from thing.models import Character, Corporation
 
 # Periodic task to try to fix *UNKNOWN* Character objects
-CHAR_NAME_URL = '/eve/CharacterName.xml.aspx'
-CORP_SHEET_URL = '/corp/CorporationSheet.xml.aspx'
+CHAR_NAME_URL = 'https://esi.evetech.net/latest/characters/names/'
+CHAR_INFO_URL = 'https://esi.evetech.net/latest/characters/%s/'
+CORP_NAME_URL = 'https://esi.evetech.net/latest/corporations/names/'
 
 
 class FixNames(APITask):
@@ -43,6 +46,11 @@ class FixNames(APITask):
         for char in Character.objects.filter(name='*UNKNOWN*'):
             char_map[char.id] = char
 
+        # Fetch all Characters without Corporations
+        no_corp_map = {}
+        for char in Character.objects.filter(corporation_id=None):
+            no_corp_map[char.id] = char
+
         # Fetch all unknown Corporation objects
         corp_map = {}
         for corp in Corporation.objects.filter(name='*UNKNOWN*'):
@@ -55,32 +63,59 @@ class FixNames(APITask):
         # Go fetch names for them
         name_map = {}
         for i in range(0, len(ids), 100):
-            params = {'ids': ','.join(map(str, ids[i:i + 100]))}
+            params = ','.join(map(str, ids[i:i + 100]))
 
-            if self.fetch_api(CHAR_NAME_URL, params, use_auth=False) is False or self.root is None:
-                return False
+            success, response = self.fetch_esi_url(CHAR_NAME_URL + '?character_ids=%s' % params, None)
 
-            # <row name="Tazuki Falorn" characterID="1759080617"/>
-            for row in self.root.findall('result/rowset/row'):
-                name_map[int(row.attrib['characterID'])] = row.attrib['name']
+            if not success:
+                print(response)
+                break
 
-        if len(name_map) == 0:
-            return
+            result = json.loads(response)
 
-        # Fix corporation names first
-        for id, corp in corp_map.items():
-            corp_name = name_map.get(id)
-            if corp_name is not None:
-                corp.name = corp_name
-                corp.save()
-                del name_map[id]
+            for row in result:
+                name_map[int(row['character_id'])] = row['character_name']
 
-        # Fix character names
-        for id, name in name_map.items():
-            char = char_map.get(id)
-            if char is not None:
-                char.name = name
-                char.save()
+        for i in range(0, len(ids), 100):
+            params = ','.join(map(str, ids[i:i + 100]))
+
+            success, response = self.fetch_esi_url(CORP_NAME_URL + '?corporation_ids=%s' % params, None)
+
+            if not success:
+                continue
+
+            result = json.loads(response)
+
+            for row in result:
+                name_map[int(row['corporation_id'])] = row['corporation_name']
+
+        if len(name_map) > 0:
+            # Fix corporation names first
+            for id, corp in corp_map.items():
+                corp_name = name_map.get(id)
+                if corp_name is not None:
+                    corp.name = corp_name
+                    corp.save()
+                    del name_map[id]
+
+            # Fix character names
+            for id, name in name_map.items():
+                char = char_map.get(id)
+                if char is not None:
+                    char.name = name
+                    char.save()
+
+        for id, char in no_corp_map.items():
+            success, response = self.fetch_esi_url(CHAR_INFO_URL % id, None)
+
+            if not success:
+                continue
+
+            result = json.loads(response)
+
+            char.name = result['name']
+            char.corporation_id = result['corporation_id']
+            char.save()
 
         # # Ugh, now go look up all of the damn names just in case they're corporations
         # new_corps = []

@@ -64,22 +64,16 @@ class PriceUpdater(APITask):
             self.log_error('No refresh token found for station %d!' % primary_station.id)
             return False
 
-        access_token = None
-        token_expires = None
-
         start_time = datetime.now()
 
         while True:
-            if access_token is None or token_expires < datetime.now():
-                access_token, token_expires = self.get_access_token(primary_station.market_profile.sso_refresh_token)
-
             # Retrieve market data and parse the JSON
             self.log_debug('Retrieving page %d for %d' % (page_number, station_or_region_id))
             url = api_url + str(page_number)
-            data = self.fetch_esi_url(url, access_token)
+            success, data = self.fetch_esi_url(url, primary_station.market_profile)
             self.log_debug('Page %d retrieved!' % page_number)
 
-            if data is False:
+            if not success:
                 # self.log_error('API returned an error for url %s' % url)
                 return False
 

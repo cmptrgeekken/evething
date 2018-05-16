@@ -44,7 +44,7 @@ class EsiMoonObserver(APITask):
     observer_url = 'https://esi.tech.ccp.is/latest/corporation/%s/mining/observers/?datasource=tranquility&page=%s'
     observer_detail_url = 'https://esi.tech.ccp.is/latest/corporation/%s/mining/observers/%s/?datasource=tranquility&page=%s'
 
-    def run(self, base_url):
+    def run(self):
         self.init()
 
         extract_scope_chars = [s.character for s in CharacterApiScope.objects.filter(scope='esi-industry.read_corporation_mining.v1')]
@@ -59,20 +59,18 @@ class EsiMoonObserver(APITask):
 
     def import_observers(self, character):
         corp_id = character.corporation_id
-        refresh_token = character.sso_refresh_token
-
-        access_token, expires = self.get_access_token(refresh_token)
 
         page = 1
         max_pages = None
         try:
             while max_pages is None or page < max_pages:
-                if expires <= datetime.datetime.now():
-                    access_token, expires = self.get_access_token(refresh_token)
 
-                results, headers = self.fetch_esi_url(self.observer_url % (corp_id, page), access_token, headers_to_return=['X-Pages'])
-                if headers and 'X-Pages' in headers:
-                    max_pages = int(headers['X-Pages'])
+                success, results, headers = self.fetch_esi_url(self.observer_url % (corp_id, page), character, headers_to_return=['x-pages'])
+                if 'x-pages' in headers:
+                    max_pages = int(headers['x-pages'])
+
+                if not success:
+                    break
                 
                 page += 1
                 observers = json.loads(results)
@@ -98,14 +96,17 @@ class EsiMoonObserver(APITask):
 
                     if do_import:
                         inner_page = 1
-                        results, headers = self.fetch_esi_url(
+                        success, results, headers = self.fetch_esi_url(
                             url=self.observer_detail_url % (corp_id, db_observer.observer_id, inner_page),
-                            access_token=access_token,
-                            headers_to_return=['Last-Modified'])
+                            character=character,
+                            headers_to_return=['last-modified'])
                         inner_page += 1
 
-                        if headers['Last-Modified']:
-                            observer_time = self.parse_esi_date(headers['Last-Modified'])
+                        if not success:
+                            continue
+
+                        if headers['last-modified']:
+                            observer_time = self.parse_esi_date(headers['last-modified'])
                         else:
                             observer_time = datetime.datetime.utcnow()
 
