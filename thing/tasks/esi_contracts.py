@@ -337,12 +337,13 @@ class EsiContracts(APITask):
 
         seen_contracts = []
 
+        new = []
+
         for contract in contracts_to_populate:
             items_url = self.corp_contract_item_url % (corp_id, contract.contract_id)
             success, data, headers = self.fetch_esi_url(items_url, character, headers_to_return=['status'])
             if not success:
                 if 'status' in headers and headers['status'] == 404:
-                    print('Fetch failed for %d: %s, %s, %s' % (contract.contract_id, data, headers, items_url))
                     seen_contracts.append(contract.contract_id)
                     ttl_count += 1
                 continue

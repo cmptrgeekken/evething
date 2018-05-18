@@ -237,7 +237,7 @@ WHERE   character_id = %s
 fuelblock_purchase_contracts = """
 SELECT DISTINCT c.contract_id
 FROM thing_contract c 
-    INNER JOIN thing_contractitem ci ON c.contract_id=ci.contract_id
+    INNER JOIN thing_contractitem ci ON c.id=ci.contract_id
     INNER JOIN thing_item i ON ci.item_id=i.id 
 WHERE c.type IN('item_exchange', 'Item Exchange')
     AND i.name LIKE '%Fuel Block'
@@ -248,7 +248,7 @@ WHERE c.type IN('item_exchange', 'Item Exchange')
 fuelblock_monthly_purchase_summary = """
 SELECT DATE_FORMAT(c.date_completed, '%m-%Y') AS month, SUM(ci.quantity) AS qty
 FROM thing_contract c 
-    INNER JOIN thing_contractitem ci ON c.contract_id=ci.contract_id
+    INNER JOIN thing_contractitem ci ON c.id_id=ci.contract_id
     INNER JOIN thing_item i ON ci.item_id=i.id 
 WHERE c.type IN ('item_exchange', 'Item Exchange')
     AND i.name LIKE '%Fuel Block'
@@ -275,7 +275,7 @@ buyback_contracts = """
         AND c.type in ('Item Exchange', 'item_exchange')
         AND c.issuer_corp_id != c.corporation_id
         AND co.name = 'Penny''s Flying Circus'
-    AND EXISTS (SELECT 1 FROM thing_contractitem ci INNER JOIN thing_pricewatch pw ON ci.item_id=pw.item_id WHERE ci.contract_id=c.contract_id AND ci.included=1 AND pw.active=1)
+    AND EXISTS (SELECT 1 FROM thing_contractitem ci INNER JOIN thing_pricewatch pw ON ci.item_id=pw.item_id WHERE ci.contract_id=c.id AND ci.included=1 AND pw.active=1)
 """
 
 buyback_item_summary = """
@@ -294,7 +294,7 @@ SELECT i.name,
        SUM(ci.quantity) AS quantity,
        DATE_FORMAT(MIN(c.date_issued), '%m-%d-%Y') AS start_date
 FROM thing_contract c 
-    INNER JOIN thing_contractitem ci ON c.contract_id=ci.contract_id
+    INNER JOIN thing_contractitem ci ON c.id=ci.contract_id
     INNER JOIN thing_item i ON ci.item_id=i.id 
 WHERE c.type IN ('item_exchange', 'Item Exchange') 
     AND c.status = 'Completed'
@@ -312,7 +312,7 @@ SELECT i.name,
        DATE_FORMAT(MIN(c.date_issued), '%m-%d-%Y') AS start_date,
        AVG(TO_DAYS(c.date_completed)-TO_DAYS(c.date_issued))*24*60*60 AS avg_completion_secs
 FROM thing_contract c 
-    INNER JOIN thing_contractitem ci ON c.contract_id=ci.contract_id
+    INNER JOIN thing_contractitem ci ON c.id=ci.contract_id
     INNER JOIN thing_item i ON ci.item_id=i.id 
 WHERE c.type IN ('item_exchange', 'Item Exchange') 
     AND c.status = 'Completed'
@@ -345,7 +345,7 @@ ORDER BY s.name,i.name
 fuelblock_pending_stats = """
 SELECT i.name,SUM(ci.quantity) AS quantity
 FROM thing_contract c 
-    INNER JOIN thing_contractitem ci ON c.contract_id=ci.contract_id
+    INNER JOIN thing_contractitem ci ON c.id=ci.contract_id
     INNER JOIN thing_item i ON ci.item_id=i.id 
 WHERE c.type IN ('item_exchange', 'Item Exchange') 
     AND c.status = 'Outstanding'
@@ -412,7 +412,7 @@ AND EXISTS
 	(SELECT 1 
 	 FROM thing_contractitem ci 
 		INNER JOIN thing_pricewatch pw ON ci.item_id=pw.item_id 
-	 WHERE ci.contract_id=c.contract_id AND ci.included=1 AND pw.active=1)
+	 WHERE ci.contract_id=c.id AND ci.included=1 AND pw.active=1)
 """
 
 buyback_pending_stats = """
@@ -430,7 +430,7 @@ AND EXISTS
 	(SELECT 1 
 	 FROM thing_contractitem ci 
 		INNER JOIN thing_pricewatch pw ON ci.item_id=pw.item_id 
-	 WHERE ci.contract_id=c.contract_id AND ci.included=1 AND pw.active=1)
+	 WHERE ci.contract_id=c.id AND ci.included=1 AND pw.active=1)
 """
 
 
@@ -453,7 +453,7 @@ WHERE contract_id IN (SELECT DISTINCT c.contract_id
    WHERE c.assignee_id=c.corporation_id
    AND c.type IN ('item_exchange', 'Item Exchange')
    AND c.issuer_corp_id != c.corporation_id
-   AND EXISTS (SELECT 1 FROM thing_contractitem ci INNER JOIN thing_pricewatch pw ON ci.item_id=pw.item_id WHERE ci.contract_id=c.contract_id AND ci.included=1 AND pw.active=1)
+   AND EXISTS (SELECT 1 FROM thing_contractitem ci INNER JOIN thing_pricewatch pw ON ci.item_id=pw.item_id WHERE ci.contract_id=c.id AND ci.included=1 AND pw.active=1)
 ) and price = 0
 """
 
@@ -965,7 +965,7 @@ FROM thing_contract c
             SUM(ci.quantity) AS quantity
 		FROM thing_contractitem ci 
 		GROUP BY ci.contract_id, ci.item_id
-	) ci ON c.contract_id=ci.contract_id
+	) ci ON c.id=ci.contract_id
     INNER JOIN thing_item i ON ci.item_id=i.id
     INNER JOIN
 		(
@@ -975,15 +975,15 @@ FROM thing_contract c
 			FROM thing_contractitem sci
 				INNER JOIN thing_item si ON sci.item_id=si.id
 			GROUP BY sci.contract_id
-		) sc ON sc.contract_id=ci.contract_id
+		) sc ON sc.id=ci.contract_id
 WHERE c.contract_id IN (SELECT DISTINCT c.contract_id
    FROM thing_contract c
    WHERE c.assignee_id=c.corporation_id
    AND c.type IN ('item_exchange', 'Item Exchange')
    AND c.issuer_corp_id != c.corporation_id
    AND c.status = 'Completed'
-   AND EXISTS (SELECT 1 FROM thing_contractitem ci INNER JOIN thing_pricewatch pw ON ci.item_id=pw.item_id WHERE ci.contract_id=c.contract_id AND ci.included=1 AND pw.active=1)
-   AND NOT EXISTS (SELECT 1 from thing_contractitem ci WHERE ci.item_id NOT IN (SELECT item_id from thing_pricewatch pw WHERE pw.active=1) AND ci.contract_id=c.contract_id AND ci.included=1)
+   AND EXISTS (SELECT 1 FROM thing_contractitem ci INNER JOIN thing_pricewatch pw ON ci.item_id=pw.item_id WHERE ci.contract_id=c.id AND ci.included=1 AND pw.active=1)
+   AND NOT EXISTS (SELECT 1 from thing_contractitem ci WHERE ci.item_id NOT IN (SELECT item_id from thing_pricewatch pw WHERE pw.active=1) AND ci.contract_id=c.id AND ci.included=1)
 ) and c.price > 0
   --AND c.date_accepted > DATE_ADD(NOW(), INTERVAL -1 MONTH)
     ) AS cprice
@@ -1050,7 +1050,7 @@ INNER JOIN
 (
 SELECT c.contract_id, cs.id AS csid, COUNT(DISTINCT ci.item_id) AS matching_values
 FROM thing_contract c
-        INNER JOIN thing_contractitem ci ON c.contract_id=ci.contract_id
+        INNER JOIN thing_contractitem ci ON c.id=ci.contract_id
         INNER JOIN thing_contractseeding cs ON c.start_station_id=cs.station_id
     WHERE 
 		ci.item_id IN (SELECT csi.item_id FROM thing_contractseedingitem csi WHERE csi.contractseeding_id=cs.id AND csi.required=1)

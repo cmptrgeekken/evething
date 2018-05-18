@@ -113,7 +113,7 @@ def item_contracts(request):
         contract.z_items = ''
 
         contract_items = ContractItem.objects.select_related('item').filter(
-            contract_id=contract.contract_id
+            contract_id=contract.id
         )
 
         buyback_items_query = PriceWatch.objects.filter(
@@ -141,9 +141,9 @@ def item_contracts(request):
             contract.z_calculated_reward += contract_item.quantity * buyback_price
             contract.z_items += '<div>%s %s</div>' % (commas(contract_item.quantity), contract_item.item.name)
 
-            if contract_item.item.name.endswith("Fuel Block") and not contract_item.included:
-                if contract.start_station is not None and contract.start_station.system is not None and contract.start_station.system.name != 'B-9C24':
-                    contract.z_calculated_reward += ceil(float(contract_item.quantity) / 25000) * 5000000
+            # if contract_item.item.name.endswith("Fuel Block") and not contract_item.included:
+            #    if contract.start_station is not None and contract.start_station.system is not None and contract.start_station.system.name != 'B-9C24':
+            #        contract.z_calculated_reward += ceil(float(contract_item.quantity) / 25000) * 5000000
 
         # Allow for 2% wiggle room
         if float(contract.z_calculated_reward) < float(contract.z_reward)*.98:

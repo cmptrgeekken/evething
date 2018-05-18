@@ -68,28 +68,23 @@ class PriceUpdater(APITask):
 
         while True:
             # Retrieve market data and parse the JSON
-            self.log_debug('Retrieving page %d for %d' % (page_number, station_or_region_id))
             url = api_url + str(page_number)
             success, data = self.fetch_esi_url(url, primary_station.market_profile)
-            self.log_debug('Page %d retrieved!' % page_number)
 
             if not success:
                 # self.log_error('API returned an error for url %s' % url)
                 return False
 
-            self.log_debug('Parsing JSON for page %d' % page_number)
             try:
                 orders = json.loads(data)
             except:
                 break
-            self.log_debug('JSON parsed for page %d' % page_number)
 
             if len(orders) == 0:
                 break
 
             sql_inserts = []
 
-            self.log_debug('Generating SQL for page %d...' % page_number)
             for order in orders:
                 # Ignore stations we're not tracking
                 if int(order['location_id']) not in station_lookup:
@@ -133,7 +128,6 @@ class PriceUpdater(APITask):
 
             self.execute_query(sql_inserts)
 
-        self.log_debug('Orders imported for %d' % station_or_region_id)
 
         # Delete non-existent orders:
         StationOrder.objects.filter(station_id__in=list(station_lookup)).exclude(
@@ -159,7 +153,6 @@ class PriceUpdater(APITask):
             return
 
         sql = ','.join(sql_inserts)
-        self.log_debug('Writing %d orders to DB' % order_ct)
 
         cursor.execute('SET autocommit=0')
         cursor.execute('SET unique_checks=0')
@@ -170,5 +163,4 @@ class PriceUpdater(APITask):
         cursor.execute('SET autocommit=1')
         transaction.set_dirty()
         
-        self.log_debug('%d orders written!' % order_ct)
 

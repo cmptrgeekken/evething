@@ -27,7 +27,7 @@ from django.db import models
 
 from thing.models.system import System
 from thing.models.item import Item
-from thing.models.userprofile import UserProfile
+from thing.models.character import Character
 from thing.models.corporation import Corporation
 
 numeral_map = zip(
@@ -55,7 +55,7 @@ class Station(models.Model):
     is_unknown = models.BooleanField(default=False)
 
     load_market_orders = models.BooleanField(default=False)
-    market_profile = models.ForeignKey(UserProfile, null=True, default=None, on_delete=models.DO_NOTHING)
+    market_profile = models.ForeignKey(Character, null=True, default=None, on_delete=models.DO_NOTHING)
 
     system = models.ForeignKey(System, blank=True, null=True, default=None, on_delete=models.DO_NOTHING)
     type = models.ForeignKey(Item, null=True, default=None, on_delete=models.DO_NOTHING)

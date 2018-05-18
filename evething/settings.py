@@ -293,9 +293,8 @@ CELERYBEAT_SCHEDULE = {
             'expires': 240 * 60,
             'queue': 'et_medium'
         },
-        'args': [None],
+        'args': [],
     },
-
     'corp_contract_updater': {
         'task': 'thing.esi_contracts',
         'schedule': timedelta(hours=1),
@@ -303,7 +302,7 @@ CELERYBEAT_SCHEDULE = {
             'expires': 240*60,
             'queue': 'et_medium'
         },
-        'args': ['https://esi.tech.ccp.is/latest'],
+        'args': [],
     },
     'corp_moon_updater': {
         'task': 'thing.moonextraction',
@@ -312,7 +311,7 @@ CELERYBEAT_SCHEDULE = {
             'expires': 240 * 60,
             'queue': 'et_medium'
         },
-        'args': ['https://esi.tech.ccp.is/latest'],
+        'args': [],
     },
     'corp_struct_updater': {
         'task': 'thing.structures',
@@ -321,7 +320,7 @@ CELERYBEAT_SCHEDULE = {
             'expires': 240 * 60,
             'queue': 'et_medium'
         },
-        'args': [None],
+        'args': [],
     },
     'corp_moon_observer': {
         'task': 'thing.moonobserver',
@@ -330,7 +329,7 @@ CELERYBEAT_SCHEDULE = {
             'expires': 240 * 60,
             'queue': 'et_medium'
         },
-        'args': [None],
+        'args': [],
     },
     'char_roles_updater': {
         'task': 'thing.characterroles',
@@ -339,7 +338,7 @@ CELERYBEAT_SCHEDULE = {
             'expires': 240 * 60,
             'queue': 'et_medium'
         },
-        'args': [None],
+        'args': [],
     },
 
     # update unknown character/corporation names every hour

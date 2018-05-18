@@ -128,7 +128,7 @@ class ApiHelper:
 
         return data
 
-    def fetch_esi_url(self, url, character, method='get', body=None, headers_to_return=None):
+    def fetch_esi_url(self, url, character=None, method='get', body=None, headers_to_return=None, access_token=None):
         """
         Fetch an ESI URL
         """
@@ -157,17 +157,19 @@ class ApiHelper:
                         print('Waiting out error timer for %d seconds' % wait_seconds)
                         time.sleep(wait_seconds)
 
+
                     if character is not None:
                         if character.sso_access_token is None\
                                 or character.sso_token_expires <= datetime.datetime.utcnow():
-                            character.sso_access_token, character.sso_token_expires = self.get_access_token(character)
+                            access_token, character.sso_token_expires = self.get_access_token(character)
 
-                        if character.sso_access_token is None:
+                        if access_token is None:
                             if headers_to_return:
                                 return False, data, headers
                             return False, data
-
-                        response = self._session.request(method, url + '&token=' + character.sso_access_token, json=body)
+                    
+                    if access_token is not None:
+                        response = self._session.request(method, url + '&token=' + access_token, json=body)
                     else:
                         response = self._session.request(method, url, json=body)
 
