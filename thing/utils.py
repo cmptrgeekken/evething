@@ -84,8 +84,8 @@ class ApiHelper:
         'Accept-Encoding': 'gzip, deflate',
     })
     # Limit each session to a single connection
-    _session.mount('http://', requests.adapters.HTTPAdapter(pool_connections=1, pool_maxsize=1))
-    _session.mount('https://', requests.adapters.HTTPAdapter(pool_connections=1, pool_maxsize=1))
+    _session.mount('http://', requests.adapters.HTTPAdapter(pool_connections=1, pool_maxsize=1000))
+    _session.mount('https://', requests.adapters.HTTPAdapter(pool_connections=1, pool_maxsize=1000))
 
     _taskstate = None
 
@@ -131,7 +131,7 @@ class ApiHelper:
 
         return data
 
-    def fetch_batch_esi_urls(self, urls, character=None, method='get', body=None, headers_to_return=None, access_token=None):
+    def fetch_batch_esi_urls(self, urls, character=None, method='get', body=None, headers_to_return=None, access_token=None, batch_size=100):
         shared_dict = dict()
 
         if character.sso_access_token is None \
@@ -146,7 +146,7 @@ class ApiHelper:
                 q.task_done()
 
         q = Queue(len(urls))
-        for i in range(len(urls)):
+        for i in range(batch_size):
             t = Thread(target=do_batch)
             t.daemon = True
             t.start()
