@@ -15,6 +15,9 @@ from django.db import connections
 import json, re
 import traceback
 
+from Queue import Queue
+from threading import Thread
+
 PENALTY_TIME = 12 * 60 * 60
 PENALTY_MULT = 0.2
 
@@ -128,6 +131,35 @@ class ApiHelper:
 
         return data
 
+    def fetch_batch_esi_urls(self, urls, character=None, method='get', body=None, headers_to_return=None, access_token=None):
+        shared_dict = dict()
+
+        if character.sso_access_token is None \
+                or character.sso_token_expires <= datetime.datetime.utcnow():
+            access_token, character.sso_token_expires = self.get_access_token(character)
+
+        def do_batch():
+            while True:
+                url = q.get()
+                response = self.fetch_esi_url(url, character, method, body, headers_to_return, access_token)
+                shared_dict[url] = response
+                q.task_done()
+
+        q = Queue(len(urls))
+        for i in range(len(urls)):
+            t = Thread(target=do_batch)
+            t.daemon = True
+            t.start()
+
+        try:
+            for url in urls:
+                q.put(url)
+            q.join()
+        except KeyboardInterrupt:
+            return
+
+        return shared_dict
+
     def fetch_esi_url(self, url, character=None, method='get', body=None, headers_to_return=None, access_token=None):
         """
         Fetch an ESI URL
@@ -156,7 +188,6 @@ class ApiHelper:
                         wait_seconds = (ApiHelper.global_wait_until - datetime.datetime.now()).seconds
                         print('Waiting out error timer for %d seconds' % wait_seconds)
                         time.sleep(wait_seconds)
-
 
                     if character is not None:
                         if character.sso_access_token is None\
@@ -249,8 +280,8 @@ class ApiHelper:
 
         response = oauth_handler.get_token("", grant_type='refresh_token', refresh_token=character.sso_refresh_token)
         if response is not None and 'access_token' in response:
-            character.sso_error_count = 0
-            character.save()
+            #character.sso_error_count = 0
+            #character.save()
             return response['access_token'], datetime.datetime.now() + datetime.timedelta(
                 seconds=response['expires_in'])
 

@@ -26,14 +26,14 @@
 from django.db import models
 from django.db.models import Sum
 
-from thing.models import Corporation
+from thing.models import corporation
 
 
 class Character(models.Model):
     id = models.IntegerField(primary_key=True)
 
     name = models.CharField(max_length=64)
-    corporation = models.ForeignKey(Corporation, blank=True, null=True, on_delete=models.DO_NOTHING)
+    corporation = models.ForeignKey(corporation.Corporation, blank=True, null=True, on_delete=models.DO_NOTHING)
     sso_refresh_token = models.CharField(max_length=4000)
     sso_error_count = models.IntegerField(default=0)
 

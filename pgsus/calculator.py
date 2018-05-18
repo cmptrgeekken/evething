@@ -23,7 +23,7 @@
 # OF SUCH DAMAGE.
 # ------------------------------------------------------------------------------
 
-from thing.models import *  # NOPEP8
+from thing.models import Item  # NOPEP8
 
 import math
 

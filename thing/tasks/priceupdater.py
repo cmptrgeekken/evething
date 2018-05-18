@@ -29,20 +29,39 @@ from decimal import Decimal
 from datetime import datetime, timedelta
 
 import json
-from thing.models import Station, StationOrder, StationOrderUpdater
+from thing.models import Station, StationOrder
 from thing import queries
 
 from django.db import transaction
-from django.db.models import Q
+from multiprocessing import Pool
 
 
 class PriceUpdater(APITask):
     name = 'thing.price_updater'
 
-    def run(self, api_url, taskstate_id, apikey_id, station_or_region_id):
-        if self.init(taskstate_id) is False:
-            return True
+    def run(self):
+        self.init()
 
+        stations = Station.objects.filter(load_market_orders=True).select_related('market_profile')
+
+        order_regions = set()
+        for station in stations:
+            if station.is_citadel:
+                url = 'https://esi.tech.ccp.is/latest/markets/structures/%d?datasource=tranquility&page=' \
+                      % station.id
+            else:
+                region_id = station.system.constellation.region.id
+                order_regions.add(region_id)
+                continue
+
+            self.import_prices(url, station.id)
+
+        for region_id in order_regions:
+            url = 'https://esi.tech.ccp.is/latest/markets/%d/orders?datasource=tranquility&order_type=all&page=' \
+                  % region_id
+            self.import_prices(url, region_id)
+
+    def import_prices(self, api_url, station_or_region_id):
         page_number = 1
 
         stations_query = Station.objects.filter(load_market_orders=True)
@@ -66,22 +85,40 @@ class PriceUpdater(APITask):
 
         start_time = datetime.now()
 
-        while True:
-            # Retrieve market data and parse the JSON
-            url = api_url + str(page_number)
-            success, data = self.fetch_esi_url(url, primary_station.market_profile)
+        initial_url = api_url + str(page_number)
+        success, data, headers = self.fetch_esi_url(initial_url, primary_station.market_profile, headers_to_return=['x-pages'])
+        if not success:
+            return
+
+        max_pages = int(headers['x-pages'])
+
+        urls = [api_url + str(i) for i in range(2, max_pages+1)]
+
+        if max_pages > 1:
+            all_station_data = self.fetch_batch_esi_urls(urls, primary_station.market_profile)
+        else:
+            all_station_data = dict()
+
+        all_station_data[initial_url] = (success, data)
+
+        total_orders = 0
+
+        for url, station_data in all_station_data.items():
+            success, data = station_data
 
             if not success:
-                # self.log_error('API returned an error for url %s' % url)
+                self.log_error('API returned an error for url %s' % url)
                 return False
 
             try:
                 orders = json.loads(data)
             except:
-                break
+                return False
 
             if len(orders) == 0:
-                break
+                return False
+
+            total_orders += len(orders)
 
             sql_inserts = []
 
@@ -95,39 +132,36 @@ class PriceUpdater(APITask):
                 price = Decimal(order['price'])
                 issued = self.parse_api_date(order['issued'], True)
 
-                order_id=int(order['order_id'])
-                item_id=int(order['type_id'])
-                station_id=int(order['location_id'])
-                buy_order=order['is_buy_order']
-                volume_entered=int(order['volume_total'])
-                volume_remaining=remaining
-                minimum_volume=int(order['min_volume'])
-                expires=issued + timedelta(int(order['duration']))
-                range=order['range']
-                times_updated=1
-                last_updated=start_time
-                
+                order_id = int(order['order_id'])
+                item_id = int(order['type_id'])
+                station_id = int(order['location_id'])
+                buy_order = order['is_buy_order']
+                volume_entered = int(order['volume_total'])
+                volume_remaining = remaining
+                minimum_volume = int(order['min_volume'])
+                expires = issued + timedelta(int(order['duration']))
+                order_range = order['range']
+                times_updated = 1
+                last_updated = start_time
+
                 new_sql = "(%d, %d, %d, '%d', '%d', '%d', %0.2f, '%d', '%s', '%s', '%s', '%s', %d)" \
-                       % (order_id,
-                          item_id,
-                          station_id,
-                          volume_entered,
-                          volume_remaining,
-                          minimum_volume,
-                          price,
-                          buy_order,
-                          issued,
-                          expires,
-                          range,
-                          last_updated,
-                          times_updated)
+                          % (order_id,
+                             item_id,
+                             station_id,
+                             volume_entered,
+                             volume_remaining,
+                             minimum_volume,
+                             price,
+                             buy_order,
+                             issued,
+                             expires,
+                             order_range,
+                             last_updated,
+                             times_updated)
 
                 sql_inserts.append(new_sql)
 
-            page_number += 1
-
             self.execute_query(sql_inserts)
-
 
         # Delete non-existent orders:
         StationOrder.objects.filter(station_id__in=list(station_lookup)).exclude(
@@ -138,8 +172,6 @@ class PriceUpdater(APITask):
         cursor = self.get_cursor()
         cursor.execute(queries.order_updatemarketorders)
         cursor.close()
-
-
 
         return True
 
@@ -162,5 +194,8 @@ class PriceUpdater(APITask):
         cursor.execute('SET unique_checks=1')
         cursor.execute('SET autocommit=1')
         transaction.set_dirty()
+
+    def __call__(self, *args, **kwargs):
+        self.import_station(*args[0])
         
 
