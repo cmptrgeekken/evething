@@ -204,6 +204,11 @@ class ApiHelper:
                     else:
                         response = self._session.request(method, url, json=body)
 
+                    if response.status_code > 500\
+                            and retry > 0:
+                        retry -= 1
+                        continue
+
                     data = response.text
 
                     if headers_to_return is not None:
@@ -236,7 +241,7 @@ class ApiHelper:
                     retry -= 1
                     traceback.print_exc(e)
 
-                    if retry == 0:
+                    if retry <= 0:
                         if headers_to_return:
                             return False, data, headers
                         return False, data
