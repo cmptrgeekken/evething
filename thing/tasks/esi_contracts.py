@@ -140,6 +140,9 @@ class EsiContracts(APITask):
         # Add missing IDs as *UNKNOWN* Characters for now
         new = []
         for new_id in lookup_ids.difference(char_map, corp_map, alliance_map, lookup_corp_ids):
+            if new_id in char_map:
+                continue
+
             char = Character(
                 id=new_id,
                 name="*UNKNOWN*",
@@ -153,6 +156,9 @@ class EsiContracts(APITask):
         # Add missing Corporations too
         new = []
         for new_id in lookup_corp_ids.difference(corp_map):
+            if new_id in corp_map:
+                continue
+
             corp = Corporation(
                 id=new_id,
                 name="*UNKNOWN*",
@@ -166,6 +172,9 @@ class EsiContracts(APITask):
         # Fetch station data
         new = []
         for new_id in station_ids.difference(station_map):
+            if new_id in station_map:
+                continue
+
             station = Station(
                     id=new_id,
                     name="[Unknown Station: %d]" % new_id,
