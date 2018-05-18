@@ -340,6 +340,15 @@ CELERYBEAT_SCHEDULE = {
         },
         'args': [],
     },
+    'price_updater': {
+        'task': 'thing.price_updater',
+        'schedule': timedelta(minutes=5),
+        'options': {
+            'expires': 10 * 60,
+            'queue': 'et_medium'
+        },
+        'args': [],
+    },
 
     # update unknown character/corporation names every hour
     'fix-names': {

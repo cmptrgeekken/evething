@@ -109,6 +109,7 @@ def task_spawner():
     stations = Station.objects.filter(load_market_orders=True).select_related('market_profile')
 
     order_regions = set()
+    '''
     for station in stations:
         if station.is_citadel:
             url = 'https://esi.tech.ccp.is/latest/markets/structures/%d?datasource=tranquility&page=' \
@@ -127,7 +128,7 @@ def task_spawner():
 
         taskstate = g_tasks.get(url)
         _init_taskstate(taskdata, now, taskstate, -1, None, 'thing.price_updater', url, 'et_prices', region)
-
+    '''
     '''
 
     # Build a magical QuerySet for APIKey objects

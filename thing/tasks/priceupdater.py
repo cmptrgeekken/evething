@@ -194,8 +194,5 @@ class PriceUpdater(APITask):
         cursor.execute('SET unique_checks=1')
         cursor.execute('SET autocommit=1')
         transaction.set_dirty()
-
-    def __call__(self, *args, **kwargs):
-        self.import_station(*args[0])
         
 
