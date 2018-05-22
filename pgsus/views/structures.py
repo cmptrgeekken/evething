@@ -25,14 +25,17 @@
 
 from thing.models import *  # NOPEP8
 from thing.stuff import render_page, datetime  # NOPEP8
+
 from django.core.urlresolvers import reverse
 from django.shortcuts import redirect, render
-from django.http import JsonResponse
-from collections import defaultdict
+from django.http import JsonResponse, HttpResponse
 
-from thing.utils import dictfetchall
-from thing import queries
 from thing.helpers import commas
+
+from ics import Calendar, Event
+
+import uuid
+import random
 
 
 def mooncomp(request):
@@ -208,12 +211,24 @@ class MoonDetails:
 
         self.ship_m3_tooltip = 'Hourly - ' + tooltip
 
+    def to_event(self, base_url):
+        rd = random.Random()
+        rd.seed(self.extraction.id)
+
+        e = Event(
+            name=self.name,
+            begin=self.extraction.chunk_arrival_time,
+            duration=datetime.timedelta(hours=3),
+            url=base_url + str(self.extraction.id),
+            uid=str(uuid.UUID(int=rd.getrandbits(128)))
+        )
+        return e
+
     def parse_log(self):
         try:
             first_ore = self.config.first_ore
         except:
             return
-
 
         self.ores.append(
             MoonOreEntry(
@@ -396,6 +411,21 @@ def extractions(request):
 
     moon_list.sort(key=lambda x: x.extraction.chunk_arrival_time)
 
+    if 'format' in request.GET and request.GET.get('format') == 'ical':
+        cal = Calendar()
+        for l in moon_list:
+            base_url = request.build_absolute_uri(reverse(extractions))
+
+            event_url = "%s?ticker=%s&event=" % (base_url, ticker)
+
+            cal.events.add(l.to_event(event_url))
+
+        response = HttpResponse(str(cal), content_type='text/calendar')
+
+        response['Content-Disposition'] = 'attachment;filename="Moon Schedule.ics"'
+
+        return response
+
     out = render_page(
         'pgsus/extractions.html',
         dict(
@@ -409,6 +439,7 @@ def extractions(request):
         return JsonResponse(moon_list, safe=False)
 
     return out
+
 
 def refinerylist(request):
     if 'char' not in request.session:
