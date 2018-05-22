@@ -30,7 +30,7 @@ from django.core.urlresolvers import reverse
 from django.shortcuts import redirect, render
 from django.http import JsonResponse, HttpResponse
 
-from thing.helpers import commas
+from thing.helpers import humanize, commas
 
 from ics import Calendar, Event
 
@@ -215,12 +215,24 @@ class MoonDetails:
         rd = random.Random()
         rd.seed(self.extraction.id)
 
+        desc = "Chunk Time: %s days" % self.chunk_days
+
+        if self.total_value is not None:
+            desc += "\nTotal Value: %s ISK\n" % humanize(self.total_value)
+        else:
+            desc += "Total Value: Unknown"
+
+        for ore in self.ores:
+            desc += "\n(%s) %s%% %s\n %s ISK/m<sup>3</sup>" % (ore.type, commas(ore.pct*100, 0), ore.ore.name, commas(ore.remaining_isk_per_m3, 0))
+            desc += "\n Ore Value: %s ISK" % commas(float(ore.total_volume) * ore.remaining_isk_per_m3, 0)
+
         e = Event(
             name=self.name,
             begin=self.extraction.chunk_arrival_time,
             duration=datetime.timedelta(hours=3),
             url=base_url + str(self.extraction.id),
-            uid=str(uuid.UUID(int=rd.getrandbits(128)))
+            uid=str(uuid.UUID(int=rd.getrandbits(128))),
+            description=desc
         )
         return e
 
@@ -412,13 +424,19 @@ def extractions(request):
     moon_list.sort(key=lambda x: x.extraction.chunk_arrival_time)
 
     if 'format' in request.GET and request.GET.get('format') == 'ical':
-        cal = Calendar()
+        cal = Calendar(imports=[
+            'BEGIN:VCALENDAR',
+            'PRODID:-//PGSUS//Penny\'s Flying Circus//EN',
+            'X-WR-CALNAME:%s Moon Extractions' % ticker,
+            'X-PUBLISHED-TTL:PT12H',
+            'END:VCALENDAR',
+        ])
         for l in moon_list:
             base_url = request.build_absolute_uri(reverse(extractions))
 
             event_url = "%s?ticker=%s&event=" % (base_url, ticker)
 
-            cal.events.add(l.to_event(event_url))
+            cal.events.append(l.to_event(event_url))
 
         response = HttpResponse(str(cal), content_type='text/calendar')
 
