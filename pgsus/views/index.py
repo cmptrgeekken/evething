@@ -956,7 +956,8 @@ def perms(request):
         dict(scope='esi-ui.write_waypoint.v1', desc='Allows for setting and clearing of waypoints in-game.', required=False),
         dict(scope='esi-assets.read_assets.v1', desc='Allows for reading of character assets.', required=False),
         dict(scope='esi-assets.read_corporation_assets.v1', desc='Allows for reading of corporation assets (requires Director role).', required=False),
-        dict(scope='esi-characters.read_notifications.v1', desc='Allows for viewing of character notifications', required=False)
+        dict(scope='esi-characters.read_notifications.v1', desc='Allows for viewing of character notifications', required=False),
+        dict(scope='esi-markets.structure_markets.v1', desc='Allows for reading of structure market data', required=False)
     ]
 
     for scope in scopes:
