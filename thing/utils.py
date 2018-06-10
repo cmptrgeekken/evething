@@ -134,8 +134,9 @@ class ApiHelper:
     def fetch_batch_esi_urls(self, urls, character=None, method='get', body=None, headers_to_return=None, access_token=None, batch_size=100):
         shared_dict = dict()
 
-        if character.sso_access_token is None \
-                or character.sso_token_expires <= datetime.datetime.utcnow():
+        if character is not None\
+                and (character.sso_access_token is None
+                or character.sso_token_expires <= datetime.datetime.utcnow()):
             access_token, character.sso_token_expires = self.get_access_token(character)
 
         def do_batch():

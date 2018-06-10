@@ -41,6 +41,11 @@ class MarketGroup(MPTTModel):
     class MPTTMeta:
         order_insertion_by = ['name']
 
+    def get_all_items(self):
+        from thing.models import Item
+
+        return Item.objects.filter(market_group__lft__gte=self.lft, market_group__rght__lte=self.rght, market_group__tree_id=self.tree_id)
+
     def __unicode__(self):
         return self.name
 

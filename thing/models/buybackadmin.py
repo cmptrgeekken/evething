@@ -23,40 +23,15 @@
 # OF SUCH DAMAGE.
 # ------------------------------------------------------------------------------
 
-
 from django.db import models
 
-from thing.models.buybackitemgroup import BuybackItemGroup
-from thing.models.item import Item
-from thing.models.marketgroup import MarketGroup
+from thing.models import Buyback, Character
 
 
-class BuybackItem(models.Model):
+class BuybackAdmin(models.Model):
     id = models.IntegerField(primary_key=True)
-    buyback_item_group = models.ForeignKey(BuybackItemGroup, on_delete=models.DO_NOTHING)
 
-    item = models.ForeignKey(Item, on_delete=models.DO_NOTHING, null=True)
-    market_group = models.ForeignKey(MarketGroup, on_delete=models.DO_NOTHING)
+    buyback = models.ForeignKey(Buyback, on_delete=models.DO_NOTHING)
+    character = models.ForeignKey(Character, on_delete=models.DO_NOTHING)
 
-    price_type = models.CharField(max_length=8, default='5day')
-    price_pct = models.FloatField(default=1)
-    reprocess = models.BooleanField(default=False)
-    reprocess_pct = models.FloatField(default=.876)
-
-    accepted = models.BooleanField(default=True)
-
-    active = models.BooleanField(default=False)
-
-    price_region_id = 10000002
-
-    def get_items(self):
-        if self.item is not None:
-            return [self.item]
-
-        return self.market_group.get_all_items()
-
-    class Meta:
-        app_label = 'thing'
-
-    def __unicode__(self):
-        return self.item.name
+    super = models.BooleanField(default=False)

@@ -33,7 +33,6 @@ from thing.models import Station, StationOrder
 from thing import queries
 
 from django.db import transaction
-from multiprocessing import Pool
 
 
 class PriceUpdater(APITask):

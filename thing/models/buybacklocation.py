@@ -23,22 +23,26 @@
 # OF SUCH DAMAGE.
 # ------------------------------------------------------------------------------
 
-
 from django.db import models
-from thing.models.userprofile import UserProfile
+
+from thing.models import BuybackLocationGroup, Constellation, Region, System
 
 
-class BuybackProgram(models.Model):
+class BuybackLocation(models.Model):
     id = models.IntegerField(primary_key=True)
-    user = models.ForeignKey(UserProfile, on_delete=models.DO_NOTHING)
-    name = models.CharField(max_length=4000, null=False)
-    description = models.CharField(max_length=4000, null=False)
-    logo = models.ImageField(null=True)
 
-    active = models.BooleanField(default=False)
+    buyback_location_group = models.ForeignKey(BuybackLocationGroup, on_delete=models.DO_NOTHING)
+    system = models.ForeignKey(System, on_delete=models.DO_NOTHING, null=True, default=None, blank=True)
+    constellation = models.ForeignKey(Constellation, on_delete=models.DO_NOTHING, null=True, default=None, blank=True)
+    region = models.ForeignKey(Region, on_delete=models.DO_NOTHING, null=True, default=None, blank=True)
 
-    class Meta:
-        app_label = 'thing'
+    excluded = models.BooleanField()
 
-    def __unicode__(self):
-        return self.item.name
+    def get_name(self):
+        if self.region is not None:
+            return '%s (Region)' % self.region.name
+
+        if self.constellation is not None:
+            return '%s (Constellation)' % self.constellation.name
+
+        return '%s (%s)' % (self.system.name, self.system.constellation.region.name)

@@ -36,6 +36,13 @@ WHERE   corporation_id IN (
 ORDER BY c.name, cw.account_key
 """
 
+marketgroup_all_items = """
+SELECT i.id
+FROM thing_marketgroup mg
+INNER JOIN thing_item i on mg.id = i.market_group_id
+WHERE mg.lft >= %d and mg.rght < %d and mg.tree_id = %d
+"""
+
 fuel_block_industry = """
 SELECT i.name AS name,SUM(runs)*40 AS qty
 FROM thing_industryjob ij 
@@ -140,13 +147,25 @@ SELECT  DISTINCT pw.item_id, 10000002 AS region_id
 FROM    thing_pricewatch pw
 WHERE   pw.active = 1
 UNION
+select distinct i.id as item_id, 10000002 as region_id
+FROM thing_item i
+	inner join thing_marketgroup mg on i.market_group_id=mg.id
+where 
+	(exists (select 1 from thing_buybackitem where item_id=i.id and accepted=1)
+    or exists (select 1 from thing_buybackitem bi inner join thing_marketgroup mg1 on bi.market_group_id=mg1.id WHERE mg1.lft<=mg.lft and mg1.rght >= mg.rght and mg1.tree_id=mg.tree_id and accepted=1))
+    and not exists (select 1 from thing_buybackitem where item_id=i.id and accepted=0)
+    and not exists (select 1 from thing_buybackitem bi inner join thing_marketgroup mg1 on bi.market_group_id=mg1.id WHERE mg1.lft<=mg.lft and mg1.rght >= mg.rght and mg1.tree_id=mg.tree_id and accepted=0)
+"""
+
+''' Add if we want all local stuff
+UNION
 SELECT DISTINCT so.item_id, c.region_id
 FROM thing_stationorder so
     INNER JOIN thing_station s ON so.station_id=s.id
     INNER JOIN thing_system sy ON s.system_id=sy.id
     INNER JOIN thing_constellation c ON sy.constellation_id=c.id
     WHERE s.name NOT LIKE 'Jita%'
-"""
+'''
 
 journal_aggregate_char = """
 SELECT  EXTRACT(YEAR FROM date) AS year,
@@ -248,7 +267,7 @@ WHERE c.type IN('item_exchange', 'Item Exchange')
 fuelblock_monthly_purchase_summary = """
 SELECT DATE_FORMAT(c.date_completed, '%m-%Y') AS month, SUM(ci.quantity) AS qty
 FROM thing_contract c 
-    INNER JOIN thing_contractitem ci ON c.id_id=ci.contract_id
+    INNER JOIN thing_contractitem ci ON c.id=ci.contract_id
     INNER JOIN thing_item i ON ci.item_id=i.id 
 WHERE c.type IN ('item_exchange', 'Item Exchange')
     AND i.name LIKE '%Fuel Block'
@@ -256,6 +275,7 @@ WHERE c.type IN ('item_exchange', 'Item Exchange')
           OR (c.assignee_id=c.corporation_id AND ci.included=0))
     AND c.date_completed IS NOT NULL
   GROUP BY DATE_FORMAT(c.date_completed, '%m-%Y')
+  ORDER BY DATE_FORMAT(c.date_completed, '%m-%Y');
 """
 
 courier_contracts = """
@@ -1124,4 +1144,8 @@ FROM thing_moonobserverentry moe
 where moe.last_updated >= DATE_ADD(NOW(), INTERVAL -2 DAY)
     AND moe.observer_id=%s
 GROUP BY moe.observer_id, i.name
+"""
+
+contract_fix_duplicate_items = """
+DELETE FROM thing_contractitem WHERE id NOT IN (SELECT MIN(id) FROM thing_contractitem group by record_id,contract_id);
 """
