@@ -25,13 +25,14 @@
 
 from django.db import models
 
-from thing.models import BuybackLocationGroup, Constellation, Region, System
+from thing.models import BuybackLocationGroup, Constellation, Region, Station, System
 
 
 class BuybackLocation(models.Model):
     id = models.IntegerField(primary_key=True)
 
     buyback_location_group = models.ForeignKey(BuybackLocationGroup, on_delete=models.DO_NOTHING)
+    structure = models.ForeignKey(Station, on_delete=models.DO_NOTHING, null=True, default=None, blank=True)
     system = models.ForeignKey(System, on_delete=models.DO_NOTHING, null=True, default=None, blank=True)
     constellation = models.ForeignKey(Constellation, on_delete=models.DO_NOTHING, null=True, default=None, blank=True)
     region = models.ForeignKey(Region, on_delete=models.DO_NOTHING, null=True, default=None, blank=True)
@@ -45,4 +46,7 @@ class BuybackLocation(models.Model):
         if self.constellation is not None:
             return '%s (Constellation)' % self.constellation.name
 
-        return '%s (%s)' % (self.system.name, self.system.constellation.region.name)
+        if self.system is not None:
+            return '%s (%s)' % (self.system.name, self.system.constellation.region.name)
+
+        return '%s (%s)' % (self.structure.name, self.structure.system.constellation.region.name)
