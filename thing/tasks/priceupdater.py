@@ -87,6 +87,7 @@ class PriceUpdater(APITask):
         initial_url = api_url + str(page_number)
         success, data, headers = self.fetch_esi_url(initial_url, primary_station.market_profile, headers_to_return=['x-pages'])
         if not success:
+            self.log_error("Station %s error: %s" % (primary_station.name, data))
             return
 
         max_pages = int(headers['x-pages'])

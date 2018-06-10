@@ -112,9 +112,7 @@ def item_contracts(request):
         contract.z_calculated_reward = 0
         contract.z_items = ''
 
-        contract_items = ContractItem.objects.select_related('item').filter(
-            contract_id=contract.id
-        )
+        contract_items = contract.get_items()
 
         buyback_items_query = PriceWatch.objects.filter(
             active=True,

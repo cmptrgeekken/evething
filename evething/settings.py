@@ -297,7 +297,7 @@ CELERYBEAT_SCHEDULE = {
     },
     'corp_contract_updater': {
         'task': 'thing.esi_contracts',
-        'schedule': timedelta(hours=1),
+        'schedule': timedelta(minutes=5),
         'options': {
             'expires': 240*60,
             'queue': 'et_medium'
@@ -345,7 +345,7 @@ CELERYBEAT_SCHEDULE = {
         'schedule': timedelta(minutes=5),
         'options': {
             'expires': 10 * 60,
-            'queue': 'et_medium'
+            'queue': 'et_prices'
         },
         'args': [],
     },

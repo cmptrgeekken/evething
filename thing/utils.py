@@ -131,7 +131,7 @@ class ApiHelper:
 
         return data
 
-    def fetch_batch_esi_urls(self, urls, character=None, method='get', body=None, headers_to_return=None, access_token=None, batch_size=100):
+    def fetch_batch_esi_urls(self, urls, character=None, method='get', body=None, headers_to_return=None, access_token=None, batch_size=10):
         shared_dict = dict()
 
         if character is not None\

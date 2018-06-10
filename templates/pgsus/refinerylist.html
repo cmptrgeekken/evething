@@ -75,9 +75,9 @@
         <div class="col-lg-12">
             {% if is_admin and systems_missing_repros %}
             <h4>The following systems are missing reprocessing plants:</h4>
-            <ul>
+            <ul class="list-inline">
                 {% for s in systems_missing_repros %}
-                <li>{{ s.name }}</li>
+                <li><a href="https://evemaps.dotlan.net/system/{{s.name}}" target="_blank">{{ s.name }}</a></li>
                 {% endfor %}
             </ul>
             {% endif %}
