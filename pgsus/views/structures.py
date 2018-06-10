@@ -428,7 +428,7 @@ def extractions(request):
             'BEGIN:VCALENDAR',
             'PRODID:-//PGSUS//Penny\'s Flying Circus//EN',
             'X-WR-CALNAME:%s Moon Extractions' % ticker,
-            'X-PUBLISHED-TTL:PT12H',
+            'X-PUBLISHED-TTL:PT1H',
             'END:VCALENDAR',
         ])
         for l in moon_list:
