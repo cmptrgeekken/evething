@@ -65,7 +65,7 @@ class BuybackItemGroup(models.Model):
 
             if self.price_type == '5day':
                 return self.item.get_history_avg(days=5, region_id=self.price_region_id, issued=issued,
-                                                 pct=pct, reprocess=reprocess)
+                                                 pct=pct, reprocess=reprocess, reprocess_pct=self.reprocess_pct)
             return 0
 
         def get_buyback_type(self):
@@ -74,7 +74,7 @@ class BuybackItemGroup(models.Model):
                 type_str = '%0.0f%% of 5-day Jita Average' % (self.price_pct * 100.0)
 
             if self.reprocess:
-                type_str += ' of max-reprocessed materials'
+                type_str += ' @ %0.1f%% refine' % (self.reprocess_pct*100.0)
 
             return type_str
 
