@@ -23,40 +23,43 @@
 # OF SUCH DAMAGE.
 # ------------------------------------------------------------------------------
 
-
 from django.db import models
 
-from thing.models.buybackitemgroup import BuybackItemGroup
-from thing.models.item import Item
-from thing.models.marketgroup import MarketGroup
+from thing.models import Alliance, Buyback, Corporation
 
 
-class BuybackItem(models.Model):
+class BuybackLocationGroup(models.Model):
     id = models.IntegerField(primary_key=True)
-    buyback_item_group = models.ForeignKey(BuybackItemGroup, on_delete=models.DO_NOTHING)
 
-    item = models.ForeignKey(Item, on_delete=models.DO_NOTHING, null=True)
-    market_group = models.ForeignKey(MarketGroup, on_delete=models.DO_NOTHING)
+    buyback = models.ForeignKey(Buyback, on_delete=models.DO_NOTHING)
 
-    price_type = models.CharField(max_length=8, default='5day')
-    price_pct = models.FloatField(default=1)
-    reprocess = models.BooleanField(default=False)
-    reprocess_pct = models.FloatField(default=.876)
+    name = models.CharField(max_length=100)
 
-    accepted = models.BooleanField(default=True)
+    corporation = models.ForeignKey(Corporation, on_delete=models.DO_NOTHING)
+    alliance = models.ForeignKey(Alliance, on_delete=models.DO_NOTHING)
 
-    active = models.BooleanField(default=False)
+    structure_name_filter = models.CharField(max_length=100)
 
-    price_region_id = 10000002
+    def get_accepted_locations(self):
+        from thing.models.buybacklocation import BuybackLocation
 
-    def get_items(self):
-        if self.item is not None:
-            return [self.item]
+        return BuybackLocation.objects.filter(buyback_location_group_id=self.id, excluded=False)
 
-        return self.market_group.get_all_items()
+    def get_excluded_locations(self):
+        from thing.models.buybacklocation import BuybackLocation
 
-    class Meta:
-        app_label = 'thing'
+        return BuybackLocation.objects.filter(buyback_location_group_id=self.id, excluded=True)
 
-    def __unicode__(self):
-        return self.item.name
+    def get_owner(self):
+        if self.alliance is not None:
+            return "%s (Alliance)" % self.alliance.name
+
+        if self.corporation is not None:
+            return "%s (Corporation)" % self.corporation.name
+
+        return "Anyone"
+
+    def get_types(self):
+        from thing.models.buybacklocationtype import BuybackLocationType
+
+        return BuybackLocationType.objects.filter(buyback_location_group_id=self.id)

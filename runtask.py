@@ -36,7 +36,7 @@ os.environ['DJANGO_SETTINGS_MODULE'] = 'evething.settings'
 import django
 django.setup()
 from django.db import connections, transaction
-from thing.tasks import EsiCharacterRoles, EsiContracts, EsiMoonExtraction, EsiMoonObserver, EsiNotifications, EsiStructures, EsiAssets, FixNames, PriceUpdater
+from thing.tasks import EsiCharacterRoles, EsiContracts, EsiMoonExtraction, EsiMoonObserver, EsiNotifications, EsiStructures, EsiAssets, HistoryUpdater, FixNames, PriceUpdater
 
 from thing.models import *  # NOPEP8
 import sys
@@ -73,6 +73,9 @@ if __name__ == '__main__':
 
     if 'price' in libs:
         to_run.append(PriceUpdater())
+
+    if 'history' in libs:
+        to_run.append(HistoryUpdater())
 
     for run in to_run:
         print('Running %s...' % run.__name__)

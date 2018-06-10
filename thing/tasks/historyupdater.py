@@ -27,6 +27,7 @@ from .apitask import APITask
 
 from thing import queries
 from thing.models import PriceHistory
+from thing.models.buybackitemgroup import BuybackItemGroup
 
 import json
 
@@ -36,29 +37,40 @@ HISTORY_PER_REQUEST = 50
 class HistoryUpdater(APITask):
     name = 'thing.history_updater'
 
-    def run(self, api_url):
+    history_url = 'https://esi.evetech.net/latest/markets/%s/history/?datasource=tranquility&type_id=%s'
+
+    def run(self, item_ids=None, region_id=None):
         self.init()
 
-        # Get a list of all item_ids
-        cursor = self.get_cursor()
-        cursor.execute(queries.pricing_item_ids)
+        if item_ids is not None:
+            items = [dict(item_id=i, region_id=region_id) for i in item_ids]
+        else:
+            # Get a list of all item_ids
+            cursor = self.get_cursor()
+            cursor.execute(queries.pricing_item_ids)
 
-        items = [dict(item_id=row[0], region_id=row[1]) for row in cursor]
+            items = [dict(item_id=row[0], region_id=row[1]) for row in cursor]
 
-        cursor.close()
+            cursor.close()
+
+        urls = [self.history_url % (i['region_id'], i['item_id']) for i in items]
+
+        item_lookup = dict()
+        for i in range(0, len(urls)):
+            item_lookup[urls[i]] = items[i]['region_id'], items[i]['item_id']
+
+        all_history_data = self.fetch_batch_esi_urls(urls, None)
 
         # Collect data
-        for i in range(0, len(items)):
-            item_id = items[i]['item_id']
-            region_id = items[i]['region_id']
-            
-            # Fetch the XML
-            url = api_url % (region_id, item_id)
-            data = self.fetch_url(url, {})
-            if data is False:
+        for url, history_data in all_history_data.items():
+            success, data = history_data
+
+            if not success:
                 return
 
             item_history = json.loads(data)
+
+            region_id, item_id = item_lookup[url]
 
             data = {}
             for history in item_history:

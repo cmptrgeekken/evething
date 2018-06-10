@@ -283,7 +283,7 @@ CELERYBEAT_SCHEDULE = {
             'expires': 239*60,
             'queue': 'et_medium',
         },
-        'args': ['https://esi.tech.ccp.is/latest/markets/%d/history/?datasource=tranquility&type_id=%d'],
+        'args': [],
     },
 
     'notifications_updater': {

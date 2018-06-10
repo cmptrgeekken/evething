@@ -1,0 +1,187 @@
+{% extends "web_template.html" %}
+{% import 'macros/common.html' as common %}
+
+{% block title %}Buyback{% endblock %}
+
+{% block content %}
+
+<section class="bg-19 bg-center bg-cover">
+    <div>
+        <div class="container section-sm">
+            <h1 class="top-title"><img src="https://image.eveonline.com/Corporation/{{ buyback.corporation.id }}_64.png" width="64" height="64" alt="{{ buyback.corporation.name }}"> {{ buyback.name }}</h1>
+            <p class="sub-text">
+                {{ buyback.description }}
+            </p>
+        </div>
+    </div>
+</section>
+
+<section class="container section-md" style="width: auto; margin-left: 40px; margin-right: 40px;">
+    <div class="row">
+        <div class="col-md-8">
+            {% if parse_results and parse_results['bad_lines']|length > 0 %}
+            <div class="alert alert-danger" role="alert">
+                <h4 class="alert-heading">The following lines could not be parsed or are not a part of this buyback:</h4>
+                <ul>
+                    {% for bad_line in parse_results['bad_lines'] %}
+                        <li>{{bad_line}}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+            {% if parse_results and parse_results['results']|length > 0 %}
+            <div class="row">
+                <div class="col-md-6">
+                    <h3>Contract to:</h3>
+                    <b id="contract_target"><img src="https://image.eveonline.com/Corporation/{{ buyback.corporation.id }}_32.png" width="16" height="16" alt=""> {{ buyback.corporation.name }}</b>
+                    <!-- Trigger -->
+                    <button class="btn btn-xs" type="button" data-clipboard-text="Penny's Flying Circus">
+                        <img src="{{ STATIC_URL }}pgsus/img/clippy.svg" width="13" title="Copy to clipboard">
+                    </button>
+                </div>
+                <div class="col-md-6">
+                    <h3>You will receive:</h3>
+                    <b><span id="total_reward">{{ total_reward | commas }}</span> ISK</b>
+                    <!-- Trigger -->
+                    <button class="btn btn-xs" type="button" data-clipboard-text="{{ total_reward|int }}">
+                        <img src="{{ STATIC_URL }}pgsus/img/clippy.svg" width="13" title="Copy to clipboard">
+                    </button>
+                </div>
+            </div>
+            <h2>Items to Sell</h2>
+            <table class="table table-bordered table-hover">
+                <tr>
+                    <th>Qty</th>
+                    <th>Item</th>
+                    <th>Ea</th>
+                    <th>Reward</th>
+                </tr>
+                {% for item in buyback_items if buyback_qty.get(item.item.id) > 0 %}
+                <tr>
+                    <td>
+                        {{ buyback_qty.get(item.item.id)|commas }}
+                    </td>
+                    <td>{{ item.item.name }}</td>
+                    <td>{{ item.get_price() | humanize }}</td>
+                    <td><abbr title="{{(item.get_price()*buyback_qty.get(item.item.id)) | commas}} ISK">{{ (item.get_price()*buyback_qty.get(item.item.id))| humanize }} ISK</abbr></td>
+                </tr>
+                {% endfor %}
+            </table>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <h4>Total Volume:</h4>
+                    <b>{{ total_volume | humanize }} m<sup>3</sup></b>
+                </div>
+            </div>
+            {% endif %}
+            <div>
+            <h2>What would you like to sell?</h2>
+            <form id="formEntry" class="form-horizontal" method="post">
+                <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                <div class="form-group">
+                    <div class="col-sm-12">
+                        <textarea name="buyback_input" rows="15" style="width: 85%;" placeholder="Paste items to sell here (e.g., 1000 Robotics)">{{ buyback_input }}</textarea>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="col-sm-6">
+                        <button type="submit" class="btn btn-primary">
+                            Submit
+                        </button>
+                    </div>
+                </div>
+            </form>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <h2>Accepted Items</h2>
+            <i>Pricing Last Updated: {{ price_last_updated.strftime('%Y-%m-%d') }}</i>
+
+            {% for g in buyback_groups %}
+                <h4>
+                    <a data-toggle="collapse" href="#group-{{ g.id }}" role="button" aria-expanded="false" aria-controls="group-{{ g.id }}">
+                        {{ g.name }}
+                    </a>
+                </h4>
+
+                <div class="collapse" id="group-{{ g.id }}">
+                    <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#locations-{{g.id}}">
+                      Accepted Locations
+                    </button>
+                    <br/><br/>
+                    <div class="modal fade" id="locations-{{g.id}}" tabindex="-1" role="dialog" aria-labelledby="locations-{{g.id}}-label" aria-hidden="true">
+                      <div class="modal-dialog modal-sm" role="document">
+                        <div class="modal-content">
+                          <div class="modal-header">
+                            <h3 class="modal-title" id="locations-{{g.id}}-label">{{ g.buyback_location_group.name }}
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                              <span aria-hidden="true">&times;</span>
+                            </button>
+                            </h3>
+                          </div>
+                          <div class="modal-body">
+                            <div class="row">
+                                <p>
+                                    &nbsp;&nbsp;Accepted structures meet the following requirements:
+                                    <ul>
+                                    {% if g.buyback_location_group.structure_name_filter %}
+                                        <li><b>Name must contain:</b> {{ g.buyback_location_group.structure_name_filter }}</li>
+                                    {% endif %}
+                                        <li><b>Be Owned by:</b> {{ g.buyback_location_group.get_owner() }}</li>
+                                        <li><b>Be located in the following:</b>
+                                            <ul>
+                                                {% for l in g.buyback_location_group.get_accepted_locations() %}
+                                                <li>{{ l.get_name() }}</li>
+                                                {% endfor %}
+                                            </ul>
+                                        </li>
+                                        {% if g.buyback_location_group.get_excluded_locations() %}
+                                        <li><b>Not be located in the following:</b>
+                                            <ul>
+                                                {% for l in g.buyback_location_group.get_excluded_locations() %}
+                                                <li>{{ l.get_name() }}</li>
+                                                {% endfor %}
+                                            </ul>
+                                        </li>
+                                        {% endif %}
+                                    {% if g.buyback_location_group.get_types() %}
+                                        <li><b>Be of type:</b>
+                                            <ul>
+                                                {% for t in g.buyback_location_group.get_types() %}
+                                                <li>{{ t.structure_type.name }}</li>
+                                                {% endfor %}
+                                            </ul>
+                                        </li>
+                                    {% endif %}
+                                    </ul>
+                                </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+
+                    <table class="table table-bordered table-hover">
+                    {% for i in g.get_items() %}
+                    <tr>
+                        <td>
+                            {{ i.item.name }}<br/>
+                            <i><small>
+                                {{ i.get_buyback_type() }}
+                            </small></i>
+                        </td>
+                        <td>
+                            <abbr title="{{i.get_price() | commas}} ISK">{{ i.get_price() | humanize }} ISK</abbr>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    </table>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+{% endblock %}

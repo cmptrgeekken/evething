@@ -157,7 +157,7 @@ def open_window(request):
     return HttpResponse('')
 
 
-def buyback(request):
+def buyback_old(request):
     buyback_items = PriceWatch.objects.filter(
             active=True,
             price_group__isnull=False

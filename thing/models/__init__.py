@@ -13,6 +13,14 @@ from thing.models.alliance import Alliance
 from thing.models.corporation import Corporation
 from thing.models.character import Character
 
+from thing.models.buyback import Buyback
+from thing.models.buybackadmin import BuybackAdmin
+from thing.models.buybackitemgroup import BuybackItemGroup
+from thing.models.buybackitem import BuybackItem
+from thing.models.buybacklocationgroup import BuybackLocationGroup
+from thing.models.buybacklocation import BuybackLocation
+from thing.models.buybacklocationtype import BuybackLocationType
+
 #
 from thing.models.inventoryflag import InventoryFlag
 from thing.models.reftype import RefType
