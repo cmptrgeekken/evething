@@ -77,7 +77,7 @@ class BuybackItemGroup(models.Model):
             elif self.price_type == 'buy':
                 item_price = round(self.price_pct*self.item.get_price(True, reprocess=reprocess, reprocess_pct=self.reprocess_pct), 2)
 
-            if self.reprocess_tax > 0:
+            if self.reprocess_tax is not None:
                 item_price *= (1-self.reprocess_tax)
 
             return item_price
@@ -92,7 +92,7 @@ class BuybackItemGroup(models.Model):
             if self.reprocess:
                 type_str += '<br/>@ %0.1f%% refine' % (self.reprocess_pct*100.0)
 
-            if self.reprocess_tax is not None:
+            if self.reprocess_tax > 0:
                 type_str += '<br/>(minus %0.0f%% tax)' % (self.reprocess_tax*100.0)
 
             return type_str
