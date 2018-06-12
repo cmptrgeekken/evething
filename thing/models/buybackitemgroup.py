@@ -75,12 +75,12 @@ class BuybackItemGroup(models.Model):
                 item_price = self.item.get_history_avg(days=5, region_id=self.price_region_id, issued=issued,
                                                  pct=pct, reprocess=reprocess, reprocess_pct=self.reprocess_pct)
             elif self.price_type == 'buy':
-                item_price = round(self.price_pct*self.item.get_price(True, reprocess=reprocess, reprocess_pct=self.reprocess_pct), 2)
+                item_price = self.price_pct*self.item.get_price(True, reprocess=reprocess, reprocess_pct=self.reprocess_pct)
 
             if self.reprocess_tax is not None:
                 item_price *= (1-self.reprocess_tax)
 
-            return item_price
+            return round(item_price, 2)
 
         def get_buyback_type(self):
             type_str = ''
