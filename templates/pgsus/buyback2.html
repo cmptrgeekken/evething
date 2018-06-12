@@ -180,7 +180,7 @@
                         <td>
                             {{ i.item.name }}<br/>
                             <i><small>
-                                {{ i.get_buyback_type() }}
+                                {{ i.get_buyback_type()|safe }}
                             </small></i>
                         </td>
                         <td>

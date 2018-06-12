@@ -41,6 +41,7 @@ class BuybackItemGroup(models.Model):
     price_pct = models.FloatField(default=1)
     reprocess = models.BooleanField(default=False)
     reprocess_pct = models.FloatField(default=.876)
+    reprocess_tax = models.FloatField(default=0)
 
     active = models.BooleanField(default=False)
 
@@ -56,6 +57,11 @@ class BuybackItemGroup(models.Model):
             self.reprocess = buybackitem.reprocess or buybackitemgroup.reprocess
             self.reprocess_pct = buybackitem.reprocess_pct or buybackitemgroup.reprocess_pct
 
+            if buybackitem.reprocess_tax is not None:
+                self.reprocess_tax = buybackitem.reprocess_tax
+            else:
+                self.reprocess_tax = buybackitemgroup.reprocess_tax or 0.0
+
         def get_price(self, reprocess=None, issued=None, pct=None):
             if reprocess is None:
                 reprocess = self.reprocess
@@ -63,13 +69,18 @@ class BuybackItemGroup(models.Model):
             if pct is None:
                 pct = self.price_pct
 
+            item_price = 0
+
             if self.price_type == '5day':
-                return self.item.get_history_avg(days=5, region_id=self.price_region_id, issued=issued,
+                item_price = self.item.get_history_avg(days=5, region_id=self.price_region_id, issued=issued,
                                                  pct=pct, reprocess=reprocess, reprocess_pct=self.reprocess_pct)
             elif self.price_type == 'buy':
-                return round(self.price_pct*self.item.get_price(True, reprocess=reprocess, reprocess_pct=self.reprocess_pct), 2)
+                item_price = round(self.price_pct*self.item.get_price(True, reprocess=reprocess, reprocess_pct=self.reprocess_pct), 2)
 
-            return 0
+            if self.reprocess_tax is not None:
+                item_price *= (1-self.reprocess_tax)
+
+            return item_price
 
         def get_buyback_type(self):
             type_str = ''
@@ -79,7 +90,10 @@ class BuybackItemGroup(models.Model):
                 type_str = '%0.0f%% of Jita Buy' % (self.price_pct * 100)
 
             if self.reprocess:
-                type_str += ' @ %0.1f%% refine' % (self.reprocess_pct*100.0)
+                type_str += '<br/>@ %0.1f%% refine' % (self.reprocess_pct*100.0)
+
+            if self.reprocess_tax is not None:
+                type_str += '<br/>(minus %0.0f%% tax)' % (self.reprocess_tax*100.0)
 
             return type_str
 

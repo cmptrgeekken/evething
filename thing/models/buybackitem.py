@@ -42,6 +42,7 @@ class BuybackItem(models.Model):
     price_pct = models.FloatField(default=1)
     reprocess = models.BooleanField(default=False)
     reprocess_pct = models.FloatField(default=.876)
+    reprocess_tax = models.FloatField(default=0)
 
     accepted = models.BooleanField(default=True)
 
