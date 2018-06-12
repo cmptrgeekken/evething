@@ -10,7 +10,9 @@
         <div class="container section-sm">
             <h1 class="top-title"><img src="https://image.eveonline.com/Corporation/{{ buyback.corporation.id }}_64.png" width="64" height="64" alt="{{ buyback.corporation.name }}"> {{ buyback.name }}</h1>
             <p class="sub-text">
-                {{ buyback.description }}
+                {% if buyback.description %}
+                    {{ buyback.description }}
+                {% endif %}
             </p>
         </div>
     </div>

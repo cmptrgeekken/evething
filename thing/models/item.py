@@ -119,6 +119,50 @@ class Item(models.Model):
 
         return orders.aggregate(total_volume=Sum('volume_remaining'))['total_volume']
 
+    def get_price(self, buy=False, item_ids=None, station_ids=None, order_pct=.05, reprocess=False, reprocess_pct=.876):
+        from thing.models.stationorder import StationOrder
+
+        if item_ids is None:
+            item_ids = [self.id]
+
+        if station_ids is None:
+            station_ids = [60003760] # Jita IV-4
+
+        average = 0
+
+        if reprocess:
+            materials = self.get_reprocessed_items()
+            for material in materials:
+                # TODO: Calculate reprocessing rate correctly
+                average += material.z_qty * reprocess_pct * material.get_price(buy=buy, station_ids=station_ids, order_pct=order_pct)
+
+            return round(float(average / self.portion_size), 2)
+
+        orders = StationOrder.objects.filter(item_id__in=item_ids, station_id__in=station_ids, buy_order=buy)
+        
+        if buy:
+            orders = orders.order_by('-price')
+        else:
+            orders = orders.order_by('price')
+
+        max_order_vol = orders.aggregate(total_volume=Sum('volume_remaining'))['total_volume']
+
+        order_vol = 0
+        order_sum = 0.0
+
+        for o in orders:
+            order_vol += o.volume_remaining
+            order_sum += float(o.volume_remaining) * float(o.price)
+            
+            if float(order_vol) > float(max_order_vol)*order_pct:
+                break
+
+        if order_vol == 0:
+            # If no order volume, calculate reprocessed value at 84.3% refine
+            return self.get_price(buy=buy, station_ids=station_ids, order_pct=order_pct, reprocess=True, reprocess_pct=.843)
+
+        return round(order_sum / float(order_vol), 2)
+
     def get_current_orders(self,
                            quantity=None,
                            buy=False,
