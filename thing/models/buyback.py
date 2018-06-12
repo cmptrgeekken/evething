@@ -34,6 +34,7 @@ class Buyback(models.Model):
     name = models.CharField(max_length=250)
     slug = models.CharField(max_length=250)
     description = models.TextField()
+    contract_description = models.CharField(max_length=250)
     corporation = models.ForeignKey(corporation.Corporation, blank=True, null=True, on_delete=models.DO_NOTHING)
     discord_link = models.CharField(max_length=1000)
     active = models.BooleanField(default=False)

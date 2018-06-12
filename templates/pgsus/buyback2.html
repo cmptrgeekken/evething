@@ -49,6 +49,15 @@
                         <img src="{{ STATIC_URL }}pgsus/img/clippy.svg" width="13" title="Copy to clipboard">
                     </button>
                 </div>
+                {% if buyback.contract_description %}
+                <div class="col-md-6 pull-6">
+                    <h3>Contract Description:</h3>
+                    <b>{{ buyback.contract_description }}</b>
+                    <button class="btn btn-xs" type="button" data-clipboard-text="{{ buyback.contract_description }}">
+                        <img src="{{ STATIC_URL }}pgsus/img/clippy.svg" width="13" title="Copy to clipboard">
+                    </button>
+                </div>
+                {% endif %}
             </div>
             <h2>Items to Sell</h2>
             <table class="table table-bordered table-hover">
