@@ -52,8 +52,10 @@ class EsiStructures(APITask):
 
             if 'Station_Manager' in char.get_apiroles():
                 if char.corporation_id is not None and char.corporation_id not in seen_corps:
-                    self.import_structures(char)
-                    seen_corps.add(char.corporation_id)
+                    print char.name
+                    success = self.import_structures(char)
+                    if success:
+                        seen_corps.add(char.corporation_id)
 
     def import_structures(self, character):
         corp_id = character.corporation_id
@@ -63,13 +65,13 @@ class EsiStructures(APITask):
         seen_ids = set()
 
         skip_updates = False
-    
+
         while max_pages is None or page < max_pages:
             success, results, headers = self.fetch_esi_url(self.corp_structures_url % (corp_id, page), character, 'get', None, ['x-pages'])
 
             if not success:
                 skip_updates = True
-                break
+                return False
 
             max_pages = int(headers['x-pages'])
             page += 1
@@ -101,7 +103,7 @@ class EsiStructures(APITask):
                 if success:
                     info = json.loads(results)
                 else:
-                    self.log_debug("Cannot find info on structure: %s" % struct['structure_id'])
+                    #self.log_debug("Cannot find info on structure: %s" % struct['structure_id'])a
                     continue
 
                 if info is None:
@@ -152,7 +154,7 @@ class EsiStructures(APITask):
 
                         db_service.save()
 
-        if not skip_updates:
+        if not skip_updates and len(seen_ids) > 0:
             Station.objects.filter(corporation_id=corp_id).exclude(id__in=list(seen_ids)).update(corporation_id=None)
 
         return True

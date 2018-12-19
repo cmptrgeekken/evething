@@ -38,7 +38,7 @@ from django.db import transaction
 class PriceUpdater(APITask):
     name = 'thing.price_updater'
 
-    def run(self):
+    def run(self, a=None, b=None, c=None, d=None):
         self.init()
 
         stations = Station.objects.filter(load_market_orders=True).select_related('market_profile')
@@ -95,7 +95,7 @@ class PriceUpdater(APITask):
         urls = [api_url + str(i) for i in range(2, max_pages+1)]
 
         if max_pages > 1:
-            all_station_data = self.fetch_batch_esi_urls(urls, primary_station.market_profile)
+            all_station_data = self.fetch_batch_esi_urls(urls, primary_station.market_profile, batch_size=1)
         else:
             all_station_data = dict()
 

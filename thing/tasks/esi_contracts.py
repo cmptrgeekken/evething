@@ -355,61 +355,59 @@ class EsiContracts(APITask):
                 if 'status' in headers and headers['status'] == 404:
                     seen_contracts.append(contract.contract_id)
                     ttl_count += 1
-                continue
-
-            try:
-                items_response = json.loads(data)
-            except:
-                continue
-
-            contract_items = dict()
-
-            for row in items_response:
-                contract_item = ContractItem(
-                    contract_id=contract.id,
-                    record_id=row['record_id'],
-                    item_id=row['type_id'],
-                    quantity=int(row['quantity']),
-                    raw_quantity=row.get('raw_quantity', 0),
-                    singleton=row['is_singleton'],
-                    included=row['is_included'],
-                )
-
+            else:
                 try:
-                    if contract_item.item.id not in contract_items:
-                        contract_items[contract_item.item.id] = contract_item
-                    else:
-                        contract_items[contract_item.item.id].quantity += int(contract_item.quantity)
+                    items_response = json.loads(data)
                 except:
-                    self.log_error('Item not found: %d', row['type_id'])
+                    continue
 
-                    new_item = Item(
-                        id=row['type_id'],
-                        name='**UNKNOWN**',
-                        item_group_id=20,  # Mineral, just
-                        portion_size=1,
-                        base_price=1,
+                contract_items = [] 
+
+                for row in items_response:
+                    contract_item = ContractItem(
+                        contract_id=contract.id,
+                        record_id=row['record_id'],
+                        item_id=row['type_id'],
+                        quantity=int(row['quantity']),
+                        raw_quantity=row.get('raw_quantity', 0),
+                        singleton=row['is_singleton'],
+                        included=row['is_included'],
                     )
 
-                    new_item.save()
+                    contract_items.append(contract_item)
 
-                    if contract_item.item.id not in contract_items:
-                        contract_items[contract_item.item.id] = contract_item
-                    else:
-                        contract_items[contract_item.item.id].quantity += int(contract_item.quantity)
+                    try:
+                        if contract_item.item is None:
+                            print('Item not found: %d', row['type_id'])
+                    except:
+                        self.log_error('Item not found: %d', row['type_id'])
 
-            ttl_count += 1
-            new = new + contract_items.values()
+                        new_item = Item(
+                            id=row['type_id'],
+                            name='**UNKNOWN**',
+                            item_group_id=20,  # Mineral, just
+                            portion_size=1,
+                            base_price=1,
+                        )
 
-            seen_contracts.append(contract.contract_id)
+                        new_item.save()
+                new = new + contract_items
+
+                ttl_count += 1
+
+                seen_contracts.append(contract.contract_id)
 
             if len(seen_contracts) >= 100:
                 print('Flushing %d-%d/%d contracts to DB...' % (ttl_count-len(seen_contracts), ttl_count, len(contracts_to_populate)))
-                ContractItem.objects.bulk_create(new)
                 c_filter.filter(contract_id__in=seen_contracts).update(retrieved_items=True)
+                # Ensure we remove duplicate records
+                ContractItem.objects.filter(contract_id__in=seen_contracts).delete();
+                ContractItem.objects.bulk_create(new)
                 new = []
                 seen_contracts = []
+
         if new:
+            ContractItem.objects.filter(contract_id__in=seen_contracts).delete();
             ContractItem.objects.bulk_create(new)
             c_filter.filter(contract_id__in=seen_contracts).update(retrieved_items=True)
 

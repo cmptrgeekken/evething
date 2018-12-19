@@ -48,7 +48,7 @@ class FixNames(APITask):
 
         # Fetch all Characters without Corporations
         no_corp_map = {}
-        for char in Character.objects.filter(corporation_id=None):
+        for char in Character.objects.filter(corporation_id=None, not_found=False):
             no_corp_map[char.id] = char
 
         # Fetch all unknown Corporation objects
@@ -106,9 +106,12 @@ class FixNames(APITask):
                     char.save()
 
         for id, char in no_corp_map.items():
-            success, response = self.fetch_esi_url(CHAR_INFO_URL % id, None)
+            success, response, headers = self.fetch_esi_url(CHAR_INFO_URL % id, None, headers_to_return=['status'])
 
             if not success:
+                if 'status' in headers and headers['status'] == 404:
+                    char.not_found=True
+                    char.save()
                 continue
 
             result = json.loads(response)
