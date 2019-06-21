@@ -37,8 +37,8 @@ import traceback
 class EsiMoonExtraction(APITask):
     name = 'thing.moonextraction'
 
-    mining_url = 'https://esi.tech.ccp.is/latest/corporation/%s/mining/extractions/?datasource=tranquility'
-    write_structure_url = 'https://esi.tech.ccp.is/latest/corporations/%s/structures/%s/?datasource=tranquility&language=en-us'
+    mining_url = 'https://esi.evetech.net/latest/corporation/%s/mining/extractions/?datasource=tranquility'
+    write_structure_url = 'https://esi.evetech.net/latest/corporations/%s/structures/%s/?datasource=tranquility&language=en-us'
 
     def run(self):
         self.init()
@@ -114,9 +114,12 @@ class EsiMoonExtraction(APITask):
             success, results = self.fetch_esi_url(self.mining_url % corp_id, character)
 
             if not success:
+                print(results)
                 return
 
             mining_info = json.loads(results)
+
+            seen_moons = dict()
 
             for info in mining_info:
                 db_moonextract = MoonExtraction.objects.filter(moon_id=info['moon_id']).first()
@@ -147,8 +150,19 @@ class EsiMoonExtraction(APITask):
                 db_extracthistory.save()
 
                 db_moonextract.save()
+
+                seen_moons[db_extracthistory.structure_id] = db_extracthistory.chunk_arrival_time
         except Exception, e:
             traceback.print_exc(e)
             return True
+
+        if len(seen_moons) > 0:
+            bad_moons = MoonExtractionHistory.objects.filter(structure__station__corporation_id=corp_id, chunk_arrival_time__gt=datetime.datetime.utcnow()).exclude(structure_id__in=seen_moons.keys()).delete()
+
+            for k in seen_moons:
+                t = seen_moons[k]
+
+                MoonExtractionHistory.objects.filter(structure_id=k, chunk_arrival_time__gt=datetime.datetime.utcnow()).exclude(chunk_arrival_time=t).delete()
+
 
         return True

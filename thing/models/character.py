@@ -36,6 +36,8 @@ class Character(models.Model):
     corporation = models.ForeignKey(corporation.Corporation, blank=True, null=True, on_delete=models.DO_NOTHING)
     sso_refresh_token = models.CharField(max_length=4000)
     sso_error_count = models.IntegerField(default=0)
+    not_found = models.BooleanField(default=False)
+
 
     class Meta:
         app_label = 'thing'
@@ -68,7 +70,8 @@ class Character(models.Model):
         return set([r.role for r in CharacterApiRole.objects.filter(character_id=self.id)])
 
     def deauthorize_user(self):
-        from thing.models import CharacterApiScope
-        CharacterApiScope.objects.filter(character_id=self.id, scope='esi-contracts.read_corporation_contracts.v1').delete()
+        from thing.models import CharacterApiScope, CharacterApiRole
+        CharacterApiScope.objects.filter(character_id=self.id).delete()
+        CharacterApiRole.objects.filter(character_id=self.id).delete()
         self.sso_refresh_token = None
         self.save()

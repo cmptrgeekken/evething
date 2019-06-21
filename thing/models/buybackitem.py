@@ -40,6 +40,7 @@ class BuybackItem(models.Model):
 
     price_type = models.CharField(max_length=8, default='5day')
     price_pct = models.FloatField(default=1)
+    repro_price_pct = models.FloatField(default=None)
     reprocess = models.BooleanField(default=False)
     reprocess_pct = models.FloatField(default=.876)
     reprocess_tax = models.FloatField(default=0)

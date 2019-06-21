@@ -32,6 +32,9 @@ from thing.models.contract import Contract
 from thing.models.contractitem import ContractItem
 from thing.utils import dictfetchall
 from thing import queries
+
+from django.core.cache import cache
+
 import math
 
 class ContractSeeding(models.Model):
@@ -47,6 +50,7 @@ class ContractSeeding(models.Model):
     raw_text = models.TextField()
     estd_price = models.DecimalField(max_digits=20, decimal_places=2)
     priority = models.IntegerField(default=0)
+    is_active = models.BooleanField(default=True)
 
     stock_count = None
     seed_price = None
@@ -57,19 +61,29 @@ class ContractSeeding(models.Model):
         return ContractSeedingItem.objects.filter(contractseeding_id=self.id).order_by('-required', 'item__name')
 
     def get_stock(self, page=1, page_size=20):
-        contracts = dictfetchall(queries.contractseeding_contracts % self.id)
-        contract_ids = []
-        for c in contracts:
-            contract_ids.append(c['contract_id'])
+        cache_key = 'get_stock-%d' % (self.id)
 
-        contracts = Contract.objects.filter(contract_id__in=contract_ids).order_by('price')
-        contracts_trimmed = dict()
-        for c in contracts:
-            contracts_trimmed[c.contract_id] = c
+        cache_value = cache.get(cache_key)
 
-        contracts = contracts_trimmed.values()
+        if cache_value is not None:
+            contracts = cache_value
+        else:
+            contracts = dictfetchall(queries.contractseeding_contracts % self.id)
+            contract_ids = []
+            for c in contracts:
+                contract_ids.append(c['contract_id'])
+
+            contracts = Contract.objects.filter(contract_id__in=contract_ids).order_by('price')
+            contracts_trimmed = dict()
+            for c in contracts:
+                contracts_trimmed[c.contract_id] = c
+
+            contracts = contracts_trimmed.values()
+            
+            cache.set(cache_key, contracts, 300)
 
         ttl_pages = int(math.ceil(len(contracts) / float(page_size))) + 1
+
 
         if page is not None:
             return contracts[page_size*(page-1):page_size*page], ttl_pages
@@ -83,6 +97,22 @@ class ContractSeeding(models.Model):
         if self.stock_count is None:
             self.stock_count = len(self.get_stock(page=None))
         return self.stock_count
+
+    def get_corp_stock(self):
+        stock = self.get_stock(page=None)
+        ct = 0
+        for s in stock:
+            if s.assignee_id == 98388312:
+                ct+=1
+        return ct
+
+    def get_alliance_stock(self):
+        stock = self.get_stock(page=None)
+        ct = 0
+        for s in stock:
+            if s.assignee_id == 99005338:
+                ct+=1
+        return ct
 
     def get_seed_price(self):
         if self.seed_price is not None:

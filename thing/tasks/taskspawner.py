@@ -111,7 +111,7 @@ def task_spawner():
     order_regions = set()
     for station in stations:
         if station.is_citadel:
-            url = 'https://esi.tech.ccp.is/latest/markets/structures/%d?datasource=tranquility&page=' \
+            url = 'https://esi.evetech.net/latest/markets/structures/%d?datasource=tranquility&page=' \
                   % station.id
         else:
             region_id = station.system.constellation.region.id
@@ -122,7 +122,7 @@ def task_spawner():
         _init_taskstate(taskdata, now, taskstate, -1, None, 'thing.price_updater', url, 'et_prices', station.id)
 
     for region_id in order_regions:
-        url = 'https://esi.tech.ccp.is/latest/markets/%d/orders?datasource=tranquility&order_type=all&page=' \
+        url = 'https://esi.evetech.net/latest/markets/%d/orders?datasource=tranquility&order_type=all&page=' \
               % region_id
 
         taskstate = g_tasks.get(url)

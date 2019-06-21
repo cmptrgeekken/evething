@@ -27,6 +27,7 @@
     <meta name="msapplication-TileColor" content="#ffffff">
     <meta name="msapplication-TileImage" content="{{ STATIC_URL }}pgsus/img/icons/ms-icon-144x144.png">
     <meta name="theme-color" content="#ffffff">
+    {% block extra_meta %}{% endblock %}
 
     <!--  Boostrap Framework  -->
     <link href="{{ STATIC_URL }}pgsus/css/bootstrap.min.css" rel="stylesheet">
@@ -86,19 +87,38 @@
             <ul class="collapse navbar-collapse" id="bs-navbar-collapse-1">
                 <ul class="nav navbar-nav navbar-right ">
                     <li>
-                        <a href="{{ url('pgsus.views.buyback', buyback_name='pennys-fuel-buyback') }}">
-                            Buyback
-                        </a>
+                        <a href="{{ url('pgsus.views.route') }}">Route Planner</a>
                     </li>
                     <li>
-                        <a href="{{ url('pgsus.views.freighter') }}">
-                            Freight
-                        </a>
+                        <a href="{{ url('pgsus.views.extractions') }}">Moon Schedule</a>
                     </li>
-                    <li>
-                        <a href="{{ url('pgsus.views.fuel') }}">
-                            Fuel Blocks
+                    <li class="nav-item dropdown-services">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarServicesDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            Penny's Services
+                            <span class="caret"></span>
                         </a>
+                        <ul class="dropdown-menu" aria-labelledby="navbarServicesDropdown">
+                            <li>
+                                <a href="{{ url('pgsus.views.buyback', buyback_name='pennys-fuel-buyback') }}">
+                                    Fuel PI / Ice Buyback
+                                </a>
+                            </li>
+                            <li>
+                                <a href="{{ url('pgsus.views.buyback', buyback_name='bteam-buyback') }}">
+                                    Moon Ore Buyback
+                                </a>
+                            </li>
+                            <li>
+                                <a href="{{ url('pgsus.views.freighter') }}">
+                                    Freight
+                                </a>
+                            </li>
+                            <li>
+                                <a href="{{ url('pgsus.views.fuel') }}">
+                                    Fuel Blocks
+                                </a>
+                            </li>
+                        </ul>
                     </li>
 
                     <li class="nav-item dropdown">
@@ -108,16 +128,29 @@
                         </a>
 
                         <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                            <li>
+                                <a href="{{ url('pgsus.views.pricer') }}">Purchase Optimizer</a>
+                            </li>
+                            {% if gate_watcher or structure_admin %}
+                            <li class="divider"></li>
+                            {% endif %}
+                            {% if gate_watcher %}
+                            <li>
+                                <a href="{{ url('pgsus.views.gates') }}">Jump Gate Status</a>
+                            </li>
+                            {% endif %}
+                            {% if structure_admin %}
+                            <li>
+                                <a href="{{ url('pgsus.views.ihubs') }}">IHub List</a>
+                            </li>
+                            {% endif %}
+                            {% if charid %}
+                            <li class="divider"></li>
                             {% if moon_scheduler %}
                             <li>
                                 <a href="{{ url('pgsus.views.refinerylist') }}">Moon Scheduling</a>
                             </li>
                             {% endif %}
-                            <li>
-                                <a href="{{ url('pgsus.views.extractions') }}">Moon Extractions</a>
-                            </li>
-                            {% if charid %}
-                            <li class="divider"></li>
                             <li>
                                 <a href="{{ url('pgsus.views.contractseedlist') }}">Contract Seeding</a>
                             </li>

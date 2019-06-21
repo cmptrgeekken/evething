@@ -34,7 +34,7 @@ from thing.models import CharacterApiScope, CharacterApiRole
 class EsiCharacterRoles(APITask):
     name = 'thing.characterroles'
 
-    roles_url = 'https://esi.tech.ccp.is/latest/characters/%s/roles/?datasource=tranquility'
+    roles_url = 'https://esi.evetech.net/latest/characters/%s/roles/?datasource=tranquility'
 
     def run(self, character_id=None):
         self.init()

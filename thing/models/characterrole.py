@@ -32,10 +32,13 @@ class CharacterRole(models.Model):
     ROLES = (
         ('moon', 'moon'),
         ('contracts', 'contracts'),
-        ('moonbean', 'moonbean')
+        ('moonbean', 'moonbean'),
+        ('spodcmd', 'spodcmd'),
+        ('gatewatch', 'gatewatch'),
+        ('structure', 'structure'),
     )
 
-    id = models.IntegerField(primary_key=True)
+    id = models.AutoField(primary_key=True)
 
     character = models.ForeignKey(Character, on_delete=models.DO_NOTHING)
     role = models.CharField(max_length=50, choices=ROLES)

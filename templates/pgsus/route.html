@@ -1,0 +1,148 @@
+{% extends "web_template.html" %}
+{% import 'macros/common.html' as common %}
+  
+{% block title %}Route Planner{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function(){
+    $('.js-select2.system')
+        .select2({
+            ajax: {
+                url: '/api/systems',
+                dataType: 'json',
+                processResults: function(data) {
+                    return {
+                        results: $.map(data.items, function(i){return {text: i.text, id: i.text}})
+                    };
+                }
+                    
+            },
+            placeholder: 'Search...',
+            minimumInputLength:3
+        });
+
+    $('.js-addAllWaypoints').on('click', function(){
+
+        var waypoints = $('.js-addWaypoint').map(function(){
+            return $(this).data('waypoint');
+        }).toArray();
+
+        function add_waypoints() {
+            if (waypoints.length == 0) return;
+
+            $.get('/api/waypoint', {waypoint: waypoints.shift()})
+                .then(add_waypoints);
+        }
+
+        add_waypoints()
+    });
+})
+</script>
+{% endblock %}
+
+{% block content %}
+<section class="bg-19 bg-center bg-cover">
+    <div>
+        <div class="container section-sm">
+            <h1 class="top-title">Route Planner</h1>
+        </div>
+    </div>
+</section>
+
+<section class="container section-md">
+      <div class="row">
+        <div class="col-lg-8">
+            {% if not show_waypoints %}
+            <h4><i><a href="{{url('pgsus.views.perms')}}?perm=esi-ui.write_waypoint.v1&redirect={{page_path}}">Click here to authorize us to add waypoints in-game!</a></i></h4>
+            {% endif %}
+            <h2>Please select your route</h2>
+            <form method="get" class="form-horizontal" action="{{ url('pgsus.views.route') }}">
+                <div class="form-group">
+                    <label class="col-sm-4 col-form-label" for="start_system">Start System:</label>
+                    <div class="col-sm-8">
+                        <select name="start" id="start_system" required="required" class="js-select2 input-lg system" style="width: 130px" required>
+                            {% if start %}
+                            <option selected value="{{ start }}">{{ start }}</option>
+                            {% endif %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="col-sm-4 col-form-label" for="end_system">End System:</label>
+                    <div class="col-sm-8">
+                        <select name="end" id="end_system" required="required" class="js-select2 input-lg system" style="width: 130px" required>
+                            {% if end %}
+                            <option selected value="{{ end }}">{{ end }}</option>
+                            {% endif %}
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-4 col-form-label" for="ignore_external">
+                        Ignore Non-PH Gates<br/>
+                        <small class="form-text text-muted">NOTE: We cannot verify the status of non-PH gates</small>
+                    </label>
+                    <div class="col-sm-8">
+                        <input type="checkbox" id="ignore_external" name="ignore_external"{% if ignore_external %} checked{% endif %} value="1" />
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="col-sm-6">
+                        <button type="submit" class="btn btn-primary">
+                            Submit
+                        </button>
+                    </div>
+                </div>
+			</form>
+
+            {% if route %}
+            {% if show_waypoints %} <a href="javascript:void(0)" class="js-addAllWaypoints">Add All Waypoints</a> &nbsp; | &nbsp; {% endif %} <a href="{{ maps_link}}" target="_blank">EveMaps Route</a>
+            <ol>
+                {% for s in route %}
+                    <li>{{ s.name }}
+                        {% if s.waypoint %}
+                        {% if s.waypoint_is_jb %}<br/><i>&nbsp;&nbsp;&nbsp;Take Jump Gate</i>{% endif %} &nbsp; <small><a href="javascript:void(0)" class="waypoint js-addWaypoint" data-waypoint="{{ s.waypoint }}"><i class="fa fa-map-marker" aria-hidden="true"></i></a></small>
+                        {% endif %}
+                    </li>
+                {% endfor %}
+            </ol>
+
+            <!--
+            <div style="width:708px;height:598px;border-style:solid;border-color:#000;">
+                <object data="{{ svg_link }}" type="image/svg+xml" width="708" height="598"></object>
+            </div>
+            -->
+            {% endif %}
+
+        </div>
+        <div class="col-md-4">
+            <h3>Current Gates</h3>
+            <table>
+                {% for b in current_jbs %}
+                <tr>
+                    <td style="text-align: center">
+                    {% if b.start_in_alliance == 0 %}
+                        <span class="badge alert-warning" title="Non-PH Gate">{{ b.start }}</span>
+                    {% else %}
+                        <span class="badge alert-success">{{ b.start }}</span>
+                    {% endif %}
+                    </td>
+                    <td>
+                    &nbsp; &lt;&gt; &nbsp;
+                    </td>
+                    <td style="text-align: center">
+                    {% if b.end_in_alliance == 0 %}
+                        <span class="badge alert-warning" title="Non-PH Gate">{{ b.end }}</span>
+                    {% else %}
+                        <span class="badge alert-success">{{ b.end }}</span>
+                    {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+      </div>
+</section>
+{% endblock %}

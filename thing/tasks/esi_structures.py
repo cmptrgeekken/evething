@@ -37,8 +37,8 @@ import traceback
 class EsiStructures(APITask):
     name = 'thing.structures'
 
-    structure_url = 'https://esi.tech.ccp.is/latest/universe/structures/%s/?datasource=tranquility'
-    corp_structures_url = 'https://esi.tech.ccp.is/latest/corporations/%s/structures/?datasource=tranquility&language=en-us&page=%s'
+    structure_url = 'https://esi.evetech.net/latest/universe/structures/%s/?datasource=tranquility'
+    corp_structures_url = 'https://esi.evetech.net/latest/corporations/%s/structures/?datasource=tranquility&language=en-us&page=%s'
 
     def run(self):
         self.init()
@@ -52,7 +52,6 @@ class EsiStructures(APITask):
 
             if 'Station_Manager' in char.get_apiroles():
                 if char.corporation_id is not None and char.corporation_id not in seen_corps:
-                    print char.name
                     success = self.import_structures(char)
                     if success:
                         seen_corps.add(char.corporation_id)
@@ -73,7 +72,10 @@ class EsiStructures(APITask):
                 skip_updates = True
                 return False
 
-            max_pages = int(headers['x-pages'])
+            if 'x-pages' in headers:
+                max_pages = int(headers['x-pages'])
+            else:
+                max_pages = 1
             page += 1
             structure_info = json.loads(results)
 
@@ -141,10 +143,14 @@ class EsiStructures(APITask):
                 if 'state_timer_end' in struct:
                     db_struct.state_timer_end=self.parse_api_date(struct['state_timer_end'], True)
 
+                db_struct.state = struct['state']
+                if 'unanchors_at' in struct:
+                    db_struct.unanchors_at = self.parse_api_date(struct['unanchors_at'], True)
+
                 db_struct.save()
 
-                StructureService.objects.filter(structure_id=db_struct.station_id).delete()
                 if 'services' in struct:
+                    StructureService.objects.filter(structure_id=db_struct.station_id).delete()
                     for service in struct['services']:
                         db_service = StructureService(
                             structure_id=struct['structure_id'],
@@ -156,5 +162,57 @@ class EsiStructures(APITask):
 
         if not skip_updates and len(seen_ids) > 0:
             Station.objects.filter(corporation_id=corp_id).exclude(id__in=list(seen_ids)).update(corporation_id=None)
+            Station.objects.filter(corporation_id=corp_id, id__in=list(seen_ids)).update(deleted=False)
+
+        # Loop through all citadels with no corporation and determine corporation
+        # If a 403 Forbidden is returned, delete the citadel
+        # If the corporation ID matches the current import corporation, delete the citadel
+        # If the corporation ID is a different corporation, update corporation_id
+        unknown_citadels = Station.objects.filter(is_citadel=True, corporation_id__isnull=True, deleted=False)
+
+        batch_size = 25
+
+        for i in range(0, len(unknown_citadels), batch_size):
+            citadels = unknown_citadels[i:batch_size+i]
+
+            urls = [self.structure_url % c.id for c in citadels]
+
+            lookup = dict((self.structure_url % c.id, c) for c in citadels)
+
+            print('Retrieving %d-%d of %d' % (i+1, batch_size+i, len(unknown_citadels)))
+
+            batch_results = self.fetch_batch_esi_urls(urls, character, batch_size=5, headers_to_return=['status'])
+
+            for url, c_data in batch_results.items():
+                success, results, headers = c_data
+
+                c = lookup[url]
+                if 'status' in headers and headers['status'] == 404:
+                    # Forbidden, delete entry
+                    print('Deleting %s [%d]' % (c.name, c.id))
+                    c.deleted = True
+                    c.save()
+                    continue
+                elif not success:
+                    print(headers)
+                    print('Failed to determine status of %s [%d]' % (c.name, c.id))
+                    continue
+
+                structure_info = json.loads(results)
+
+                c.name = structure_info['name']
+                c.type_id = structure_info['type_id']
+                c.system_id = structure_info['solar_system_id']
+
+                if structure_info['owner_id'] == character.corporation_id:
+                    print('Deleting corp structure %s [%d]' % (c.name, c.id))
+                    c.deleted = True
+                    c.save()
+                    continue
+
+                print('Updating corp for structure %s [%d]' % (c.name, c.id))
+
+                c.corporation_id = structure_info['owner_id']
+                c.save()
 
         return True

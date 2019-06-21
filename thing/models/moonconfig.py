@@ -62,16 +62,16 @@ class MoonConfig(models.Model):
     def __unicode__(self):
         return self.structure.name
 
-    def get_composition(self):
+    def get_composition(self, chunk_minutes=0):
         try:
-            comp = "<ul><li>%s</li><li>%s</li>" % (self.first_ore.get_ore_display(self.first_ore_pct), self.second_ore.get_ore_display(self.second_ore_pct))
+            comp = "<ul><li>%s</li><li>%s</li>" % (self.first_ore.get_ore_display(self.first_ore_pct, chunk_minutes), self.second_ore.get_ore_display(self.second_ore_pct, chunk_minutes))
             try:
-                comp += "<li>%s</li>" % (self.third_ore.get_ore_display(self.third_ore_pct))
+                comp += "<li>%s</li>" % (self.third_ore.get_ore_display(self.third_ore_pct, chunk_minutes))
             except:
                 pass
 
             try:
-                comp += "<li>%s</li>" % (self.fourth_ore.get_ore_display(self.fourth_ore_pct))
+                comp += "<li>%s</li>" % (self.fourth_ore.get_ore_display(self.fourth_ore_pct, chunk_minutes))
             except:
                 pass
             comp += "</ul>"

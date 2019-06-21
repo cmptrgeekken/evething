@@ -192,6 +192,9 @@ def courier_contracts(request):
             for system in systems:
                 freighter_map[system].append(fpm)
 
+    region_routes = dict()
+    system_list = set()
+
     for contract in contract_list:
         contract.z_price_model = None
         contract.z_shipping_rate = None
@@ -206,6 +209,20 @@ def courier_contracts(request):
 
         start_system_name = contract.start_station.system.name if contract.start_station.system else '[Unknown]'
         end_system_name = contract.end_station.system.name if contract.end_station.system else '[Unknown]'
+
+        start_system = contract.start_station.system
+        end_system = contract.end_station.system
+
+        if start_system is not None:
+            if start_system.constellation.region.name not in region_routes:
+                region_routes[start_system.constellation.region.name] = set()
+            region_routes[start_system.constellation.region.name].add(start_system.name)
+
+        if end_system is not None:
+            if end_system.constellation.region.name not in region_routes:
+                region_routes[end_system.constellation.region.name] = set()
+            region_routes[end_system.constellation.region.name].add(end_system.name)
+
 
         if start_system_name in freighter_map and end_system_name in freighter_map:
             start_systems = freighter_map[start_system_name]
@@ -252,6 +269,12 @@ def courier_contracts(request):
         if not contract.start_station.is_citadel or not contract.end_station.is_citadel:
             contract.z_has_station = True
 
+    map_links = list()
+
+    for region, systems in region_routes.items():
+        map_links.append('https://evemaps.dotlan.net/map/%s/%s' % (region.replace(' ', '_'), ','.join(systems)))
+
+
     # Render template
     return render_page(
         'thing/courier_contracts.html',
@@ -261,6 +284,7 @@ def courier_contracts(request):
             char_map=char_map,
             corp_map=corp_map,
             alliance_map=alliance_map,
+            map_links=map_links
         ),
         request,
         character_ids,

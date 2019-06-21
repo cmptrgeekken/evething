@@ -1,3 +1,5 @@
+#!/usr/bin/python
+# encoding=utf8
 # ------------------------------------------------------------------------------
 # Copyright (c) 2010-2013, EVEthing team
 # All rights reserved.
@@ -25,10 +27,19 @@
 
 from thing.models import *  # NOPEP8
 from thing.stuff import render_page, datetime  # NOPEP8
+from thing.utils import ApiHelper
+from thing import queries
+import re
+import json
+
+from django.db import connections
 
 from django.core.urlresolvers import reverse
 from django.shortcuts import redirect, render
 from django.http import JsonResponse, HttpResponse
+from django.core.cache import cache
+
+from thing.utils import dictfetchall
 
 from thing.helpers import humanize, commas
 
@@ -132,6 +143,7 @@ class MoonOreEntry:
         self.ore = ore
         self.pct = pct
         self.total_volume = total_volume
+        self.refinery = None
 
         self.name = self.ore.name
 
@@ -154,9 +166,10 @@ class MoonOreEntry:
 
 class MoonDetails:
 
-    def __init__(self, structure, extraction, config, observer_log, ore_values, ship_m3_per_hour):
+    def __init__(self, structure, extraction, config, observer_log, ore_values, ship_m3_per_hour, refinery):
         self.name = structure.station.name
         self.is_jackpot = False
+        self.refinery = refinery
 
         if datetime.datetime.utcnow() > extraction.natural_decay_time \
                 or extraction.laser_fire_time is not None:
@@ -186,6 +199,8 @@ class MoonDetails:
 
         self.remaining_isk_per_m3 = 0
 
+        self.last_mined = None
+
         self.ores = list()
 
         self.parse_log()
@@ -193,6 +208,8 @@ class MoonDetails:
         for ore in self.ores:
             tooltip = ''
             for ship in ship_m3_per_hour:
+                if 'ignore' in ship and ship['ignore'] in self.name:
+                    continue
                 if tooltip:
                     tooltip += ' / '
 
@@ -282,7 +299,7 @@ class MoonDetails:
 
             ore.remaining_volume = ore.total_volume = ore.pct * self.total_volume
             if ore.ore.id not in self.ore_values:
-                self.ore_values[ore.ore.id] = ore.ore.get_history_avg(reprocess=True, reprocess_pct=.84, pct=.8)
+                self.ore_values[ore.ore.id] = .9*ore.ore.get_price(buy=True,reprocess=True, reprocess_pct=.843)
 
             ore.value_ea = self.ore_values[ore.ore.id]
 
@@ -301,6 +318,9 @@ class MoonDetails:
                     ore.mined_volume += l.quantity * l.type.volume
 
                     self.is_popped = True
+
+                    if self.last_mined is None or l.end_time > self.last_mined:
+                        self.last_mined = l.end_time
 
             if ore.is_jackpot:
                 ore.total_value *= 2
@@ -374,54 +394,108 @@ class MoonDetails:
 
 def extractions(request):
     min_date = datetime.datetime.utcnow() + datetime.timedelta(days=-2)
-    max_date = datetime.datetime.utcnow() + datetime.timedelta(days=7)
-
-    moon_extractions = MoonExtractionHistory.objects.filter(chunk_arrival_time__gte=min_date, chunk_arrival_time__lte=max_date).order_by('chunk_arrival_time')
+    min_date_rigged = datetime.datetime.utcnow() + datetime.timedelta(days=-4)
+    max_visible_days = 7
 
     ore_values = dict()
 
     if 'char' in request.session:
         charid = request.session['char']['id']
         waypoint_scope = CharacterApiScope.objects.filter(character_id=charid, scope='esi-ui.write_waypoint.v1').first()
+        role = CharacterRole.objects.filter(character_id=charid, role__in=['moon','spodcmd', 'moonbean']).values_list('role', flat=True).first()
     else:
         waypoint_scope = None
-
+        role = None
+    
     ship_m3_per_hour = [
         dict(name='Venture', m3=9*60*60),
         dict(name='Procurer', m3=32*60*60),
+        dict(name='Rorqual', m3=175*60*60, ignore='R64')
     ]
 
     ticker = request.GET.get('ticker') or 'REKTD'
 
-    moon_list = dict()
-    for e in moon_extractions:
-        structure = e.structure
-        if structure.station.corporation_id is None\
-            or structure.station.corporation.alliance.short_name != ticker:
-            continue
+    moon_type = (request.GET.get('type') or 'public').lower()
+    if role is None:
+        moon_type = 'public'
+    elif moon_type.lower() == 'r16':
+        moon_type = 's16'
 
-        cfg = MoonConfig.objects.filter(structure_id=e.structure.id).first()
+    if moon_type == 'n64':
+        min_date = min_date_rigged
 
-        # TODO: Enable Nationalized moons based off roles?
-        if cfg is None or cfg.is_nationalized:
-            continue
+    if role is not None:
+        max_visible_days = 25
+    
+    max_date = datetime.datetime.utcnow() + datetime.timedelta(days=max_visible_days)
+    cache_key = 'extractions-%s-%s-%d' % (ticker, moon_type, max_visible_days)
 
-        observer = MoonObserver.objects.filter(observer_id=structure.station_id).first()
+    moon_list = cache.get(cache_key)
 
-        observer_log = []
-        if observer is not None:
-            observer_log = MoonObserverEntry.objects.filter(
-                observer_id=observer.id,
-                last_updated__gte=e.chunk_arrival_time,
-                last_updated__lte=e.chunk_arrival_time + datetime.timedelta(days=2))
+    filter_types = ['Public']
 
-        details = MoonDetails(structure, e, cfg, observer_log, ore_values, ship_m3_per_hour)
+    if role == 'moon' or role == 'spodcmd':
+        filter_types.append('N64')
+        filter_types.append('S16')
 
-        moon_list[structure.id] = details
 
-    moon_list = moon_list.values()
+    if moon_list is None:
+        moon_list = dict()
+        
+        moon_extractions = MoonExtractionHistory.objects.filter(chunk_arrival_time__gte=min_date, chunk_arrival_time__lte=max_date).order_by('chunk_arrival_time')
 
-    moon_list.sort(key=lambda x: x.extraction.chunk_arrival_time)
+        refineries = dict()
+        
+        for e in moon_extractions:
+            structure = e.structure
+            if structure.station.corporation_id is None\
+                or structure.station.corporation.alliance.short_name != ticker:
+                continue
+
+            system = structure.station.system.name
+
+            if system not in refineries:
+                repro_structure = StructureService.objects.filter(name='Reprocessing', structure__station__corporation__alliance__short_name=ticker, structure__station__name__iregex='DRILL', state='online',structure__station__system__name=system).first()
+
+                #repro_structure = Station.objects.filter(name__iregex='Refinery', corporation__alliance__short_name=ticker, system__name=system).first()
+
+                if repro_structure is not None:
+                    refineries[system] = repro_structure.structure.station.name
+
+            if system in refineries:
+                refinery = refineries[system]
+            else:
+                refinery = None
+
+
+            cfg = MoonConfig.objects.filter(structure_id=e.structure.id).first()
+            if cfg is None:
+                continue
+
+            if moon_type == 'public':
+                if cfg.is_nationalized:
+                    continue
+            elif moon_type.lower() not in structure.station.name.lower():
+                continue
+
+            observer = MoonObserver.objects.filter(observer_id=structure.station_id).first()
+
+            observer_log = []
+            if observer is not None:
+                observer_log = MoonObserverEntry.objects.filter(
+                    observer_id=observer.id,
+                    last_updated__gte=e.chunk_arrival_time,
+                    last_updated__lte=e.chunk_arrival_time + datetime.timedelta(days=2))
+
+            details = MoonDetails(structure, e, cfg, observer_log, ore_values, ship_m3_per_hour, refinery)
+
+            moon_list[structure.id] = details
+
+        moon_list = moon_list.values()
+
+        moon_list.sort(key=lambda x: x.extraction.chunk_arrival_time)
+
+        cache.set(cache_key, moon_list, 60*10)
 
     if 'format' in request.GET and request.GET.get('format') == 'ical':
         cal = Calendar(imports=[
@@ -449,6 +523,8 @@ def extractions(request):
         dict(
             moon_list=moon_list,
             show_waypoint=waypoint_scope is not None,
+            filter_types=filter_types,
+            moon_type=moon_type
         ),
         request,
     )
@@ -457,6 +533,156 @@ def extractions(request):
         return JsonResponse(moon_list, safe=False)
 
     return out
+
+def gates(request):
+    if 'char' not in request.session:
+        return redirect('/?login=1');
+
+    charid = request.session['char']['id']
+
+    role = CharacterRole.objects.filter(character_id=charid, role__in=['gatewatch']).first()
+
+    if role is None:
+        return redirect('/?perm=1')
+
+    alliance_id = role.character.corporation.alliance_id
+
+    results = None #cache.get('gates')
+    if results is None:
+        results = dictfetchall(queries.jumpbridge_lo_quantity % alliance_id)
+
+        cache.set('structures-gates-%d' % alliance_id, results)
+
+
+    lo_quantities = dictfetchall(queries.lo_station_quantities % alliance_id)
+
+    for r in results:
+        sys = r['station_name'].split(' » '.decode('utf8'))[0]
+        for q in lo_quantities:
+            if sys in q['station_name']:
+                if 'stations' not in r:
+                    r['stations'] = list()
+                r['stations'].append('<b>%s</b>: %s LO' % (q['station_name'], commas(q['qty'])))
+            
+
+    return render_page(
+                'pgsus/gates.html',
+                dict(
+                    gates=results
+                ),
+                request
+                )
+
+class IHub:
+    def __init__(self, entry):
+        self.system = entry['system']
+        self.constellation = entry['constellation']
+        self.region = entry['region']
+        self.upgrades = list()
+        self.last_updated = entry['last_updated']
+        self.corp_ticker = entry['corp_ticker']
+
+def ihubs(request):
+    if 'char' not in request.session:
+        return redirect('/?login=1')
+
+    charid = request.session['char']['id']
+
+    role = CharacterRole.objects.filter(character_id=charid, role__in=['structure']).first()
+
+    if role is None:
+        return redirect('/?perm=1')
+
+    alliance_id = role.character.corporation.alliance_id
+
+    ihubs = cache.get('ihubs')
+    if ihubs is None:
+        ihubs = dictfetchall(queries.ihub_upgrades % alliance_id)
+        cache.set('structures-ihubs-%d' % alliance_id, ihubs)
+
+    region_list = set()
+    constellation_list = set()
+    system_list = set()
+
+    type_list = set()
+
+    region_filter = request.GET.get('region')
+    constellation_filter = request.GET.get('constellation')
+    system_filter = request.GET.get('system')
+    type_filter = request.GET.get('type')
+
+    results = dict()
+
+    for ihub in ihubs:
+        region_list.add(ihub['region'])
+        constellation_list.add(ihub['constellation'])
+        system_list.add(ihub['system'])
+
+        type_name = re.sub(r"\d+$", "", ihub['upgrade'])
+
+        type_list.add(type_name)
+
+	if region_filter and region_filter != ihub['region']:
+            continue
+        if constellation_filter and constellation_filter != ihub['constellation']:
+            continue
+        if system_filter and system_filter != ihub['system']:
+            continue
+        if type_filter and type_filter not in ihub['upgrade']:
+            continue
+
+        if ihub['system'] not in results:
+            results[ihub['system']] = IHub(ihub)
+
+        if ihub['state'] == 'Offline':
+            ihub['state_color'] = 'firebrick'
+        else:
+            ihub['state_color'] = 'forestgreen'
+
+        results[ihub['system']].upgrades.append("%s <span style='color: %s'>(%s)</span>" % (ihub['upgrade'], ihub['state_color'], ihub['state']))
+
+    def ihub_sort(itema, itemb):
+        if itema.region < itemb.region:
+            return -1
+        if itema.region > itemb.region:
+            return 1
+        if itema.system < itemb.system:
+            return -1
+        return 1
+
+    results_list = results.values()
+
+    results_list.sort(ihub_sort)
+
+
+    region_list = list(region_list)
+    constellation_list = list(constellation_list)
+    system_list = list(system_list)
+    type_list = list(type_list)
+
+    region_list.sort()
+    constellation_list.sort()
+    system_list.sort()
+    type_list.sort()
+
+    return render_page(
+        'pgsus/ihublist.html',
+        dict(
+            results=results_list,
+            regions=region_list,
+            constellations=constellation_list,
+            systems=system_list,
+            types=type_list,
+            region=region_filter,
+            constellation=constellation_filter,
+            system=system_filter,
+            type=type_filter,
+        ),
+        request,
+    )
+     
+
+
 
 
 def refinerylist(request):
@@ -471,6 +697,9 @@ def refinerylist(request):
         return redirect('/?perm=1')
 
     is_admin = role.role == 'moon'
+
+    if role.character.corporation_id is None:
+        return render_page('pgsus/error.html', dict(message = 'No corporation associated with your character. Please contact KenGeorge Beck for assistance.'), request)
 
     allianceid = role.character.corporation.alliance_id
 
@@ -524,7 +753,7 @@ def refinerylist(request):
     constellation_list = set()
     system_list = set()
 
-    type_list = ['N64', 'R64', 'D64', 'R32', 'R16', 'R4', 'ABC']
+    type_list = ['N64', 'R64', 'R32', 'S16']
 
     region_filter = request.GET.get('region')
     constellation_filter = request.GET.get('constellation')
@@ -588,7 +817,7 @@ def refinerylist(request):
                 except:
                     pass
             elif type_filter == 'N64':
-                if config is None or not config.is_nationalized:
+                if type_filter not in structure.station.name: #config is None or not config.is_nationalized:
                     continue
             elif type_filter not in structure.station.name:
                 continue
@@ -703,5 +932,228 @@ def refinerylist(request):
 
     return out
 
+def add_gate(request):
+    scope = None
+    if 'char' in request.session:
+        charid = request.session['char']['id']
+
+        scope = CharacterApiScope.objects.filter(character_id=charid, scope='esi-universe.read_structures.v1').first()
+
+    if scope is None:
+        return redirect('/?perm=1')
+
+    system = request.GET.get('system')
+      
+    structs = list()
+
+    message = ''
+    helper = ApiHelper()
+
+    if system is not None:
+
+        success, data = helper.fetch_esi_url('https://esi.evetech.net/latest/characters/%s/search/?categories=structure&search=%s&datasource=tranquility' % (charid, system), scope.character)
+
+        if not success:
+            message = 'Failed 1: %s' % data
+
+        if success:
+            structures = json.loads(data)
+
+            for s in structures['structure']:
+                success, s_data = helper.fetch_esi_url('https://esi.evetech.net/latest/universe/structures/%s/?datasource=tranquility' % s, scope.character)
+
+                if not success:
+                    message += 'Failed 2: %s' % s_data
+                    break
+
+                if success:
+                    structure = json.loads(s_data)
+
+                    message += 'Found Structure: %s ' % structure['name']
+
+                    if structure['type_id'] == 35841:
+                        db_struct = Station.objects.filter(id=s).first()
+
+                        if db_struct is None:
+                            db_struct = Station()
+                            db_struct.id = s
+
+                        db_struct.name = structure['name']
+                        db_struct.short_name = structure['name']
+                        db_struct.type_id = structure['type_id']
+                        db_struct.system_id = structure['solar_system_id']
+                        db_struct.is_citadel = True
+                        db_struct.is_unknown = False
+                        db_struct.corporation_id = structure['owner_id']
+
+                        db_struct.save()
+
+                        structs.append(db_struct)
+    elif request.GET.get('bm') == '1':
+        # Load from bookmarks
+        scope = CharacterApiScope.objects.filter(character_id=charid, scope='esi-bookmarks.read_corporation_bookmarks.v1').first()
+        if scope is None:
+            return redirect('/?perms=1')
+
+        success, data = helper.fetch_esi_url('https://esi.evetech.net/latest/corporations/%s/bookmarks/?datasource=tranquility' % scope.character.corporation_id, scope.character)
+
+        if success:
+            bms = json.loads(data)
+
+            message += 'Success!'
+
+            for bm in bms:
+                if 'item' not in bm or bm['item']['type_id'] != 35841:
+                    continue
+
+                system = System.objects.filter(id=bm['location_id']).first()
+    
+                struct = Station.objects.filter(type_id=35841, system_id=system.id).first()
+                if struct is None:
+                    struct = Station()
+                struct_strip = r'\s*\( Upwell Jump Gate \).*'
+                struct_name = re.sub(struct_strip, '', bm['label'])
+                struct.id = bm['bookmark_id']
+
+                struct.name = struct_name
+                struct.type_id = 35841
+                struct.system_id = system.id
+                struct.is_citadel = True
+                struct.is_unknown = False
+                struct.corporation_id = 1 #Unknown
+
+                struct.save()
+
+                structs.append(struct)
+        else:
+            message += data
 
 
+    return render_page('pgsus/addgate.html', dict(
+        added_structs=structs,
+        message=message
+        ), request)
+    
+
+
+
+
+def route(request):
+    from pgsus.esi_routes import dijkstra, Graph
+
+    starmap = None #cache.get('route-starmap')
+    start_system = request.GET.get('start')
+    end_system = request.GET.get('end')
+    ignore_external = request.GET.get('ignore_external') == '1'
+    ignored_jgs = request.GET.getlist('ignored')
+
+    if starmap is None:
+        starmap = dict()
+        map_data = dictfetchall('select jg.*,1 AS needs_waypoint, IF((SELECT MAX(last_updated) FROM thing_jumpgate_history jgh WHERE jgh.station_id=jg.id) > DATE_ADD(NOW(), INTERVAL -1 DAY),1,0) AS in_alliance from thing_jumpgates jg inner join thing_station st on jg.id=st.id inner join thing_corporation c on st.corporation_id=c.id UNION SELECT *, 0 AS needs_waypoint, 1 AS in_alliance FROM thing_stargate')
+
+        for d in map_data:
+            system_id = int(d['system_id'])
+            entry = starmap.get(system_id)
+            if entry is None:
+                entry = dict(e_neighbors=list(), neighbors=list(), security=0.0, waypoints=dict())
+
+            entry['neighbors'].append(int(d['destination_system_id']))
+            if d['in_alliance'] == 0:
+                entry['e_neighbors'].append(int(d['destination_system_id']))
+            if d['needs_waypoint'] == 1:
+                entry['waypoints'][d['destination_system_id']] = int(d['id'])
+
+            starmap[system_id] = entry
+
+    cache.set('route-starmap', starmap, 60*30)
+
+    current_jbs = dictfetchall(queries.current_bridges)
+
+    jb_network = list()
+    jb_lookup = set()
+
+    for jb in current_jbs:
+        if jb['start'] not in jb_lookup and jb['end'] not in jb_lookup:
+            jb_network.append(jb)
+
+        jb_lookup.add(jb['start'])
+        jb_lookup.add(jb['end'])
+
+    graph = Graph(starmap)
+
+    optimal_route = list()
+
+    if 'char' in request.session:
+        charid = request.session['char']['id']
+        waypoint_scope = CharacterApiScope.objects.filter(character_id=charid, scope='esi-ui.write_waypoint.v1').first()
+    else:
+        waypoint_scope = None
+
+    maps_route = ''
+    maps_link = None
+
+    if start_system is not None and end_system is not None:
+        start = System.objects.filter(name=start_system).first()
+        end = System.objects.filter(name=end_system).first()
+
+        end_systems = list()
+
+        if end.name == '2Q-I6Q':
+            for s in ['O-VWPB', 'NQ-9IH', 'RQOO-U', 'SH1-6P']:
+                sys = System.objects.filter(name=s).first()
+
+                if sys is not None:
+                    end_systems.append(sys.id)
+        else:
+            end_systems.append(end.id)
+
+
+        route_ids = dijkstra(graph, start.id, end_systems, ignore_external, ignored_jgs)
+
+        systems = dict((s.id, s) for s in System.objects.filter(id__in=route_ids))
+
+        maps_route = start.name
+
+        for i in range(0,len(route_ids)):
+            system = systems[route_ids[i]]
+            next_system = None
+            waypoint_is_jb = False
+
+            if i < len(route_ids)-1:
+                next_system = systems[route_ids[i+1]]
+
+                waypoint = graph.waypoint(system.id, next_system.id)
+                waypoint_is_jb = True
+            elif graph.waypoint(route_ids[i-1], system.id) is None:
+                waypoint = system.id
+            else:
+                waypoint = None
+
+            if waypoint is not None:
+                if next_system is not None:
+                    maps_route += ':%s::%s' % (system.name,next_system.name)
+                else:
+                    maps_route += ':%s' % system.name
+
+            system.waypoint = waypoint
+            system.waypoint_is_jb = waypoint_is_jb
+
+            optimal_route.append(system)
+
+
+    return render_page('pgsus/route.html', dict(
+        route=optimal_route, 
+        start=start_system,
+        end=end_system, 
+        show_waypoints=waypoint_scope is not None, 
+        maps_link='http://evemaps.dotlan.net/route/%s' % maps_route,
+        svg_link='/svg?type=universe&path=%s' % maps_route,
+        page_path=request.get_full_path(),
+        current_jbs=jb_network,
+        ignore_external=ignore_external
+
+        ), request)
+
+
+def get_cursor(db='default'):
+        return connections[db].cursor()

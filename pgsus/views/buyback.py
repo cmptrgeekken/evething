@@ -78,7 +78,7 @@ def buyback(request, buyback_name):
 
     buyback_qty = dict()
 
-    buyback_groups = BuybackItemGroup.objects.filter(buyback_id=buyback.id)
+    buyback_groups = BuybackItemGroup.objects.filter(buyback_id=buyback.id, active=True)
 
     latest_price = PriceHistory.objects.order_by('-date').first()
     price_last_updated = latest_price.date
@@ -120,6 +120,7 @@ def buyback(request, buyback_name):
             parse_results=parse_results,
             total_reward=total_reward,
             total_volume=total_volume,
+            buyback_name=buyback_name
 
         ),
         request,

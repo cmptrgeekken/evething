@@ -39,9 +39,17 @@ urlpatterns += patterns(
     url(r'^refineries', 'refinerylist', name='refinerylist'),
     url(r'^api/waypoint', 'add_waypoint', name='add_waypoint'),
     url(r'^api/window', 'open_window', name='open_window'),
+    url(r'^api/systems', 'api_systems', name='api_systems'),
+    url(r'^api/jumpgatehistory', 'api_jumpgate_history', name='api_jumpgate_history'),
     url(r'^perms', 'perms', name='perms'),
     url(r'^mooncomp', 'mooncomp', name='mooncomp'),
-    url(r'^extractions', 'extractions', name='extractions')
+    url(r'^extractions', 'extractions', name='extractions'),
+    url(r'^gates', 'gates', name='gates'),
+    url(r'^ihubs', 'ihubs', name='ihubs'),
+    url(r'^route', 'route', name='route'),
+    url(r'^addgate', 'add_gate', name='add_gate'),
+    url(r'^svg', 'svg', name='svg'),
+    url(r'^api/publiccontracts', 'api_publiccontracts', name='api_publiccontracts')
 )
 
 urlpatterns += patterns(

@@ -32,6 +32,7 @@ from .apitask import APITask
 import json
 
 from thing.models import Alliance, Character, CharacterApiScope, Contract, ContractItem, Corporation, Event, Item, Station, APIKey, UserProfile
+from django.db.models import Q
 
 from multiprocessing import Pool, Value, Array
 
@@ -39,11 +40,22 @@ from multiprocessing import Pool, Value, Array
 class EsiContracts(APITask):
     name = 'thing.esi_contracts'
 
-    corp_contract_url = 'https://esi.tech.ccp.is/latest/corporations/%d/contracts/?datasource=tranquility&page=%s'
-    corp_contract_item_url = 'https://esi.tech.ccp.is/latest/corporations/%d/contracts/%d/items/?datasource=tranquility'
+    corp_contract_url = 'https://esi.evetech.net/latest/corporations/%d/contracts/?datasource=tranquility&page=%s'
+    corp_contract_item_url = 'https://esi.evetech.net/latest/corporations/%d/contracts/%d/items/?datasource=tranquility'
+    
+    char_contract_url = 'https://esi.evetech.net/latest/characters/%d/contracts/?datasource=tranquility&page=%s'
+    char_contract_item_url = 'https://esi.evetech.net/latest/characters/%d/contracts/%d/items/?datasource=tranquility'
 
     def run(self):
         self.init()
+        
+        char_contract_scopes = CharacterApiScope.objects.filter(
+            scope__in=['esi-contracts.read_character_contracts.v1']
+        )
+
+        for scope in char_contract_scopes:
+            char = scope.character
+            success = self.import_contracts(char, False)
 
         contract_scopes = CharacterApiScope.objects.filter(
             scope__in=['esi-contracts.read_corporation_contracts.v1']
@@ -58,19 +70,25 @@ class EsiContracts(APITask):
                 if 'Contract_Manager' in char.get_apiroles():
                     if char.corporation_id not in seen_corps\
                             and char.corporation_id is not None:
-                        self.import_contracts(char)
+                        success = self.import_contracts(char, True)
 
-                        seen_corps.add(char.corporation_id)
+                        if success:
+                            seen_corps.add(char.corporation_id)
 
-    def import_contracts(self, character):
+
+    def import_contracts(self, character, for_corp):
+        char_id = character.id
         corp_id = character.corporation_id
 
-        if corp_id is None:
-            return
+        if corp_id is None and for_corp:
+            return False
 
         now = datetime.datetime.now()
 
-        c_filter = Contract.objects.filter(corporation_id=corp_id)
+        if for_corp:
+            c_filter = Contract.objects.filter(Q(issuer_corp_id=corp_id) | Q(assignee_id=corp_id) | Q(acceptor_id=corp_id) | Q(assignee_id=character.corporation.alliance_id))
+        else:
+            c_filter = Contract.objects.filter(Q(issuer_char_id=char_id) | Q(assignee_id=char_id) | Q(acceptor_id=char_id))
 
         contracts = []
 
@@ -78,14 +96,37 @@ class EsiContracts(APITask):
 
         ttl_pages = None
 
-        while ttl_pages is None or page <= ttl_pages:
-            success, data, headers = self.fetch_esi_url(self.corp_contract_url % (corp_id, page), character, headers_to_return=['x-pages'])
+        if for_corp:
+            import_url = self.corp_contract_url
+        else:
+            import_url = self.char_contract_url
+
+        success, data, headers = self.fetch_esi_url(import_url % (corp_id if for_corp else char_id, page), character, headers_to_return=['x-pages'])
+
+        if not success:
+            print('Import failed for %s: %s' % (character.name, data))
+            return False
+
+        if 'x-pages' in headers:
+            ttl_pages = int(headers['x-pages'])
+        else:
+            ttl_pages = 1
+
+        if ttl_pages > 1:
+            urls = [import_url % (corp_id if for_corp else char_id, i) for i in range(2, ttl_pages+1)]
+            all_contract_data = self.fetch_batch_esi_urls(urls, character, batch_size=20)
+        else:
+            all_contract_data = dict()
+
+        all_contract_data[''] = (success, data)
+        
+        for url, contract_data in all_contract_data.items():
+            success, data = contract_data
 
             if not success:
                 # Failed to retrieve contract information, back out
-                return
-
-            ttl_pages = int(headers['x-pages'])
+                print('Import failed: %s' % data)
+                return False
 
             r_contracts = json.loads(data)
             if 'response' in contracts:
@@ -96,8 +137,6 @@ class EsiContracts(APITask):
 
             contracts.extend(r_contracts)
 
-            page += 1
-
         # First we need to get all of the acceptor and assignee IDs
         contract_ids = set()
         station_ids = set()
@@ -106,13 +145,6 @@ class EsiContracts(APITask):
         contract_rows = []
 
         for row in contracts:
-            # corp keys don't care about orders they didn't issue - another fun
-            # bug where corp keys see alliance contracts they didn't make  :ccp:
-            if corp_id not in (
-                int(row['issuer_corporation_id']), int(row['assignee_id']), int(row['acceptor_id'])
-            ):
-                continue
-
             contract_ids.add(int(row['contract_id']))
 
             if 'start_location_id' in row:
@@ -189,7 +221,7 @@ class EsiContracts(APITask):
 
         # Fetch all existing contracts
         c_map = {}
-        for contract in c_filter.filter(contract_id__in=contract_ids, corporation_id=character.corporation_id):
+        for contract in c_filter.filter(contract_id__in=contract_ids):
             c_map[contract.contract_id] = contract
 
         # Finally, after all of that other bullshit, we can actually deal with
@@ -285,8 +317,6 @@ class EsiContracts(APITask):
             # Contract does not exist, make a new one
             else:
                 contract = Contract(
-                    character=character,
-                    corporation=character.corporation,
                     contract_id=contract_id,
                     issuer_char=issuer_char,
                     issuer_corp=issuer_corp,
@@ -329,7 +359,13 @@ class EsiContracts(APITask):
                         ))
 
         # And save the damn things
-        Contract.objects.bulk_create(new_contracts)
+        try:
+            Contract.objects.bulk_create(new_contracts)
+        except:
+            import sys
+            print("Unexpected error:", sys.exc_info()[0])
+            print(character.name)
+            return False
         Event.objects.bulk_create(new_events)
 
         # Force the queryset to update
@@ -337,7 +373,7 @@ class EsiContracts(APITask):
 
         # # Now go fetch items for each contract
 
-        contracts_to_populate = Contract.objects.filter(corporation_id=corp_id, retrieved_items=False).exclude(type='Courier').exclude(status='deleted')
+        contracts_to_populate = c_filter.filter(retrieved_items=False).exclude(type='Courier').exclude(status='deleted')
 
         if len(contracts_to_populate) > 100:
             print('Populating Many Contracts (%d!!)! This will take a while!!' % len(contracts_to_populate))
@@ -345,70 +381,89 @@ class EsiContracts(APITask):
         ttl_count = 0
 
         seen_contracts = []
+        seen_records = set()
 
         new = []
 
-        for contract in contracts_to_populate:
-            items_url = self.corp_contract_item_url % (corp_id, contract.contract_id)
-            success, data, headers = self.fetch_esi_url(items_url, character, headers_to_return=['status'])
-            if not success:
-                if 'status' in headers and headers['status'] == 404:
-                    seen_contracts.append(contract.contract_id)
-                    ttl_count += 1
-            else:
-                try:
-                    items_response = json.loads(data)
-                except:
-                    continue
+        item_url = self.corp_contract_item_url if for_corp else self.char_contract_item_url
 
-                contract_items = [] 
+        for i in range(0, len(contracts_to_populate), 100):
+            urls = [item_url % (corp_id if for_corp else char_id, c.contract_id) for c in contracts_to_populate[i:i+100]]
+            cids = dict((item_url % (corp_id if for_corp else char_id, c.contract_id), c.id) for c in contracts_to_populate[i:i+100])
 
-                for row in items_response:
-                    contract_item = ContractItem(
-                        contract_id=contract.id,
-                        record_id=row['record_id'],
-                        item_id=row['type_id'],
-                        quantity=int(row['quantity']),
-                        raw_quantity=row.get('raw_quantity', 0),
-                        singleton=row['is_singleton'],
-                        included=row['is_included'],
-                    )
+            contract_item_data = self.fetch_batch_esi_urls(urls, character, headers_to_return=['status'], batch_size=1)
 
-                    contract_items.append(contract_item)
+            for url, item_data in contract_item_data.items():
+                success, data, headers = item_data
 
+                cid = cids[url]
+
+                if not success:
+                    if 'status' in headers and headers['status'] == 404:
+                        seen_contracts.append(cid)
+                        ttl_count += 1
+                else:
                     try:
-                        if contract_item.item is None:
-                            print('Item not found: %d', row['type_id'])
+                        items_response = json.loads(data)
                     except:
-                        self.log_error('Item not found: %d', row['type_id'])
+                        continue
 
-                        new_item = Item(
-                            id=row['type_id'],
-                            name='**UNKNOWN**',
-                            item_group_id=20,  # Mineral, just
-                            portion_size=1,
-                            base_price=1,
+                    contract_items = [] 
+
+                    for row in items_response:
+                        contract_item = ContractItem(
+                            contract_id=cid,
+                            record_id=row['record_id'],
+                            item_id=row['type_id'],
+                            quantity=int(row['quantity']),
+                            raw_quantity=row.get('raw_quantity', 0),
+                            singleton=row['is_singleton'],
+                            included=row['is_included'],
                         )
 
-                        new_item.save()
-                new = new + contract_items
+                        if row['record_id'] in seen_records:
+                            continue
 
-                ttl_count += 1
+                        seen_records.add(row['record_id'])
 
-                seen_contracts.append(contract.contract_id)
+                        contract_items.append(contract_item)
+
+                        try:
+                            if contract_item.item is None:
+                                print('Item not found: %d', row['type_id'])
+                        except:
+                            self.log_error('Item not found: %d', row['type_id'])
+
+                            new_item = Item(
+                                id=row['type_id'],
+                                name='**UNKNOWN**',
+                                item_group_id=20,  # Mineral, just
+                                portion_size=1,
+                                base_price=1,
+                            )
+
+                            new_item.save()
+                    new = new + contract_items
+
+                    ttl_count += 1
+
+                    seen_contracts.append(cid)
 
             if len(seen_contracts) >= 100:
                 print('Flushing %d-%d/%d contracts to DB...' % (ttl_count-len(seen_contracts), ttl_count, len(contracts_to_populate)))
-                c_filter.filter(contract_id__in=seen_contracts).update(retrieved_items=True)
+                c_filter.filter(id__in=seen_contracts).update(retrieved_items=True)
                 # Ensure we remove duplicate records
                 ContractItem.objects.filter(contract_id__in=seen_contracts).delete();
+                ContractItem.objects.filter(record_id__in=seen_records).delete()
                 ContractItem.objects.bulk_create(new)
                 new = []
                 seen_contracts = []
+                seen_records = set()
 
         if new:
             ContractItem.objects.filter(contract_id__in=seen_contracts).delete();
+            ContractItem.objects.filter(record_id__in=seen_records).delete()
             ContractItem.objects.bulk_create(new)
-            c_filter.filter(contract_id__in=seen_contracts).update(retrieved_items=True)
+            c_filter.filter(id__in=seen_contracts).update(retrieved_items=True)
 
         return True

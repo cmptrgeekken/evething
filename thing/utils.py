@@ -161,14 +161,50 @@ class ApiHelper:
 
         return shared_dict
 
+    def post_batch_esi_urls(self, url, bodies, character=None, method='post', headers_to_return=None, access_token=None, batch_size=10):
+        shared_list = list()
+
+        if character is not None\
+                and (character.sso_access_token is None
+                or character.sso_token_expires <= datetime.datetime.utcnow()):
+            access_token, character.sso_token_expires = self.get_access_token(character)
+
+        def do_batch():
+            while True:
+                body = q.get()
+                response = self.fetch_esi_url(url, character, method, body, headers_to_return, access_token)
+                shared_list.append(response)
+                q.task_done()
+
+        q = Queue(len(bodies))
+        for i in range(batch_size):
+            t = Thread(target=do_batch)
+            t.daemon = True
+            t.start()
+
+        try:
+            for body in bodies:
+                q.put(body)
+            q.join()
+        except KeyboardInterrupt:
+            return
+
+        return shared_list
+
     def fetch_esi_url(self, url, character=None, method='get', body=None, headers_to_return=None, access_token=None):
         """
         Fetch an ESI URL
         """
 
-        cache_key = self._get_cache_key(url, {})
-        cached_data = cache.get(cache_key)
-        headers = cache.get('%s_headers' % cache_key) or dict()
+        # Disable cache
+        if True or body is not None:
+            cache_key = None
+            cached_data = None
+            headers = dict()
+        else:
+            cache_key = self._get_cache_key(url, {body: body, access_token: access_token})
+            cached_data = cache.get(cache_key)
+            headers = cache.get('%s_headers' % cache_key) or dict()
 
         retry = 3
 
@@ -196,6 +232,7 @@ class ApiHelper:
                             access_token, character.sso_token_expires = self.get_access_token(character)
 
                         if access_token is None:
+                            data = 'Cannot acquire access token for char %s' % character.name
                             if headers_to_return:
                                 return False, data, headers
                             return False, data
@@ -204,13 +241,6 @@ class ApiHelper:
                         response = self._session.request(method, url + '&token=' + access_token, json=body)
                     else:
                         response = self._session.request(method, url, json=body)
-
-                    if response.status_code > 500\
-                            and retry > 0:
-                        retry -= 1
-                        continue
-
-                    data = response.text
 
                     if headers_to_return is not None:
                         for header in headers_to_return:
@@ -222,10 +252,31 @@ class ApiHelper:
                             headers[lookup] = response.headers[header]
 
                     if 'x-esi-error-limit-remain' in headers \
-                            and headers['x-esi-error-limit-remain'] == 1:
+                            and int(headers['x-esi-error-limit-remain']) < 10:
+                        print('Setting global wait to %s seconds' % headers['x-esi-error-limit-reset'])
+                        print('URL: %s %s, Token: %s, Body: %s' % (method, url, access_token, response))
+
                         ApiHelper.global_wait_until = datetime.datetime.now() + datetime.timedelta(seconds=int(headers['x-esi-error-limit-reset']))
                     else:
                         ApiHelper.global_wait_until = None
+
+                    # if response.status_code == 403:
+                        # Forbidden, invalidate API keys for user
+                        # character.deauthorize_user()
+                        # print('Deauthing user %s' % character.name)
+
+
+                    if response.status_code >= 500:
+                        if retry > 0:
+                            retry -= 1
+                            continue
+                        else:
+                            print("URL: %s" % url)
+                            print("Status Code: %s" % (response.status_code))
+                            if character:
+                                print("Character: %s" % character.name)
+
+                    data = response.text
 
                     current = self.parse_esi_date(headers['date'])
                     if 'expires' in response.headers:
@@ -244,15 +295,16 @@ class ApiHelper:
 
                     if retry <= 0:
                         if headers_to_return:
-                            return False, data, headers
-                        return False, data
+                            return False, 'Retries exceeded', headers
+                        return False, 'Retries exceeded'
 
             self._api_log.append((url, time.time() - start))
 
             if response is None or response.status_code > 299:
+                headers['status'] = response.status_code
                 if headers_to_return:
-                    return False, data, headers
-                return False, data
+                    return False, 'Response failed: %d (%s)' % (response.status_code, response.text), headers
+                return False, 'Response failed: %d (%s)' % (response.status_code, response.text)
         else:
             data = cached_data
 
@@ -265,7 +317,7 @@ class ApiHelper:
             if cached_data is None:
                 cache_expires = total_seconds(_cache_delta) + 10
 
-                if cache_expires >= 0:
+                if cache_key is not None and cache_expires >= 0:
                     cache.set(cache_key, data, cache_expires)
                     cache.set('%s_headers' % cache_key, headers, cache_expires)
 

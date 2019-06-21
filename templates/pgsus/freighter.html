@@ -111,17 +111,6 @@
                 </div>
 
                 <div class="form-group">
-                    <label class="col-sm-4 col-form-label" for="shipping_m3">Is the Start or End Location a Station:</label>
-                    <div class="col-sm-4">
-                        <select name="is_station" id="is_station" required="required" class="js-select2 input-lg">
-                            <option value="">Select One</option>
-                            <option value="1"{% if is_station %} selected{% endif %}>Yes</option>
-                            <option value="0">No</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="form-group">
                     <div class="col-sm-12">
                         <i>Note: A delivery fee of <b>{{ 5000000|commas }}</b> ISK is charged if the start or end location is a station. Contracts may be rejected if there is no citadel in the system.</i>
                     </div>

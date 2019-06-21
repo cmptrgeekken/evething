@@ -361,7 +361,8 @@ class APITask(Task):
 
     def fetch_batch_esi_urls(self, urls, character=None, method='get', body=None, headers_to_return=None, access_token=None, batch_size=10):
         return self._helper.fetch_batch_esi_urls(urls, character, method, body, headers_to_return, access_token, batch_size)
-
+    def post_batch_esi_urls(self, url, bodies, character=None, method='post', headers_to_return=None, access_token=None, batch_size=20):
+        return self._helper.post_batch_esi_urls(url, bodies, character, method, headers_to_return, access_token, batch_size)
 
     # -----------------------------------------------------------------------
 

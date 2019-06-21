@@ -46,7 +46,7 @@ class PriceUpdater(APITask):
         order_regions = set()
         for station in stations:
             if station.is_citadel:
-                url = 'https://esi.tech.ccp.is/latest/markets/structures/%d?datasource=tranquility&page=' \
+                url = 'https://esi.evetech.net/latest/markets/structures/%d?datasource=tranquility&page=' \
                       % station.id
             else:
                 region_id = station.system.constellation.region.id
@@ -56,7 +56,7 @@ class PriceUpdater(APITask):
             self.import_prices(url, station.id)
 
         for region_id in order_regions:
-            url = 'https://esi.tech.ccp.is/latest/markets/%d/orders?datasource=tranquility&order_type=all&page=' \
+            url = 'https://esi.evetech.net/latest/markets/%d/orders?datasource=tranquility&order_type=all&page=' \
                   % region_id
             self.import_prices(url, region_id)
 
@@ -84,6 +84,7 @@ class PriceUpdater(APITask):
 
         start_time = datetime.now()
 
+        #self.log_debug('Fetching started at %s' % start_time)
         initial_url = api_url + str(page_number)
         success, data, headers = self.fetch_esi_url(initial_url, primary_station.market_profile, headers_to_return=['x-pages'])
         if not success:
@@ -95,14 +96,24 @@ class PriceUpdater(APITask):
         urls = [api_url + str(i) for i in range(2, max_pages+1)]
 
         if max_pages > 1:
-            all_station_data = self.fetch_batch_esi_urls(urls, primary_station.market_profile, batch_size=1)
+            all_station_data = self.fetch_batch_esi_urls(urls, primary_station.market_profile, batch_size=20)
         else:
             all_station_data = dict()
+
+        #self.log_debug('Fetched %d URLs in %d seconds' % (len(urls)+1, (datetime.now()-start_time).total_seconds()))
 
         all_station_data[initial_url] = (success, data)
 
         total_orders = 0
 
+        cursor = self.get_cursor()
+
+        cursor.execute(queries.bulk_stationorder_drop_tmp)
+        cursor.execute(queries.bulk_stationorder_create_tmp)
+
+        seen_ids = set()
+
+        sql_inserts = []
         for url, station_data in all_station_data.items():
             success, data = station_data
 
@@ -119,8 +130,6 @@ class PriceUpdater(APITask):
                 return False
 
             total_orders += len(orders)
-
-            sql_inserts = []
 
             for order in orders:
                 # Ignore stations we're not tracking
@@ -144,6 +153,11 @@ class PriceUpdater(APITask):
                 times_updated = 1
                 last_updated = start_time
 
+                if order_id in seen_ids:
+                    continue
+
+                seen_ids.add(order_id)
+
                 new_sql = "(%d, %d, %d, '%d', '%d', '%d', %0.2f, '%d', '%s', '%s', '%s', '%s', %d)" \
                           % (order_id,
                              item_id,
@@ -161,17 +175,29 @@ class PriceUpdater(APITask):
 
                 sql_inserts.append(new_sql)
 
-            self.execute_query(sql_inserts)
+                if len(sql_inserts) >= 10000:
+                    #self.log_debug('Inserting %d records...%s' % (len(sql_inserts), datetime.now()))
+                    self.execute_query(sql_inserts)
+                    sql_inserts = []
 
-        # Delete non-existent orders:
-        StationOrder.objects.filter(station_id__in=list(station_lookup)).exclude(
-            last_updated__gte=start_time
-        ).delete()
+        #self.log_debug('Inserting %d records...%s' % (len(sql_inserts), datetime.now()))
+        self.execute_query(sql_inserts)
+
+        #self.log_debug('Deleting old orders...%s' % datetime.now())
+        cursor.execute(queries.bulk_stationorder_delete % ','.join(str(x) for x in station_lookup))
+        #self.log_debug('Updating orders...%s' % datetime.now())
+        cursor.execute(queries.bulk_stationorder_update)
+        #self.log_debug('Inserting new orders...%s' % datetime.now())
+        cursor.execute(queries.bulk_stationorder_insert)
+
 
         # Update market orders
         cursor = self.get_cursor()
-        cursor.execute(queries.order_updatemarketorders)
+        #self.log_debug('Updating market orders..%s' % datetime.now())
+        #cursor.execute(queries.order_updatemarketorders)
         cursor.close()
+
+        #self.log_debug('Finished after %d seconds' % (datetime.now()-start_time).total_seconds())
 
         return True
 
@@ -189,7 +215,7 @@ class PriceUpdater(APITask):
         cursor.execute('SET autocommit=0')
         cursor.execute('SET unique_checks=0')
         cursor.execute('SET foreign_key_checks=0')
-        cursor.execute(queries.bulk_stationorders_insert_update % sql)
+        cursor.execute(queries.bulk_stationorder_tmp_insert % sql)
         cursor.execute('SET foreign_key_checks=1')
         cursor.execute('SET unique_checks=1')
         cursor.execute('SET autocommit=1')

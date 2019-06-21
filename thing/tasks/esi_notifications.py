@@ -36,7 +36,7 @@ from thing.filetimes import filetime_to_dt, dt_to_filetime
 class EsiNotifications(APITask):
     name = 'thing.esi_notifications'
 
-    notifications_url = 'https://esi.tech.ccp.is/latest/characters/%s/notifications/?datasource=tranquility'
+    notifications_url = 'https://esi.evetech.net/latest/characters/%s/notifications/?datasource=tranquility'
 
     def run(self, character_id=None):
         self.init()

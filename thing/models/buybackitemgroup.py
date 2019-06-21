@@ -49,9 +49,10 @@ class BuybackItemGroup(models.Model):
 
         price_region_id = 10000002
 
-        def __init__(self, item, buybackitem, buybackitemgroup):
+        def __init__(self, item, buybackitem, buybackitemgroup, repro_items=dict()):
             self.item = item
 
+            self.group_id = buybackitem.buyback_item_group_id
             self.price_type = buybackitem.price_type or buybackitemgroup.price_type
             self.price_pct = buybackitem.price_pct or buybackitemgroup.price_pct
             self.reprocess = buybackitem.reprocess or buybackitemgroup.reprocess
@@ -61,6 +62,8 @@ class BuybackItemGroup(models.Model):
                 self.reprocess_tax = buybackitem.reprocess_tax
             else:
                 self.reprocess_tax = buybackitemgroup.reprocess_tax or 0.0
+
+            self.repro_items = repro_items
 
         def get_price(self, reprocess=None, issued=None, pct=None):
             if reprocess is None:
@@ -73,9 +76,9 @@ class BuybackItemGroup(models.Model):
 
             if self.price_type == '5day':
                 item_price = self.item.get_history_avg(days=5, region_id=self.price_region_id, issued=issued,
-                                                 pct=pct, reprocess=reprocess, reprocess_pct=self.reprocess_pct)
+                                                 pct=pct, reprocess=reprocess, reprocess_pct=self.reprocess_pct, repro_items=self.repro_items)
             elif self.price_type == 'buy':
-                item_price = self.price_pct*self.item.get_price(True, reprocess=reprocess, reprocess_pct=self.reprocess_pct)
+                item_price = self.item.get_price(True, reprocess=reprocess, pct=pct, reprocess_pct=self.reprocess_pct, repro_items=self.repro_items)
 
             if self.reprocess_tax is not None:
                 item_price *= (1-self.reprocess_tax)
@@ -90,10 +93,10 @@ class BuybackItemGroup(models.Model):
                 type_str = '%0.0f%% of Jita Buy' % (self.price_pct * 100)
 
             if self.reprocess:
-                type_str += '<br/>@ %0.1f%% refine' % (self.reprocess_pct*100.0)
+                type_str += ' @ %0.1f%% refine' % (self.reprocess_pct*100.0)
 
             if self.reprocess_tax > 0:
-                type_str += '<br/>(minus %0.0f%% tax)' % (self.reprocess_tax*100.0)
+                type_str += ' (minus %0.0f%% tax)' % (self.reprocess_tax*100.0)
 
             return type_str
 
@@ -106,16 +109,23 @@ class BuybackItemGroup(models.Model):
 
         items = dict()
 
+        repro_items = dict()
+
         for ai in accepted_items:
             for i in ai.get_items():
-                items[i.id] = self.BuybackItemGroupEntry(i, ai, self)
+                if ai.repro_price_pct > 0:
+                    repro_items[i.id] = ai.repro_price_pct
+
+        for ai in accepted_items:
+            for i in ai.get_items():
+                items[i.id] = self.BuybackItemGroupEntry(i, ai, self, repro_items)
 
         # Then delete rejected items
         rejected_items = BuybackItem.objects.filter(buyback_item_group_id=self.id, active=True, accepted=False)
         for ri in rejected_items:
             for i in ri.get_items():
                 del items[i.id]
-
+        
         all_items = items.values()
 
         all_items.sort(key=lambda i: i.item.name)

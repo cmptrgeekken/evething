@@ -201,8 +201,9 @@ CELERY_DEFAULT_QUEUE = 'et_medium'
 CELERY_QUEUES = (
     Queue('et_medium', Exchange('et_medium'), routing_key='et_medium'),
     Queue('et_high', Exchange('et_high'), routing_key='et_high'),
-    Queue('et_low', Exchange('et_low'), routing_key='et_low'),
+    Queue('et_contract', Exchange('et_contract'), routing_key='et_contract'),
     Queue('et_prices', Exchange('et_prices'), routing_key='et_prices'),
+    Queue('et_assets', Exchange('et_assets'), routing_key='et_assets')
 )
 
 # Periodic tasks
@@ -278,7 +279,7 @@ CELERYBEAT_SCHEDULE = {
 
     'history_updater': {
         'task': 'thing.history_updater',
-        'schedule': crontab(hour=2, minute=1),
+        'schedule': timedelta(hours=6),
         'options': {
             'expires': 239*60,
             'queue': 'et_medium',
@@ -295,9 +296,27 @@ CELERYBEAT_SCHEDULE = {
         },
         'args': [],
     },
+    'asset_updater': {
+        'task': 'thing.esiassets',
+        'schedule': timedelta(minutes=30),
+        'options': {
+            'expires': 240 * 60,
+            'queue': 'et_assets'
+        },
+        'args': [],
+    },
     'corp_contract_updater': {
         'task': 'thing.esi_contracts',
         'schedule': timedelta(minutes=5),
+        'options': {
+            'expires': 240*60,
+            'queue': 'et_contract'
+        },
+        'args': [],
+    },
+    'public_contract_updater': {
+        'task': 'thing.esi_publiccontracts',
+        'schedule': timedelta(minutes=30),
         'options': {
             'expires': 240*60,
             'queue': 'et_medium'
@@ -324,7 +343,7 @@ CELERYBEAT_SCHEDULE = {
     },
     'corp_moon_observer': {
         'task': 'thing.moonobserver',
-        'schedule': timedelta(minutes=20),
+        'schedule': timedelta(hours=1),
         'options': {
             'expires': 240 * 60,
             'queue': 'et_medium'
@@ -333,7 +352,7 @@ CELERYBEAT_SCHEDULE = {
     },
     'char_roles_updater': {
         'task': 'thing.characterroles',
-        'schedule': timedelta(minutes=60),
+        'schedule': crontab(hour=1),
         'options': {
             'expires': 240 * 60,
             'queue': 'et_medium'
@@ -342,7 +361,7 @@ CELERYBEAT_SCHEDULE = {
     },
     'price_updater': {
         'task': 'thing.price_updater',
-        'schedule': timedelta(minutes=5),
+        'schedule': timedelta(minutes=30),
         'options': {
             'expires': 10 * 60,
             'queue': 'et_prices'
@@ -350,24 +369,36 @@ CELERYBEAT_SCHEDULE = {
         'args': [],
     },
 
+    'universe': {
+        'task': 'thing.esiuniverse',
+        'schedule': crontab(hour=12),
+        'options': {
+            'expires': 10 * 60,
+            'queue': 'et_medium'
+        },
+        'args': [],
+    },
+
+
     # update unknown character/corporation names every hour
     'fix-names': {
         'task': 'thing.fix_names',
-        'schedule': timedelta(hours=1),
+        'schedule': crontab(hour=12),
         'options': {
             'expires': 59 * 60,
+            'queue': 'et_medium'
         },
         'args': (),
     },
     # fix contracts that changed state after they went off Contract.xml
-    'fix_contracts': {
-        'task': 'thing.fix_contracts',
-        'schedule': timedelta(minutes=45),
-        'options': {
-            'queue': 'et_medium',
-        },
-        'args': (),
-    }
+    #'fix_contracts': {
+    #    'task': 'thing.fix_contracts',
+    #    'schedule': timedelta(minutes=45),
+    #    'options': {
+    #        'queue': 'et_medium',
+    #    },
+    #    'args': (),
+    #}
 }
 
 class DisableMigrations(object):

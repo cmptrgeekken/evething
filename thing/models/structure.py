@@ -33,12 +33,14 @@ class Structure(models.Model):
     station = models.ForeignKey(Station, on_delete=models.DO_NOTHING, unique=True)
     profile_id = models.IntegerField()
     fuel_expires = models.DateTimeField()
+    state = models.CharField(max_length=50)
     state_timer_start = models.DateTimeField()
     state_timer_end = models.DateTimeField()
     x = models.FloatField()
     y = models.FloatField()
     z = models.FloatField()
     closest_celestial = models.ForeignKey(MapDenormalize, on_delete=models.DO_NOTHING, to_field='item_id', db_column='closest_celestial_id')
+    unanchors_at = models.DateTimeField()
 
     class Meta:
         app_label = 'thing'

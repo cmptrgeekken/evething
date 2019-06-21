@@ -281,8 +281,8 @@ WHERE c.type IN ('item_exchange', 'Item Exchange')
 courier_contracts = """
 SELECT DISTINCT c.contract_id
 FROM thing_contract c
-INNER JOIN thing_corporation co on co.id=c.corporation_id
-WHERE c.assignee_id=c.corporation_id
+INNER JOIN thing_corporation co on co.id=c.assignee_id
+WHERE c.assignee_id=co.id
 AND c.type = 'Courier'
 AND co.name = 'Penny''s Flying Circus'
 """
@@ -805,6 +805,31 @@ CREATE TABLE `thing_cache_localprice` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 """
 
+bulk_stationorder_create_tmp = """
+CREATE TABLE thing_stationorder_tmp LIKE thing_stationorder;
+"""
+
+bulk_stationorder_drop_tmp = """
+DROP TABLE IF EXISTS thing_stationorder_tmp;
+"""
+
+bulk_stationorder_tmp_insert = """
+INSERT IGNORE INTO thing_stationorder_tmp (`order_id`,`item_id`,`station_id`,`volume_entered`,`volume_remaining`,`minimum_volume`,`price`,`buy_order`,`issued`,`expires`,`range`,`last_updated`,`times_updated`)
+    VALUES %s;
+"""
+
+bulk_stationorder_delete = """
+DELETE FROM thing_stationorder WHERE station_id IN (%s) AND NOT EXISTS(select 1 FROM thing_stationorder_tmp sot WHERE sot.order_id=thing_stationorder.order_id);
+"""
+
+bulk_stationorder_insert = """
+INSERT IGNORE INTO thing_stationorder (`order_id`,`item_id`,`station_id`,`volume_entered`,`volume_remaining`,`minimum_volume`,`price`,`buy_order`,`issued`,`expires`,`range`,`last_updated`,`times_updated`) 
+SELECT sot.order_id, sot.item_id, sot.station_id, sot.volume_entered, sot.volume_remaining, sot.minimum_volume, sot.price, sot.buy_order, sot.issued, sot.expires, sot.range, sot.last_updated, sot.times_updated from thing_stationorder_tmp sot LEFT JOIN thing_stationorder so ON sot.order_id=so.order_id AND sot.station_id=so.station_id  WHERE so.order_id IS NULL;
+"""
+
+bulk_stationorder_update = """
+UPDATE thing_stationorder so INNER JOIN thing_stationorder_tmp sot ON so.order_id=sot.order_id SET so.volume_remaining=sot.volume_remaining,so.price=sot.price, so.last_updated=sot.last_updated, so.times_updated=IF(so.price!=sot.price,so.times_updated+1,so.times_updated);
+"""
 
 bulk_stationorders_insert_update = """
 INSERT INTO thing_stationorder (`order_id`,`item_id`,`station_id`,`volume_entered`,`volume_remaining`,`minimum_volume`,`price`,`buy_order`,`issued`,`expires`,`range`,`last_updated`,`times_updated`)
@@ -814,6 +839,35 @@ ON DUPLICATE KEY UPDATE
     times_updated=IF(price!=VALUES(price),times_updated+1,times_updated), 
     price=VALUES(price),
     volume_remaining=VALUES(volume_remaining)"""
+
+bulk_assets_create_tmp = """
+DROP TABLE IF EXISTS thing_esiasset_tmp;
+CREATE TEMPORARY TABLE thing_esiasset_tmp LIKE thing_esiasset;
+"""
+
+bulk_assets_tmp_insert = """
+INSERT IGNORE INTO thing_esiasset_tmp(`character_id`, `corporation_id`, `item_id`, `type_id`, `is_singleton`, `is_blueprint_copy`, `location_flag`, `location_id`, `location_type`, `quantity`, `last_updated`)
+   VALUES %s
+"""
+
+bulk_assets_tmp_merge = """
+DELETE FROM thing_esiasset WHERE corporation_id=%d AND NOT EXISTS (SELECT 1 FROM thing_esiasset_tmp eat WHERE eat.item_id=thing_esiasset.item_id);  
+UPDATE thing_esiasset ea INNER JOIN thing_esiasset_tmp eat ON ea.item_id=eat.item_id SET ea.character_id=eat.character_id, ea.corporation_id=eat.corporation_id, ea.location_flag=eat.location_flag, ea.location_id=eat.location_id, ea.location_type=eat.location_type, ea.quantity=eat.quantity,ea.last_updated=eat.last_updated;
+INSERT INTO thing_esiasset SELECT eat.* from thing_esiasset_tmp eat LEFT JOIN thing_esiasset ea ON eat.item_id=ea.item_id WHERE ea.item_id IS NULL;
+"""
+
+bulk_assets_insert_update = """
+INSERT INTO thing_esiasset(`character_id`, `corporation_id`, `item_id`, `type_id`, `is_singleton`, `is_blueprint_copy`, `location_flag`, `location_id`, `location_type`, `quantity`, `last_updated`)
+   VALUES %s
+ON DUPLICATE KEY UPDATE
+   character_id=VALUES(character_id),
+   corporation_id=VALUES(corporation_id),
+   location_flag=VALUES(location_flag),
+   location_id=VALUES(location_id),
+   location_type=VALUES(location_type),
+   quantity=VALUES(quantity),
+   last_updated=VALUES(last_updated)
+"""
 
 order_updatemarketorders = """
 update thing_marketorder mo INNER JOIN thing_stationorder so ON mo.order_id=so.order_id SET mo.price=so.price, mo.volume_remaining=so.volume_remaining
@@ -1076,10 +1130,12 @@ FROM thing_contract c
 		ci.item_id IN (SELECT csi.item_id FROM thing_contractseedingitem csi WHERE csi.contractseeding_id=cs.id AND csi.required=1)
         AND c.status='outstanding' 
         AND cs.id = %d
+        AND cs.is_active=1
     GROUP BY c.contract_id, cs.id) search ON c.contract_id=search.contract_id AND search.csid=cs.id
 WHERE 
 	cs.id = search.csid
     AND search.matching_values = (SELECT COUNT(*) FROM thing_contractseedingitem csi WHERE csi.contractseeding_id=cs.id AND csi.required=1)
+    AND date_expired > NOW()
 """
 
 assetlist_query = """
@@ -1149,3 +1205,86 @@ GROUP BY moe.observer_id, i.name
 contract_fix_duplicate_items = """
 DELETE FROM thing_contractitem WHERE id NOT IN (SELECT MIN(id) FROM thing_contractitem group by record_id,contract_id);
 """
+
+jumpbridge_lo_quantity = """
+select s.id AS station_id,
+       s.name AS station_name,
+       COALESCE(jh.lo_quantity,SUM(ea.quantity)) AS lo_qty,
+       IF(st.state='hull_reinforce' OR st.state='armor_reinforce', 'Reinforced', 'Active') as state,
+       (SELECT IF(ss.state='online',1,0) FROM thing_structureservice ss WHERE ss.structure_id=s.id AND ss.name='Jump Gate Access') AS service_state,
+       COALESCE(jh.lo_diff, 0) as lo_diff,
+       COALESCE(jh.last_updated,MIN(ea.last_updated)) AS last_updated
+FROM thing_station s
+    LEFT JOIN thing_esiasset ea ON ea.location_id=s.id AND ea.type_id=16273
+    LEFT JOIN thing_item i ON i.id=ea.type_id
+    LEFT JOIN thing_jumpgate_history jh ON jh.station_id=s.id
+    INNER JOIN thing_corporation c ON s.corporation_id=c.id
+    INNER JOIN thing_structure st ON s.id=st.station_id
+    LEFT JOIN thing_structureservice ss ON ss.structure_id=s.id
+WHERE s.type_id = 35841 AND c.alliance_id=%d AND jh.last_updated = (SELECT MAX(last_updated) FROM thing_jumpgate_history WHERE station_id=s.id) AND s.ignore_jb=0
+GROUP BY s.name
+ORDER BY jh.lo_quantity ASC
+"""
+
+jumpbridge_lo_history_update = """
+INSERT IGNORE INTO thing_jumpgate_history(station_id, lo_quantity, lo_diff, last_updated) 
+   SELECT jg.station_id, 
+          jg.lo_qty,
+          jg.lo_qty-COALESCE((SELECT jgh.lo_quantity FROM thing_jumpgate_history jgh WHERE jgh.station_id=jg.station_id AND jgh.last_updated < jg.last_updated ORDER BY jgh.last_updated DESC LIMIT 1),0) as lo_diff,
+          jg.last_updated 
+   FROM (select s.id AS station_id,
+       s.name AS station_name,
+       SUM(ea.quantity) AS lo_qty,
+       IF(st.state='hull_reinforce' OR st.state='armor_reinforce', 'Reinforced', 'Active') as state,
+       (SELECT IF(ss.state='online',1,0) FROM thing_structureservice ss WHERE ss.structure_id=s.id AND ss.name='Jump Gate Access') AS service_state,
+       ea.last_updated
+FROM thing_station s
+    LEFT JOIN thing_esiasset ea ON ea.location_id=s.id AND ea.type_id=16273
+    LEFT JOIN thing_item i ON i.id=ea.type_id
+    INNER JOIN thing_corporation c ON s.corporation_id=c.id
+    INNER JOIN thing_structure st ON s.id=st.station_id
+    LEFT JOIN thing_structureservice ss ON ss.structure_id=s.id
+WHERE s.type_id = 35841 AND s.ignore_jb=0
+GROUP BY s.name) jg
+   WHERE NOT EXISTS (SELECT 1 FROM thing_jumpgate_history jgh WHERE jgh.last_updated=jg.last_updated AND jgh.station_id=jg.station_id) AND jg.last_updated IS NOT NULL;
+"""
+
+ihub_upgrades = """
+select s.name AS system, 
+       c.name AS constellation,
+       r.name AS region,
+       i.name AS upgrade, 
+       IF(eai.location_flag='StructureActive', 'Online', 'Offline') AS state,
+       a.last_updated AS last_updated,
+       co.ticker AS corp_ticker
+FROM thing_esiasset a 
+    INNER JOIN thing_system s ON a.location_id=s.id
+    INNER JOIN thing_constellation c ON s.constellation_id=c.id
+    INNER JOIN thing_region r ON c.region_id=r.id
+    INNER JOIN thing_esiasset eai ON a.item_id=eai.location_id 
+    INNER JOIN thing_item i ON eai.type_id=i.id 
+    INNER JOIN thing_corporation co ON a.corporation_id=co.id
+    INNER JOIN thing_alliance al ON co.alliance_id=al.id
+WHERE a.type_id=32458 AND al.id = %d
+ORDER BY s.name, i.name;
+"""
+
+lo_station_quantities = """
+select s.name AS station_name, sum(a.quantity) AS qty  from thing_esiasset a  inner join thing_item i on a.type_id=i.id  left join thing_esiasset l1 on l1.item_id=a.location_id  left join thing_esiasset l2 on l2.item_id=l1.location_id  left join thing_esiasset l3 on l3.item_id=l2.location_id  left join thing_esiasset l4 on l4.item_id=l3.location_id, thing_station s  where i.name='Liquid Ozone'  and (     (s.id=l1.location_id AND l1.location_type = 'other')     OR (s.id=l2.location_id AND l2.location_type ='other')      OR (s.id=l3.location_id AND l3.location_type = 'other')      OR (s.id=l4.location_id AND l4.location_type = 'other'))  and a.corporation_id IN (SELECT id FROM thing_corporation WHERE alliance_id =%d) AND a.quantity > 10000 group by s.name order by s.name;
+"""
+
+current_bridges = """
+select jg.id, st.name as start, e.name as end,
+    IF((SELECT MAX(last_updated) FROM thing_jumpgate_history jgh WHERE jgh.station_id=jg.id) > DATE_ADD(NOW(), INTERVAL -1 DAY),1,0) AS start_in_alliance,
+    IF((SELECT MAX(last_updated) FROM thing_jumpgate_history jgh WHERE jgh.station_id=ejg.id) > DATE_ADD(NOW(), INTERVAL -1 DAY),1,0) as end_in_alliance
+    from thing_jumpgates jg
+        left join thing_jumpgates ejg on ejg.system_id=jg.destination_system_id
+        left join thing_station es on es.id=ejg.id and es.deleted=0
+        left join thing_corporation ec on ec.id=es.corporation_id
+        inner join thing_station s on s.deleted=0 AND s.id=jg.id
+        inner join thing_corporation c on s.corporation_id=c.id
+        inner join thing_system st on st.id=jg.system_id
+        inner join thing_system e on jg.destination_system_id=e.id
+    order by st.name
+"""
+

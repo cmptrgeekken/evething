@@ -22,7 +22,7 @@ def contractseedlist(request):
 
     char = Character.objects.filter(id=charid).first()
 
-    public_lists = ContractSeeding.objects.filter(is_private=False).order_by('-priority', 'name')
+    public_lists = ContractSeeding.objects.filter(is_private=False, is_active=True).order_by('-station_id', '-priority', 'name')
     role = CharacterRole.objects.filter(character_id=charid, role='contracts').first()
 
     station_lists = dict()
@@ -30,6 +30,8 @@ def contractseedlist(request):
     for list in public_lists:
         if list.station.system.name not in station_lists:
             station_lists[list.station.system.name] = []
+
+        list.stock_ct = list.get_stock_count()
 
         station_lists[list.station.system.name].append(list)
 
@@ -243,7 +245,7 @@ def contractseedview(request):
 
     list = ContractSeeding.objects.filter(id=list_id).first()
 
-    if list is None or (list.is_private and list.char_id != char_id):
+    if list is None:
         return redirect('/?login=1')
 
     related_contracts, ttl_pages = list.get_stock(page=page)

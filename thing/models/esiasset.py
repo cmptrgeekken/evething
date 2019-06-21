@@ -30,7 +30,10 @@ from thing.models.corporation import Corporation
 from thing.models.item import Item
 
 
-class EsiAsset(models.Model):
+from mptt.models import MPTTModel, TreeForeignKey
+
+
+class EsiAsset(MPTTModel):
     item_id = models.BigIntegerField(db_index=True)
 
     character = models.ForeignKey(Character, on_delete=models.DO_NOTHING)
@@ -45,9 +48,15 @@ class EsiAsset(models.Model):
     asset_name = models.CharField(max_length=128, default='')
 
     is_singleton = models.BooleanField(default=False)
+    is_blueprint_copy = models.BooleanField(default=False)
     quantity = models.IntegerField()
+
+    #location = TreeForeignKey('self', null=True, blank=True, related_name='children', to_field='item_id', db_index=True)
 
     last_updated = models.DateTimeField()
 
     class Meta:
         app_label = 'thing'
+
+    class MPTTMeta:
+        parent_attr='location_id'

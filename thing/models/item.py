@@ -28,6 +28,8 @@ from decimal import Decimal
 from django.db import models
 from django.db.models import Sum, F
 
+from django.core.cache import cache
+
 from thing.models.itemgroup import ItemGroup
 from thing.models.marketgroup import MarketGroup
 from thing.models.orderlist import OrderList
@@ -44,6 +46,11 @@ class Item(models.Model):
     portion_size = models.IntegerField()
     # 0.0025 -> 10,000,000,000
     volume = models.DecimalField(max_digits=16, decimal_places=4, default=0)
+    packaged_volume = models.DecimalField(max_digits=16, decimal_places=4, default=0)
+    mass = models.FloatField()
+    description = models.CharField(max_length=5000, default=None)
+    icon_id = models.IntegerField(default=None)
+    published = models.BooleanField(default=True)
 
     base_price = models.DecimalField(max_digits=15, decimal_places=2, default=0)
 
@@ -119,7 +126,7 @@ class Item(models.Model):
 
         return orders.aggregate(total_volume=Sum('volume_remaining'))['total_volume']
 
-    def get_price(self, buy=False, item_ids=None, station_ids=None, order_pct=.05, reprocess=False, reprocess_pct=.876):
+    def get_price(self, buy=False, item_ids=None, station_ids=None, pct=1.0, order_pct=.05, reprocess=False, reprocess_pct=.876, repro_items=None):
         from thing.models.stationorder import StationOrder
 
         if item_ids is None:
@@ -128,18 +135,28 @@ class Item(models.Model):
         if station_ids is None:
             station_ids = [60003760] # Jita IV-4
 
+        cache_key = 'get_price_%s-%s-%s-%s-%s-%s-%s' % (buy, ','.join(str(e) for e in item_ids), ','.join(str(e) for e in station_ids), order_pct, reprocess, reprocess_pct, pct)
+        cache_val = None #cache.get(cache_key)
+        if cache_val:
+            return cache_val
+
         average = 0
 
         if reprocess:
             materials = self.get_reprocessed_items()
             for material in materials:
                 # TODO: Calculate reprocessing rate correctly
-                average += material.z_qty * reprocess_pct * material.get_price(buy=buy, station_ids=station_ids, order_pct=order_pct)
+                if repro_items is not None and material.id in repro_items:
+                    price_pct = repro_items[material.id]
+                else:
+                    price_pct=pct
+
+                average += material.z_qty * reprocess_pct * material.get_price(buy=buy, pct=price_pct, station_ids=station_ids, order_pct=order_pct)
 
             return round(float(average / self.portion_size), 2)
 
-        orders = StationOrder.objects.filter(item_id__in=item_ids, station_id__in=station_ids, buy_order=buy)
-        
+        orders = StationOrder.objects.filter(item_id__in=item_ids, station_id__in=station_ids, buy_order=buy, price__gt=.01)
+
         if buy:
             orders = orders.order_by('-price')
         else:
@@ -161,7 +178,11 @@ class Item(models.Model):
             # If no order volume, calculate reprocessed value at 84.3% refine
             return self.get_price(buy=buy, station_ids=station_ids, order_pct=order_pct, reprocess=True, reprocess_pct=.843)
 
-        return round(order_sum / float(order_vol), 2)
+        val = pct * round(order_sum / float(order_vol), 2)
+
+        cache.set(cache_key, val, 30*60)
+
+        return val
 
     def get_current_orders(self,
                            quantity=None,
@@ -285,7 +306,7 @@ SELECT price / (SUM(im.quantity*i.sell_fivepct_price) /
             self.z_ttl_shipping += order_list.total_shipping
             self.z_ttl_price_with_shipping += order_list.total_price_with_shipping
 
-    def get_history_avg(self, days=5, region_id=10000002, issued=None, pct=1.0, reprocess=False, reprocess_pct=0.875):
+    def get_history_avg(self, days=5, region_id=10000002, issued=None, pct=1.0, reprocess=False, reprocess_pct=0.875, repro_items=None):
         from thing.models.pricehistory import PriceHistory
 
         average = 0
@@ -294,7 +315,12 @@ SELECT price / (SUM(im.quantity*i.sell_fivepct_price) /
             materials = self.get_reprocessed_items()
             for material in materials:
                 # TODO: Calculate reprocessing rate correctly
-                average += material.z_qty * reprocess_pct * material.get_history_avg(days=days, region_id=region_id, issued=issued, pct=pct, reprocess=False)
+                if repro_items is not None and material.id in repro_items:
+                    price_pct = repro_items[material.item_id]
+                else:
+                    price_pct=pct
+
+                average += price_pct * material.z_qty * reprocess_pct * material.get_history_avg(days=days, region_id=region_id, issued=issued, pct=1, reprocess=False)
 
             return round(float(average / self.portion_size), 2)
 
@@ -343,5 +369,6 @@ SELECT price / (SUM(im.quantity*i.sell_fivepct_price) /
         else:
             return 'ABC'
 
-    def get_ore_display(self, moon_pct):
-        return "%s (%d%%, %s)" % (self.name, moon_pct*100, self.get_ore_category())
+    def get_ore_display(self, moon_pct, chunk_minutes):
+        from thing import helpers
+        return "%s %s (%d%%, %s)" % (helpers.commas(chunk_minutes * moon_pct * 333 / self.volume), self.name, moon_pct*100, self.get_ore_category())

@@ -1,0 +1,76 @@
+{% extends "web_template.html" %}
+{% import 'macros/common.html' as common %}
+  
+{% block title %}Add Gate{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function(){
+    $('.js-select2.system')
+        .select2({
+            ajax: {
+                url: '/api/systems',
+                dataType: 'json',
+                processResults: function(data) {
+                    return {
+                        results: $.map(data.items, function(i){return {text: i.text, id: i.text}})
+                    };
+                }
+                    
+            },
+            placeholder: 'Search...',
+            minimumInputLength:3
+        });
+})
+</script>
+{% endblock %}
+
+{% block content %}
+<section class="bg-19 bg-center bg-cover">
+    <div>
+        <div class="container section-sm">
+            <h1 class="top-title">Add Gates</h1>
+        </div>
+    </div>
+</section>
+
+<section class="container section-md">
+      <div class="row">
+        <div class="col-lg-6">
+            <h2>Please select the system with the gate to add</h2>
+            {% if message %}
+            <h3>{{ message }}</h3>
+            {% endif %}
+            <form method="get" class="form-horizontal" action="{{ url('pgsus.views.add_gate') }}">
+                <div class="form-group">
+                    <label class="col-sm-4 col-form-label" for="system">System:</label>
+                    <div class="col-sm-8">
+                        <select name="system" id="system" required="required" class="js-select2 input-lg system" style="width: 130px" required>
+                            {% if system %}
+                            <option selected value="{{ system }}">{{ system }}</option>
+                            {% endif %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <div class="col-sm-6">
+                        <button type="submit" class="btn btn-primary">
+                            Submit
+                        </button>
+                    </div>
+                </div>
+			</form>
+
+            {% if added_structs %}
+            <h3>Found the following structures:</h3>
+            <ul>
+                {% for s in added_structs %}
+                <li>{{ s.name }} ({{ s.id }})</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </div>
+      </div>
+</section>
+{% endblock %}

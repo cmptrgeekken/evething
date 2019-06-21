@@ -25,13 +25,14 @@
 
 from django.db import models
 
+from thing.models.alliance import Alliance
 from thing.models.character import Character
 from thing.models.corporation import Corporation
 from thing.models.station import Station
 
 
 class Contract(models.Model):
-    character = models.ForeignKey(Character, on_delete=models.DO_NOTHING)
+    character = models.ForeignKey(Character, on_delete=models.DO_NOTHING, null=True)
     corporation = models.ForeignKey(Corporation, blank=True, null=True, on_delete=models.DO_NOTHING)
 
     contract_id = models.IntegerField(db_index=True)
@@ -81,7 +82,33 @@ class Contract(models.Model):
         else:
             return self.issuer_char.name
 
+    def get_assignee_name(self):
+        alliance = Alliance.objects.filter(id=self.assignee_id).first()
+
+        if alliance is not None and 'Unknown' not in alliance.name:
+            return '%s' % alliance.name
+
+        corp = Corporation.objects.filter(id=self.assignee_id).first()
+        if corp is not None and 'Unknown' not in corp.name:
+            return '%s' % corp.name
+
+        char = Character.objects.filter(id=self.assignee_id).first()
+        if char is not None and 'Unknown' not in char.name:
+            return '%s' % char.name
+
+        return 'Unknown'
+
     def get_items(self):
         from thing.models import ContractItem
 
-        return ContractItem.objects.filter(contract_id=self.id)
+        items = ContractItem.objects.filter(contract_id=self.id)
+
+        item_lookup = dict()
+
+        for i in items:
+            if i.item_id not in item_lookup:
+                item_lookup[i.item_id] = i
+            else:
+                item_lookup[i.item_id].quantity += i.quantity
+
+        return item_lookup.values()

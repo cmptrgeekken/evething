@@ -39,7 +39,7 @@ from thing.utils import ApiHelper
 from django.db.models import Q
 from django.shortcuts import redirect, render
 
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse, Http404
 
 from pgsus import Calculator
 
@@ -108,9 +108,47 @@ def stats(request):
 
     return out
 
+def svg(request):
+    import urllib2
+
+    path = request.GET.get('path')
+    type = request.GET.get('type')
+
+    route = 'http://evemaps.dotlan.net/svg/'
+
+    if type == 'universe':
+        route += 'Universe.svg'
+    else:
+        raise Http404
+
+    route += '?&path=%s' % path
+
+    response = urllib2.urlopen(route)
+
+    content = response.read()
+
+    http_response = HttpResponse(content, content_type='image/svg+xml')
+    http_response['Content-Length'] = len(content)
+
+    return http_response
+
+def api_systems(request):
+    systems = System.objects.filter(name__istartswith=request.GET.get('term'))
+
+    results = list()
+
+    for s in systems:
+        result = dict()
+        result['text'] = s.name
+        result['id'] = s.id
+        result['region'] = s.constellation.region.name
+
+        results.append(result)
+
+    return JsonResponse(dict(items=results))
 
 def add_waypoint(request):
-    waypoint_url = 'https://esi.tech.ccp.is/latest/ui/autopilot/waypoint/?datasource=tranquility&add_to_beginning=false&clear_other_waypoints=false&destination_id=%s'
+    waypoint_url = 'https://esi.evetech.net/latest/ui/autopilot/waypoint/?datasource=tranquility&add_to_beginning=false&clear_other_waypoints=false&destination_id=%s'
 
     if 'char' in request.session:
         charid = request.session['char']['id']
@@ -119,17 +157,25 @@ def add_waypoint(request):
 
         dest = request.GET.get('waypoint')
 
-        dest_station = Station.objects.filter(id=dest).first()
-
-        if dest_station is not None and scope is not None:
+        if scope is not None:
             helper = ApiHelper()
 
-            helper.fetch_esi_url(waypoint_url % dest_station.id, scope.character, method='post')
+            helper.fetch_esi_url(waypoint_url % dest, scope.character, method='post')
 
     return HttpResponse('')
 
+def api_jumpgate_history(request):
+    station_id = int(request.GET.get('id'))
+    page = int(request.GET.get('page') or '1')
+    size = int(request.GET.get('size') or '20')
+
+    history = dictfetchall("SELECT * FROM thing_jumpgate_history WHERE station_id=%d ORDER BY last_updated DESC LIMIT %d,%d" % (station_id, (page-1)*size,size))
+
+    return JsonResponse(dict(items=history))
+
+
 def open_window(request):
-    window_url = 'https://esi.tech.ccp.is/latest/ui/openwindow/%s/?datasource=tranquility&%s=%s'
+    window_url = 'https://esi.evetech.net/latest/ui/openwindow/%s/?datasource=tranquility&%s=%s'
 
     if 'char' in request.session:
         charid = request.session['char']['id']
@@ -158,6 +204,7 @@ def open_window(request):
 
 
 def buyback_old(request):
+    return redirect('/buyback/pennys-fuel-buyback')
     buyback_items = PriceWatch.objects.filter(
             active=True,
             price_group__isnull=False
@@ -320,7 +367,6 @@ def freighter(request):
             shipping_m3_input = request.POST.get('shipping_m3')
             shipping_m3_input = re.sub('[^\d]+', '', shipping_m3_input)
             shipping_m3 = int(shipping_m3_input)
-            is_station = int(request.POST.get('is_station')) == 1
         except ValueError:
             errors.append('Volume invalid')
 
@@ -397,7 +443,7 @@ def freighter(request):
                 errors.append('You need at least %d contracts at the shown rate to use this method.' % shipping_info['trips'])
 
             if shipping_info['rate'] is None:
-                errors.append('Cannot ship between the selected systems.')
+                errors.append('Cannot ship between the selected systems. Perhaps your m3 is too high?')
 
             if shipping_info['max_m3_exceeded']:
                 errors.append('Max Volume for this route: %s m3' % humanize(shipping_info['max_m3']))
@@ -487,9 +533,9 @@ def pricer(request):
         stations[destination_station].z_destination_selected = True
     else:
         for id in stations:
-            if stations[id].name.startswith("Jita") or stations[id].name.startswith("04-LQM") or stations[id].name.startswith("O-VWPB"):
+            if stations[id].name.startswith("Jita") or stations[id].name.startswith("BWF-ZZ"):
                 stations[id].z_source_selected = True
-            if stations[id].name.startswith("04-LQM"):
+            if stations[id].name.startswith("BWF-ZZ"):
                 stations[id].z_destination_selected = True
 
     stations = [stations[id] for id in stations]
@@ -947,13 +993,19 @@ def perms(request):
 
     scopes = [
         dict(scope='esi-characters.read_corporation_roles.v1', desc='Allows for reading of your roles within your corporation (e.g., Accountant, Station Manager). This is needed to determine which endpoints you have permission to access.', required=False),
+        dict(scope='esi-contracts.read_character_contracts.v1', desc='Allows for reading of character contracts.', required=False),
         dict(scope='esi-contracts.read_corporation_contracts.v1', desc='Allows for reading of corporation contracts.', required=False),
         dict(scope='esi-corporations.read_structures.v1', desc='Allows for retrieval of information about corporation structures (requires Station Manager role).', required=False),
         dict(scope='esi-corporations.write_structures.v1', desc='Allows for updating vulnerability schedules for structures you have access to.', required=False),
         dict(scope='esi-universe.read_structures.v1', desc='Allows for retrieval of public structure information.', required=False),
+        dict(scope='esi-search.search_structures.v1', desc='Allows for searching of structures character has access to.', required=False),
         dict(scope='esi-industry.read_corporation_mining.v1', desc='Allows for reading of moon extraction schedule (requires Station Manager role) and mining ledger (requires Accountant role).', required=False),
         dict(scope='esi-ui.open_window.v1', desc='Allows for opening of Contract, Market or Info windows in-game.', required=False),
+        dict(scope='esi-location.read_location.v1', desc='Allows for reading current character location.', required=False),
+        dict(scope='esi-location.read_online.v1', desc='Allows for reading if current character is online.', required=False),
         dict(scope='esi-ui.write_waypoint.v1', desc='Allows for setting and clearing of waypoints in-game.', required=False),
+        dict(scope='esi-bookmarks.read_corporation_bookmarks.v1', desc='Allows for reading of corporation bookmarks.', required=False),
+        dict(scope='esi-bookmarks.read_character_bookmarks.v1', desc='Allows for reading of character bookmarks.', required=False),
         dict(scope='esi-assets.read_assets.v1', desc='Allows for reading of character assets.', required=False),
         dict(scope='esi-assets.read_corporation_assets.v1', desc='Allows for reading of corporation assets (requires Director role).', required=False),
         dict(scope='esi-characters.read_notifications.v1', desc='Allows for viewing of character notifications', required=False),

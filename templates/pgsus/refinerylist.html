@@ -127,7 +127,7 @@
                                     <b>Composition</b>
                                 </a>
                                 <div class="collapse" id="composition-{{ s.id }}">
-                                    {{ s.z_config.get_composition()|safe }}
+                                    {{ s.z_config.get_composition(s.z_moon_info.chunk_minutes)|safe }}
                                 </div>
                             </small></div>
                             <small>

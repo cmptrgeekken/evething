@@ -73,8 +73,14 @@ def render_page(template, data, request, character_ids=None, corporation_ids=Non
     if 'char' in request.session:
         charid = request.session['char']['id']
         data['moon_scheduler'] = CharacterRole.objects.filter(character_id=charid, role__in=['moon', 'moonbean']).first() is not None
+        data['gate_watcher'] = CharacterRole.objects.filter(character_id=charid, role__in=['gatewatch']).first() is not None
+        data['structure_admin'] = CharacterRole.objects.filter(character_id=charid, role__in=['structure']).first() is not None
     else:
         data['moon_scheduler'] = False
+        data['gate_watcher'] = False
+        data['structure_admin'] = False
+
+
 
     if request.user.is_authenticated():
         # Get nav counts data

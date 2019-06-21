@@ -27,12 +27,13 @@ from .apitask import APITask
 
 import json
 
-from thing.models import Character, Corporation
+from thing.models import *
 
 # Periodic task to try to fix *UNKNOWN* Character objects
 CHAR_NAME_URL = 'https://esi.evetech.net/latest/characters/names/'
 CHAR_INFO_URL = 'https://esi.evetech.net/latest/characters/%s/'
 CORP_NAME_URL = 'https://esi.evetech.net/latest/corporations/names/'
+IDS_TO_NAMES_URL = 'https://esi.evetech.net/latest/universe/names/'
 
 
 class FixNames(APITask):
@@ -43,7 +44,7 @@ class FixNames(APITask):
 
         # Fetch all unknown Character objects
         char_map = {}
-        for char in Character.objects.filter(name='*UNKNOWN*'):
+        for char in Character.objects.filter(name='*UNKNOWN*', not_found=False):
             char_map[char.id] = char
 
         # Fetch all Characters without Corporations
@@ -57,90 +58,71 @@ class FixNames(APITask):
             corp_map[corp.id] = corp
 
         ids = list(set(char_map.keys()) | set(corp_map.keys()))
-        if len(ids) == 0:
-            return
 
         # Go fetch names for them
         name_map = {}
-        for i in range(0, len(ids), 100):
-            params = ','.join(map(str, ids[i:i + 100]))
+        for i in range(0, len(ids), 1000):
+            bodies = [[id] for id in ids[i:i+1000]]
 
-            success, response = self.fetch_esi_url(CHAR_NAME_URL + '?character_ids=%s' % params, None)
 
-            if not success:
-                print(response)
-                break
+            response_data = self.post_batch_esi_urls(IDS_TO_NAMES_URL, bodies)
 
-            result = json.loads(response)
+            for name_data in response_data:
+                success, response = name_data
 
-            for row in result:
-                name_map[int(row['character_id'])] = row['character_name']
+                if not success:
+                    print(response)
+                    continue
 
-        for i in range(0, len(ids), 100):
-            params = ','.join(map(str, ids[i:i + 100]))
+                result = json.loads(response)
 
-            success, response = self.fetch_esi_url(CORP_NAME_URL + '?corporation_ids=%s' % params, None)
+                for row in result:
+                    cat = row['category']
+                    name = row['name']
+                    id = int(row['id'])
+                    name_map[id] = name
 
-            if not success:
-                continue
+                    if cat == 'character':
+                        char = char_map.get(id)
+                        if char:
+                            char.name = name
+                            char.save()
+                            continue
+                    elif cat == 'corporation':
+                        corp = corp_map.get(id)
+                        if corp:
+                            corp.name = name
+                            corp.save()
+                            continue
 
-            result = json.loads(response)
+                    print('Map invalid: %s' % row)
 
-            for row in result:
-                name_map[int(row['corporation_id'])] = row['corporation_name']
+        Character.objects.filter(name='*UNKNOWN*', not_found=False).update(not_found=True)
 
-        if len(name_map) > 0:
-            # Fix corporation names first
-            for id, corp in corp_map.items():
-                corp_name = name_map.get(id)
-                if corp_name is not None:
-                    corp.name = corp_name
-                    corp.save()
-                    del name_map[id]
+        urls = [CHAR_INFO_URL % id for id,char in no_corp_map.items()]
+        chars = dict((CHAR_INFO_URL % id, char) for id, char in no_corp_map.items())
 
-            # Fix character names
-            for id, name in name_map.items():
-                char = char_map.get(id)
-                if char is not None:
-                    char.name = name
-                    char.save()
+        for i in range(0, len(urls), 1000):
+            batch_urls = urls[i:i+1000]
+            print('Retrieving %d-%d of %d' % (i,i+1000, len(urls)))
 
-        for id, char in no_corp_map.items():
-            success, response, headers = self.fetch_esi_url(CHAR_INFO_URL % id, None, headers_to_return=['status'])
+            char_info_data = self.fetch_batch_esi_urls(batch_urls, headers_to_return=['status'])
+            for url, char_info in char_info_data.items():
+                success, response, headers = char_info
 
-            if not success:
-                if 'status' in headers and headers['status'] == 404:
-                    char.not_found=True
-                    char.save()
-                continue
+                char = chars[url]
 
-            result = json.loads(response)
+                if not success:
+                    if 'status' in headers and headers['status'] == 404:
+                        char.not_found=True
+                        char.save()
+                    continue
 
-            char.name = result['name']
-            char.corporation_id = result['corporation_id']
-            char.save()
+                result = json.loads(response)
 
-        # # Ugh, now go look up all of the damn names just in case they're corporations
-        # new_corps = []
-        # for id, name in name_map.items():
-        #     params = { 'corporationID': id }
-
-        #     # Not a corporation, update the Character object
-        #     if self.fetch_api(CORP_SHEET_URL, params, use_auth=False) is False or self.root is None:
-        #         char = char_map.get(id)
-        #         char.name = name
-        #         char.save()
-        #     else:
-        #         new_corps.append(Corporation(
-        #             id=id,
-        #             name=name,
-        #             ticker=self.root.find('result/ticker').text,
-        #         ))
-
-        # Now we can create the new corporation objects
-        # corp_map = Corporation.objects.in_bulk([c.id for c in new_corps])
-        # new_corps = [c for c in new_corps if c.id not in corp_map]
-        # Corporation.objects.bulk_create(new_corps)
+                char.name = result['name']
+                char.corporation_id = result['corporation_id']
+                char.save()
 
         # And finally delete any characters that have equivalent corporations now
         cursor = self.get_cursor()

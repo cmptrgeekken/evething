@@ -1,0 +1,364 @@
+# ------------------------------------------------------------------------------
+# Copyright (c) 2010-2013, EVEthing team
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without modification,
+# are permitted provided that the following conditions are met:
+#
+#     Redistributions of source code must retain the above copyright notice, this
+#       list of conditions and the following disclaimer.
+#     Redistributions in binary form must reproduce the above copyright notice,
+#       this list of conditions and the following disclaimer in the documentation
+#       and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+# IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+# INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+# NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+# PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+# WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
+# OF SUCH DAMAGE.
+# ------------------------------------------------------------------------------
+
+from decimal import Decimal
+
+from django.db import models
+from django.db.models import Sum, F
+
+from django.core.cache import cache
+
+from thing.models.itemgroup import ItemGroup
+from thing.models.marketgroup import MarketGroup
+from thing.models.orderlist import OrderList
+from thing import queries
+
+
+class Item(models.Model):
+    id = models.IntegerField(primary_key=True)
+    name = models.CharField(max_length=128)
+
+    item_group = models.ForeignKey(ItemGroup, on_delete=models.DO_NOTHING)
+    market_group = models.ForeignKey(MarketGroup, blank=True, null=True, on_delete=models.DO_NOTHING)
+
+    portion_size = models.IntegerField()
+    # 0.0025 -> 10,000,000,000
+    volume = models.DecimalField(max_digits=16, decimal_places=4, default=0)
+    packaged_volume = models.DecimalField(max_digits=16, decimal_places=4, default=0)
+    mass = models.FloatField()
+    description = models.CharField(max_length=5000, default=None)
+    icon_id = models.IntegerField(default=None)
+    published = models.BooleanField(default=True)
+
+    base_price = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+
+    sell_fivepct_price = models.DecimalField(max_digits=20, decimal_places=2, default=0)
+    sell_fivepct_volume = models.IntegerField(default=0)
+
+    sell_avg_price = models.DecimalField(max_digits=20, decimal_places=2, default=0)
+    sell_total_volume = models.IntegerField(default=0)
+
+    buy_fivepct_price = models.DecimalField(max_digits=20, decimal_places=2, default=0)
+    buy_fivepct_volume = models.IntegerField(default=0)
+
+    buy_avg_price = models.DecimalField(max_digits=20, decimal_places=2, default=0)
+    buy_total_volume = models.IntegerField(default=0)
+
+    z_orders_loaded = False
+
+
+    """
+    As we can't use the ice group name to determine related ice items, we must
+    hard-code the ices and their related values
+    """
+    ICE_VARIANTS = dict([
+        (28433, [28433, 28443]),
+        (28443, [28433, 28443]),
+        (28434, [28434, 28436]),
+        (28436, [28434, 28436]),
+        (28438, [28438, 28442]),
+        (28442, [28438, 28442]),
+        (28444, [28444, 28441]),
+        (28441, [28444, 28441])
+    ])
+
+    class Meta:
+        app_label = 'thing'
+
+    def __unicode__(self):
+        return self.name
+
+    def icon(self, w=32):
+        return "https://imageserver.eveonline.com/InventoryType/%d_%d.png" % (self.id, w)
+
+    def get_reprocessed_items(self):
+        from itemmaterial import ItemMaterial
+
+        materials = ItemMaterial.objects.filter(
+            item_id=self.id,
+        ).select_related('item_material')
+
+        items = []
+
+        for material in materials:
+            item = material.material
+            item.z_qty = material.quantity
+
+            items.append(item)
+
+        return items
+
+    def get_max_order_volume(self, buy=False, item_ids=None, station_ids=None, max_deviation=None):
+        from thing.models.stationorder import StationOrder
+
+        if item_ids is None:
+            item_ids = [self.id]
+
+        orders = StationOrder.objects.filter(item_id__in=item_ids, buy_order=buy)
+
+        if station_ids is not None:
+            orders = orders.filter(station_id__in=station_ids)
+
+        #if max_deviation is not None:
+        #    orders = orders.
+
+        return orders.aggregate(total_volume=Sum('volume_remaining'))['total_volume']
+
+    def get_price(self, buy=False, item_ids=None, station_ids=None, order_pct=.05, reprocess=False, reprocess_pct=.876):
+        from thing.models.stationorder import StationOrder
+
+        if item_ids is None:
+            item_ids = [self.id]
+
+        if station_ids is None:
+            station_ids = [60003760] # Jita IV-4
+
+        cache_key = 'get_price_%s-%s-%s-%s-%s-%s' % (buy, ','.join(str(e) for e in item_ids), ','.join(str(e) for e in station_ids), order_pct, reprocess, reprocess_pct)
+        cache_val = cache.get(cache_key)
+        if cache_val:
+            return cache_val
+
+        average = 0
+
+        if reprocess:
+            materials = self.get_reprocessed_items()
+            for material in materials:
+                # TODO: Calculate reprocessing rate correctly
+                average += material.z_qty * reprocess_pct * material.get_price(buy=buy, station_ids=station_ids, order_pct=order_pct)
+
+            return round(float(average / self.portion_size), 2)
+
+        orders = StationOrder.objects.filter(item_id__in=item_ids, station_id__in=station_ids, buy_order=buy, price__gt=.01)
+
+        if buy:
+            orders = orders.order_by('-price')
+        else:
+            orders = orders.order_by('price')
+
+        max_order_vol = orders.aggregate(total_volume=Sum('volume_remaining'))['total_volume']
+
+        order_vol = 0
+        order_sum = 0.0
+
+        for o in orders:
+            order_vol += o.volume_remaining
+            order_sum += float(o.volume_remaining) * float(o.price)
+            
+            if float(order_vol) > float(max_order_vol)*order_pct:
+                break
+
+        if order_vol == 0:
+            # If no order volume, calculate reprocessed value at 84.3% refine
+            return self.get_price(buy=buy, station_ids=station_ids, order_pct=order_pct, reprocess=True, reprocess_pct=.843)
+
+        val = round(order_sum / float(order_vol), 2)
+
+        cache.set(cache_key, val, 30*60)
+
+        return val
+
+    def get_current_orders(self,
+                           quantity=None,
+                           buy=False,
+                           ignore_seed_items=True,
+                           source_station_ids=None,
+                           dest_station_id=1021577519493,
+                           item_ids=None,
+                           scale_by_repro=True,
+                           buy_tolerance=.02,
+                           include_variants=False):
+        from thing.models.itemstationseed import ItemStationSeed
+        from thing.models.stationorder import StationOrder
+
+        if include_variants:
+            if int(self.id) in Item.ICE_VARIANTS:
+                item_ids = Item.ICE_VARIANTS[int(self.id)]
+            elif self.market_group.parent and self.market_group.parent.name == 'Standard Ores':
+                item_ids = [i.id for i in Item.objects.filter(market_group_id=self.market_group_id, volume=self.volume)]
+
+        if not item_ids:
+            item_ids = [self.id]
+
+        orders = StationOrder.objects.filter(item_id__in=item_ids)
+
+        if ignore_seed_items:
+            seed_items = ItemStationSeed.objects.filter(item_id__in=item_ids)
+
+            for seed_item in seed_items:
+                orders = orders.exclude(station_id=seed_item.station_id)
+
+        if source_station_ids is not None:
+            orders = orders.filter(station_id__in=source_station_ids)
+
+        orders = orders.select_related('item')
+
+        item_id_lookup = ','.join([str(i) for i in item_ids])
+
+        shipping_query = queries.order_calculateshipping % ('price', 'item_id', 'thing_stationorder.station_id', str(dest_station_id))
+
+        # TODO: Move Shipping Calculation to separate table
+        orders = orders.extra(select={
+            'price_with_shipping': 'price + (%s)' % shipping_query,
+            'scaled_price_with_shipping': '''
+SELECT price / (SUM(im.quantity*i.sell_fivepct_price) /
+    (SELECT SUM(im2.quantity*i2.sell_fivepct_price)
+    FROM thing_itemmaterial im2
+    INNER JOIN thing_item i2 on im2.material_id=i2.id
+    WHERE im2.item_id IN(%s)
+    GROUP BY im2.item_id
+    ORDER BY SUM(im2.quantity*i2.sell_fivepct_price)
+    LIMIT 1)) + (%s)
+    FROM thing_itemmaterial im INNER JOIN thing_item i on i.id=im.material_id WHERE im.item_id=thing_stationorder.item_id
+            ''' % (item_id_lookup, shipping_query),
+            'shipping': shipping_query
+        })
+
+        orders = orders.filter(buy_order=buy)
+
+        if scale_by_repro and len(item_ids) > 1:
+            orders = orders.order_by('scaled_price_with_shipping')
+        else:
+            orders = orders.order_by('price_with_shipping')
+
+        qty_remaining = quantity
+
+        ttl_order_volume = 0
+
+        station_orders = {}
+
+        for order in orders:
+            if order.price_with_shipping is None:
+                continue
+
+            if qty_remaining is None:
+                order_qty = order.volume_remaining
+            else:
+                order_qty = min(qty_remaining, order.volume_remaining)
+
+                qty_remaining = max(0, qty_remaining - order_qty)
+
+            ttl_order_volume += order_qty
+
+            order.z_order_qty = Decimal(order_qty)
+            order.z_price_with_shipping = round(order.price_with_shipping*100)/100
+
+            order.z_shipping = Decimal(round(order.shipping*100)/100)
+
+            if order_qty > 0:
+                if order.station_id not in station_orders:
+                    station_orders[order.station_id] = OrderList(order.item_id,
+                                                                 order.item.name,
+                                                                 order.station_id,
+                                                                 order.station.name,
+                                                                 buy_tolerance)
+
+                station_orders[order.station_id].add_order(order)
+
+        if quantity is not None:
+            self.z_qty_remaining = qty_remaining
+            self.z_qty = quantity - qty_remaining
+            self.z_qty_needed = quantity
+        else:
+            self.z_qty_remaining = 0
+            self.z_qty = ttl_order_volume
+
+        self.z_orders = station_orders
+
+        self.z_ttl_price_best = 0
+        self.z_ttl_price_multibuy = 0
+        self.z_ttl_volume = 0
+        self.z_ttl_shipping = 0
+        self.z_ttl_price_with_shipping = 0
+
+        for sid in station_orders:
+            order_list = station_orders[sid]
+
+            self.z_ttl_price_best += order_list.total_price_best
+            self.z_ttl_price_multibuy += order_list.total_price_multibuy
+            self.z_ttl_volume += order_list.total_volume
+            self.z_ttl_shipping += order_list.total_shipping
+            self.z_ttl_price_with_shipping += order_list.total_price_with_shipping
+
+    def get_history_avg(self, days=5, region_id=10000002, issued=None, pct=1.0, reprocess=False, reprocess_pct=0.875):
+        from thing.models.pricehistory import PriceHistory
+
+        average = 0
+
+        if reprocess:
+            materials = self.get_reprocessed_items()
+            for material in materials:
+                # TODO: Calculate reprocessing rate correctly
+                average += material.z_qty * reprocess_pct * material.get_history_avg(days=days, region_id=region_id, issued=issued, pct=pct, reprocess=False)
+
+            return round(float(average / self.portion_size), 2)
+
+        query = PriceHistory.objects.filter(
+            item_id=self.id,
+            region_id=region_id
+        ).order_by('-date')
+
+        if issued is not None:
+            query = query.filter(
+                date__lte=issued
+            )
+
+        results = query.all()[:days].aggregate(
+            total_value=Sum('average', field='average*movement'),
+            total_volume=Sum('movement')
+        )
+
+        if results['total_value'] is None:
+            return 0
+
+        average = round(float(results['total_value'] / results['total_volume']) * pct, 2)
+
+        return average
+
+    def get_volume(self, region_id, days=7):
+        from thing.models.pricehistory import PriceHistory
+
+        history = PriceHistory.objects.filter(item_id=self.id, region_id=region_id).order_by('-date').all()[:days]
+
+        volume = sum([h.movement for h in history])
+
+        return volume
+
+    def get_ore_category(self):
+        if 'Exceptional' in self.item_group.name:
+            return 'R64'
+        if 'Rare' in self.item_group.name:
+            return 'R32'
+        if 'Uncommon' in self.item_group.name:
+            return 'R16'
+        if 'Common' in self.item_group.name:
+            return 'R8'
+        if 'Ubiquitous' in self.item_group.name:
+            return 'R4'
+        else:
+            return 'ABC'
+
+    def get_ore_display(self, moon_pct, chunk_minutes):
+        from thing import helpers
+        return "%s %s (%d%%, %s)" % (helpers.commas(chunk_minutes * moon_pct * 333 / self.volume), self.name, moon_pct*100, self.get_ore_category())

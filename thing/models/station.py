@@ -60,6 +60,8 @@ class Station(models.Model):
     system = models.ForeignKey(System, blank=True, null=True, default=None, on_delete=models.DO_NOTHING)
     type = models.ForeignKey(Item, null=True, default=None, on_delete=models.DO_NOTHING)
     corporation = models.ForeignKey(Corporation, null=True, default=None, on_delete=models.DO_NOTHING)
+    deleted = models.BooleanField(default=False)
+    ignore_jb = models.BooleanField(default=False)
 
     class Meta:
         app_label = 'thing'

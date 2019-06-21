@@ -87,6 +87,19 @@
 
 <section class="container section-md">
       <div class="row">
+    {% if filter_types|length > 1 %}
+        <div class="col-sm-12">
+            <form method="get">
+                <select name="type" class="input-sm" onchange="this.form.submit()">
+                    {% for type in filter_types %}
+                    <option value="{{ type|lower }}"{% if type|lower == moon_type|lower %} selected{% endif %}>{{ type }}</option>
+
+                    {% endfor %}
+                </select>
+            </form>
+        </div>
+
+    {% endif %}
         <div class="col-lg-2">
             <a href="https://calendar.google.com/calendar/r?cid=http://pgsus.space/extractions?format%3Dical" target="_blank" title="Add to Google Calendar">
                 <img src="{{ STATIC_URL }}pgsus/img/google-calendar.png" width="32" height="32" alt=""/>
@@ -100,6 +113,9 @@
                         <div class="panel-heading bg-primary" style="text-align: center;">
                             <h4 class="name">
                                 <a style="color: #FFF;text-decoration:underline;" target="_blank" href="{{ m.structure.station.system.evemaps() }}">{{ m.name }}</a>
+                                <div><small style="color:#FFF;"><b>Buyback Location: </b> <br/>{% if m.refinery %}{{ m.refinery }}{% else %}<i>None, contact landscaper</i>{% endif %}<br/><br/></small></div>
+
+                                <div><small style="color:#FFF;"><b>Region:</b> {{ m.structure.station.system.constellation.region.name }}</small></div>
                                 {% if show_waypoint %}
                                 <a title="Add Waypoint" href="javascript:void(0)" class="waypoint js-addWaypoint" data-waypoint="{{ m.structure.station_id }}">
                                     <i class="fa fa-map-marker" aria-hidden="true"></i>
@@ -131,7 +147,7 @@
                                 <small>
                                     <i>
                                         <br/>Self-Destructs <time class="timeago" datetime="{{ m.extraction.natural_decay_time|timeago }}">{{ m.extraction.natural_decay_time}}</time>
-                                        <br/><br/>If not already requested, please ping the following:
+                                        <br/><br/>If not there, please post the following in #moon-mining:
 
                                     </i>
                                     <br/>@moon-beans {{ m.name }} is ready to pop at your earliest convenience!
@@ -165,6 +181,11 @@
                                     {% endif %}
                                 </li>
                                 {% endif %}
+                                {% if m.last_mined %}
+                                <li>
+                                    <small><i><span>Latest Mining Log: </span> <time class="timeago" datetime="{{ m.last_mined|timeago }}">{{ m.last_mined }}</time></i></small></li>
+                                </li>
+                                {%endif %}
                                 <li>
                                     <span>
                                         {% if m.remaining_value %}

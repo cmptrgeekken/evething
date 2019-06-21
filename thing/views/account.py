@@ -71,7 +71,7 @@ def account_oauth_callback(request):
 
         helper = ApiHelper()
 
-        success, results = helper.fetch_esi_url('https://esi.tech.ccp.is/verify/?datasource=tranquility', access_token=access_token, method='GET')
+        success, results = helper.fetch_esi_url('https://esi.evetech.net/verify/?datasource=tranquility', access_token=access_token, method='GET')
 
         char = None
 
@@ -86,7 +86,9 @@ def account_oauth_callback(request):
             char = Character.objects.filter(id=user_info['CharacterID']).first()
             if char is None:
                 char = Character(id=user_info['CharacterID'], name=user_info['CharacterName'])
-                char.save()
+            elif char.name != user_info['CharacterName']:
+                char.name = user_info['CharacterName']
+            char.save()
         except Exception,e:
             user_info = None
 

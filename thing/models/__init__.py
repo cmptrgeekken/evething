@@ -3,6 +3,7 @@
 # Locations
 from thing.models.region import Region
 from thing.models.constellation import Constellation
+from thing.models.stargate import Stargate
 from thing.models.system import System
 from thing.models.station import Station
 from thing.models.mapdenormalize import MapDenormalize
@@ -50,6 +51,8 @@ from thing.models.characterdetails import CharacterDetails
 from thing.models.characterskill import CharacterSkill
 from thing.models.contract import Contract
 from thing.models.contractitem import ContractItem
+from thing.models.publiccontract import PublicContract
+from thing.models.publiccontractitem import PublicContractItem
 from thing.models.corporationstanding import CorporationStanding
 from thing.models.corpwallet import CorpWallet
 from thing.models.event import Event

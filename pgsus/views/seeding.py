@@ -7,6 +7,9 @@ from django.shortcuts import redirect, render
 
 from django.core.urlresolvers import reverse
 
+from decimal import Decimal
+
+
 from pgsus.parser import parse, iter_types
 import evepaste
 
@@ -146,7 +149,7 @@ def seededit(request):
                                     ).first()
 
                                     if existing_item is not None:
-                                        existing_item.min_qty = min_qty
+                                        existing_item.min_qty += min_qty
                                         existing_item.save()
                                     else:
                                         seeditem = ItemStationSeed(
@@ -228,10 +231,23 @@ def seedview(request):
                 dest_station_id=data['station_id'],
                 source_station_ids=[data['station_id']])
 
+            ttl_price = 0
+            ttl_qty = 0
+
             if data['station_id'] in item.z_orders:
                 data['o'] = item.z_orders[data['station_id']]
+                for o in data['o'].orders:
+                    if ttl_qty < data['min_qty']:
+                        qty = min(data['min_qty'] - ttl_qty, o.volume_remaining)
+                        ttl_qty += qty
+                        ttl_price += o.price * Decimal(qty)
+                    else:
+                        break
+                if ttl_qty > 0:
+                    data['avg_price'] = ttl_price / Decimal(ttl_qty)
             else:
                 data['o'] = None
+
 
             data['thirtyday_vol'] = item.get_volume(region_id=data['region_id'], days=30)
             data['fiveday_vol'] = item.get_volume(region_id=data['region_id'], days=5)

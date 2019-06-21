@@ -38,11 +38,11 @@ import traceback
 class EsiMoonObserver(APITask):
     name = 'thing.moonobserver'
 
-    corporation_url = 'https://esi.tech.ccp.is/latest/corporation/%s/'
-    character_url = 'https://esi.tech.ccp.is/latest/characters/%s/'
+    corporation_url = 'https://esi.evetech.net/latest/corporation/%s/'
+    character_url = 'https://esi.evetech.net/latest/characters/%s/'
 
-    observer_url = 'https://esi.tech.ccp.is/latest/corporation/%s/mining/observers/?datasource=tranquility&page=%s'
-    observer_detail_url = 'https://esi.tech.ccp.is/latest/corporation/%s/mining/observers/%s/?datasource=tranquility&page=%s'
+    observer_url = 'https://esi.evetech.net/latest/corporation/%s/mining/observers/?datasource=tranquility&page=%s'
+    observer_detail_url = 'https://esi.evetech.net/latest/corporation/%s/mining/observers/%s/?datasource=tranquility&page=%s'
 
     def run(self):
         self.init()
@@ -63,7 +63,7 @@ class EsiMoonObserver(APITask):
         page = 1
         max_pages = None
         try:
-            while max_pages is None or page < max_pages:
+            while max_pages is None or page <= max_pages:
 
                 success, results, headers = self.fetch_esi_url(self.observer_url % (corp_id, page), character, headers_to_return=['x-pages'])
                 if 'x-pages' in headers:
@@ -81,6 +81,8 @@ class EsiMoonObserver(APITask):
                 for observer in observers:
                     db_observer = MoonObserver.objects.filter(observer_id=observer['observer_id']).first()
 
+
+
                     do_import = True
 
                     current_time = datetime.datetime.utcnow()
@@ -95,23 +97,44 @@ class EsiMoonObserver(APITask):
                         db_observer.save()
 
                     if do_import:
-                        inner_page = 1
+                        initial_url = self.observer_detail_url % (corp_id, db_observer.observer_id, 1)
                         success, results, headers = self.fetch_esi_url(
-                            url=self.observer_detail_url % (corp_id, db_observer.observer_id, inner_page),
+                            url=initial_url,
                             character=character,
-                            headers_to_return=['last-modified'])
-                        inner_page += 1
+                            headers_to_return=['last-modified', 'x-pages'])
 
                         if not success:
                             continue
 
-                        if headers['last-modified']:
+                        if 'last-modified' in headers:
                             observer_time = self.parse_esi_date(headers['last-modified'])
                         else:
                             observer_time = datetime.datetime.utcnow()
 
-                        observer_details = json.loads(results)
+                        if 'x-pages' in headers:
+                            max_pages = int(headers['x-pages'])
+                        else:
+                            max_pages = 1
 
+                        urls = [self.observer_detail_url % (corp_id, db_observer.observer_id, p) for p in range(2, max_pages+1)]
+
+                        if max_pages > 1:
+                            all_observer_data = self.fetch_batch_esi_urls(urls, character, batch_size=20, headers_to_return=['last-modified'])
+                        else:
+                            all_observer_data = dict()
+
+                        all_observer_data[initial_url] = (success, results, headers)
+
+                        observer_details = list()
+
+                        for url, observer_data in all_observer_data.items():
+                            success, results, headers = observer_data
+
+                            if not success:
+                                self.log_warn('Failed to load results: %s' % results)
+
+                            observer_details += json.loads(results)
+                        
                         for detail in observer_details:
                             corp = Corporation.objects.filter(id=detail['recorded_corporation_id']).first()
                             if corp is None:

@@ -37,8 +37,9 @@
                                         <tr>
                                             <th>Fit Name</th>
                                             <th width="20%">Quantity</th>
+                                            {# <th>Split</th> #}
                                             <th>Priority</th>
-                                            <th>Est. Seed Price</th>
+                                            <th>Est. Seed Cost</th>
                                         </tr>
                                     {% for list in lists %}
                                         <tr>
@@ -48,7 +49,10 @@
                                                 (<a href="{{url('pgsus.views.contractseededit')}}?id={{list.id}}">Edit</a>)
                                                 {% endif %}
                                             </td>
-                                            <td class="{% if list.get_stock_count() < list.min_qty %}error{% elif list.get_stock_count() < list.min_qty*1.2 %}warning{% else %}success{% endif %}">({{ list.get_stock_count() }} / {{ list.min_qty }})</td>
+                                            <td class="{% if list.stock_ct < list.min_qty %}error{% elif list.stock_ct < list.min_qty*1.2 %}warning{% else %}success{% endif %}">({{ list.stock_ct }} / {{ list.min_qty }})</td>
+                                            {#
+                                            <td><abbr title="PH corp contracts">{{ list.get_corp_stock() }}C</abbr>, <abbr title="Alliance contracts">{{ list.get_alliance_stock() }}A</abbr></td>
+                                            #}
                                             <td>{{ list.get_priority() }}</td>
                                             <td>
                                                 {% if list.estd_price > 0 %}
