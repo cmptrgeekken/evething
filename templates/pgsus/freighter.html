@@ -14,7 +14,10 @@
 </section>
 <section class="container section-md">
     <div class="row">
-        <div class="col-md-6">
+        <div class="col-md-12">
+            <div class="alert alert-warning">
+                <h4 class="alert-heading">Note: Due to the recent cyno changes and RL needs, Penny's freighter service has been shut down. It's been a pleasure serving you all these years!</h4>
+            </div>
             {% if errors|length > 0 %}
             <div class="alert alert-danger" role="alert">
                 <ul>
@@ -60,7 +63,7 @@
                 </div>
             </div>
             {% endif %}
-
+            {% if false %}
             <h2>Shipping Information</h2>
 
             <form method="post" class="form-horizontal" action="{{ url('pgsus.views.freighter') }}">
@@ -124,7 +127,9 @@
                     </div>
                 </div>
             </form>
+            {% endif %}
         </div>
+        {% if false %}
         <div class="col-md-6">
             <h2>Shipping Methods</h2>
             {% for price_model in price_models %}
@@ -245,6 +250,7 @@
 
             {% endfor %}
         </div>
+        {% endif %}
     </div>
 </section>
 {% endblock %}

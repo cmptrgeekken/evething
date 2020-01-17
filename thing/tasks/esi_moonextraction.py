@@ -53,8 +53,9 @@ class EsiMoonExtraction(APITask):
 
             if 'Director' in char.get_apiroles():
                 if char.corporation_id is not None and char.corporation_id not in seen_corps:
-                    self.import_moon(char)
-                    seen_corps.add(char.corporation_id)
+                    print('Importing for %s (%s)' % (char.name, char.corporation.name))
+                    if self.import_moon(char):
+                        seen_corps.add(char.corporation_id)
 
         '''
         seen_corps = set()
@@ -114,8 +115,9 @@ class EsiMoonExtraction(APITask):
             success, results = self.fetch_esi_url(self.mining_url % corp_id, character)
 
             if not success:
+                print(character.name)
                 print(results)
-                return
+                return False
 
             mining_info = json.loads(results)
 

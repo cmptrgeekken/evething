@@ -42,36 +42,53 @@ class FixNames(APITask):
     def run(self):
         self.init()
 
+        self.doit()
+
+    def doit(self):
+        
         # Fetch all unknown Character objects
         char_map = {}
-        for char in Character.objects.filter(name='*UNKNOWN*', not_found=False):
+        for char in Character.objects.filter(name='*UNKNOWN*', not_found=False)[0:10000]:
             char_map[char.id] = char
 
         # Fetch all Characters without Corporations
-        no_corp_map = {}
-        for char in Character.objects.filter(corporation_id=None, not_found=False):
-            no_corp_map[char.id] = char
+        #no_corp_map = {}
+        #for char in Character.objects.filter(corporation_id=None, not_found=False)[0:10000]:
+        #    no_corp_map[char.id] = char
 
         # Fetch all unknown Corporation objects
         corp_map = {}
         for corp in Corporation.objects.filter(name='*UNKNOWN*'):
             corp_map[corp.id] = corp
+        
+        cursor = self.get_cursor()
 
-        ids = list(set(char_map.keys()) | set(corp_map.keys()))
+        cursor.execute('SELECT DISTINCT corporation_id FROM thing_character ch left join thing_corporation co on ch.corporation_id=co.id where co.id is null AND ch.corporation_id IS NOT NULL and ch.not_found=0')
+        rows = cursor.fetchall()
+        
+        char_empty_corps = [r[0] for r in rows]
 
-        # Go fetch names for them
-        name_map = {}
-        for i in range(0, len(ids), 1000):
-            bodies = [[id] for id in ids[i:i+1000]]
+        cursor.execute('select distinct alliance_id from thing_corporation co left join thing_alliance a on co.alliance_id=a.id where a.id is null and co.alliance_id is not null');
+        rows = cursor.fetchall()
+        corp_empty_alliances = [r[0] for r in rows]
 
+        ids = list(set(char_map.keys()) | set(corp_map.keys()) | set(char_empty_corps) | set(corp_empty_alliances))
 
-            response_data = self.post_batch_esi_urls(IDS_TO_NAMES_URL, bodies)
+        for i in range(0, len(ids), 10):
+            bodies = [[id] for id in ids[i:i+10]]
+
+            response_data = self.post_batch_esi_urls(IDS_TO_NAMES_URL, bodies, headers_to_return=['status'])
 
             for name_data in response_data:
-                success, response = name_data
+                success, response, headers = name_data
 
                 if not success:
-                    print(response)
+		    if 'status' in headers and headers['status'] == 404:
+                        id = headers['request_body'][0]
+                        char = char_map.get(id)
+                        if char is not None:
+                            char.not_found=True
+                            char.save()
                     continue
 
                 result = json.loads(response)
@@ -80,7 +97,6 @@ class FixNames(APITask):
                     cat = row['category']
                     name = row['name']
                     id = int(row['id'])
-                    name_map[id] = name
 
                     if cat == 'character':
                         char = char_map.get(id)
@@ -94,39 +110,26 @@ class FixNames(APITask):
                             corp.name = name
                             corp.save()
                             continue
+                        else:
+                            corp = Corporation()
+                            corp.id = id
+                            corp.name = name
+                            corp.save()
+                            continue
+                    elif cat == 'alliance':
+                        alliance = Alliance()
+                        alliance.id = id
+                        alliance.name = name
+                        alliance.save()
+                        continue
 
                     print('Map invalid: %s' % row)
 
-        Character.objects.filter(name='*UNKNOWN*', not_found=False).update(not_found=True)
+        Character.objects.filter(name='*UNKNOWN*', not_found=False, id__in=char_map.keys()).update(not_found=True)
 
-        urls = [CHAR_INFO_URL % id for id,char in no_corp_map.items()]
-        chars = dict((CHAR_INFO_URL % id, char) for id, char in no_corp_map.items())
-
-        for i in range(0, len(urls), 1000):
-            batch_urls = urls[i:i+1000]
-            print('Retrieving %d-%d of %d' % (i,i+1000, len(urls)))
-
-            char_info_data = self.fetch_batch_esi_urls(batch_urls, headers_to_return=['status'])
-            for url, char_info in char_info_data.items():
-                success, response, headers = char_info
-
-                char = chars[url]
-
-                if not success:
-                    if 'status' in headers and headers['status'] == 404:
-                        char.not_found=True
-                        char.save()
-                    continue
-
-                result = json.loads(response)
-
-                char.name = result['name']
-                char.corporation_id = result['corporation_id']
-                char.save()
 
         # And finally delete any characters that have equivalent corporations now
-        cursor = self.get_cursor()
-        cursor.execute('DELETE FROM thing_character WHERE id IN (SELECT id FROM thing_corporation)')
+        cursor.execute('DELETE FROM thing_character WHERE id IN (SELECT id FROM thing_corporation WHERE name != \'*UNKNOWN*\')')
         cursor.close()
 
         return True

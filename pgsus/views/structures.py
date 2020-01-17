@@ -31,6 +31,7 @@ from thing.utils import ApiHelper
 from thing import queries
 import re
 import json
+import unicodecsv as csv
 
 from django.db import connections
 
@@ -131,8 +132,6 @@ def mooncomp(request):
             moon_config.is_nationalized = is_national == 'Y'
 
             moon_config.save()
-
-    request.session['comp_errors'] = error_lines
     request.session['moon_comps'] = moon_comps
 
     return redirect(reverse(refinerylist))
@@ -413,13 +412,13 @@ def extractions(request):
         dict(name='Rorqual', m3=175*60*60, ignore='R64')
     ]
 
-    ticker = request.GET.get('ticker') or 'REKTD'
+    ticker = request.GET.get('ticker') or 'THXFC'
 
     moon_type = (request.GET.get('type') or 'public').lower()
-    if role is None:
+    if role is None and moon_type == 'n64':
         moon_type = 'public'
-    elif moon_type.lower() == 'r16':
-        moon_type = 's16'
+    #elif moon_type.lower() == 'r16':
+    #    moon_type = 's16'
 
     if moon_type == 'n64':
         min_date = min_date_rigged
@@ -427,16 +426,24 @@ def extractions(request):
     if role is not None:
         max_visible_days = 25
     
+    region_filter = request.GET.get('region')
+    constellation_filter = request.GET.get('constellation')
+    system_filter = request.GET.get('system')
+
+    
     max_date = datetime.datetime.utcnow() + datetime.timedelta(days=max_visible_days)
     cache_key = 'extractions-%s-%s-%d' % (ticker, moon_type, max_visible_days)
 
     moon_list = cache.get(cache_key)
 
-    filter_types = ['Public']
+    filter_types = ['Public', 'R64', 'R32', 'R16']
 
     if role == 'moon' or role == 'spodcmd':
         filter_types.append('N64')
-        filter_types.append('S16')
+
+    region_list = set()
+    constellation_list = set()
+    system_list = set()
 
 
     if moon_list is None:
@@ -449,23 +456,24 @@ def extractions(request):
         for e in moon_extractions:
             structure = e.structure
             if structure.station.corporation_id is None\
-                or structure.station.corporation.alliance.short_name != ticker:
+                or (structure.station.corporation.alliance.short_name != ticker and structure.station.corporation.ticker != ticker):
                 continue
 
             system = structure.station.system.name
 
-            if system not in refineries:
-                repro_structure = StructureService.objects.filter(name='Reprocessing', structure__station__corporation__alliance__short_name=ticker, structure__station__name__iregex='DRILL', state='online',structure__station__system__name=system).first()
+            # if system not in refineries:
+            #    repro_structure = StructureService.objects.filter(name='Reprocessing', structure__station__name__iregex='DRILL', state='online',structure__station__system__name=system).filter(structure__station__corporation__short_name=ticker | structure__station__corporation__alliance__short_name=ticker).first()
 
-                #repro_structure = Station.objects.filter(name__iregex='Refinery', corporation__alliance__short_name=ticker, system__name=system).first()
+            #    #repro_structure = Station.objects.filter(name__iregex='Refinery', corporation__alliance__short_name=ticker, system__name=system).first()
 
-                if repro_structure is not None:
-                    refineries[system] = repro_structure.structure.station.name
+            #    if repro_structure is not None:
+            #        refineries[system] = repro_structure.structure.station.name
 
             if system in refineries:
                 refinery = refineries[system]
             else:
                 refinery = None
+
 
 
             cfg = MoonConfig.objects.filter(structure_id=e.structure.id).first()
@@ -488,6 +496,7 @@ def extractions(request):
                     last_updated__lte=e.chunk_arrival_time + datetime.timedelta(days=2))
 
             details = MoonDetails(structure, e, cfg, observer_log, ore_values, ship_m3_per_hour, refinery)
+            
 
             moon_list[structure.id] = details
 
@@ -496,6 +505,24 @@ def extractions(request):
         moon_list.sort(key=lambda x: x.extraction.chunk_arrival_time)
 
         cache.set(cache_key, moon_list, 60*10)
+
+    filtered_list = list()
+
+    for m in moon_list:
+        region_list.add(m.structure.station.system.constellation.region.name)
+        constellation_list.add(m.structure.station.system.constellation.name)
+	system_list.add(m.structure.station.system.name)
+        if region_filter and m.structure.station.system.constellation.region.name != region_filter:
+            continue
+
+        if constellation_filter and m.structure.station.system.constellation.name != constellation_filter:
+            continue
+
+        if system_filter and m.structure.station.system.name != system_filter:
+            continue
+
+        filtered_list.append(m)
+
 
     if 'format' in request.GET and request.GET.get('format') == 'ical':
         cal = Calendar(imports=[
@@ -518,12 +545,26 @@ def extractions(request):
 
         return response
 
+    region_list = list(region_list)
+    constellation_list = list(constellation_list)
+    system_list = list(system_list)
+
+    region_list.sort()
+    constellation_list.sort()
+    system_list.sort()
+
     out = render_page(
         'pgsus/extractions.html',
         dict(
-            moon_list=moon_list,
+            moon_list=filtered_list,
             show_waypoint=waypoint_scope is not None,
             filter_types=filter_types,
+            regions=region_list,
+            constellations=constellation_list,
+            systems=system_list,
+            region=region_filter,
+            constellation=constellation_filter,
+            system=system_filter,
             moon_type=moon_type
         ),
         request,
@@ -753,7 +794,7 @@ def refinerylist(request):
     constellation_list = set()
     system_list = set()
 
-    type_list = ['N64', 'R64', 'R32', 'S16']
+    type_list = ['N64', 'R64', 'R32', 'R16', 'S16', 'R4', 'Athena']
 
     region_filter = request.GET.get('region')
     constellation_filter = request.GET.get('constellation')
@@ -830,7 +871,7 @@ def refinerylist(request):
         structure.z_config = config or MoonConfig(chunk_days=None)
 
         if not is_admin:
-            if structure.z_config.is_nationalized or not structure.z_not_extracting or structure.z_config.ignore_refire or not structure.z_online:
+            if not structure.z_not_extracting or structure.z_config.ignore_refire or not structure.z_online:
                 continue
 
         structure.z_next_chunk_time = None
@@ -853,8 +894,12 @@ def refinerylist(request):
                 structure.z_next_chunk_time = structure.z_moon_info.chunk_arrival_time + datetime.timedelta(days=cycle_time)
         else:
             next_date_override = config.next_date_override
-            while next_date_override <= datetime.datetime.utcnow():
-                next_date_override += datetime.timedelta(days=cycle_time)
+            if next_date_override <= datetime.datetime.utcnow():
+                while next_date_override <= datetime.datetime.utcnow():
+                    next_date_override += datetime.timedelta(days=cycle_time)
+            else:
+                while next_date_override > datetime.datetime.utcnow() + datetime.timedelta(days=cycle_time):
+                    next_date_override -= datetime.timedelta(days=cycle_time)
             structure.z_next_chunk_time = next_date_override
 
         structure.z_cycle_time = cycle_time
@@ -869,10 +914,17 @@ def refinerylist(request):
         else:
             structure.z_chunk_start_time = None
 
+        structure.z_next_chunk_days = min(cycle_time, (structure.z_next_chunk_time - datetime.datetime.utcnow()).days)
+
         if service.structure.id not in struct_list:
             struct_list[service.structure.id] = service.structure
 
     def service_sort(itema, itemb):
+        if itema.z_config.ignore_refire:
+            return 1
+        if itemb.z_config.ignore_refire:
+            return -1
+
         if not itema.z_online:
             return 1
         if not itemb.z_online:
@@ -1049,7 +1101,7 @@ def route(request):
 
     if starmap is None:
         starmap = dict()
-        map_data = dictfetchall('select jg.*,1 AS needs_waypoint, IF((SELECT MAX(last_updated) FROM thing_jumpgate_history jgh WHERE jgh.station_id=jg.id) > DATE_ADD(NOW(), INTERVAL -1 DAY),1,0) AS in_alliance from thing_jumpgates jg inner join thing_station st on jg.id=st.id inner join thing_corporation c on st.corporation_id=c.id UNION SELECT *, 0 AS needs_waypoint, 1 AS in_alliance FROM thing_stargate')
+        map_data = dictfetchall('select jg.*,1 AS needs_waypoint, IF((SELECT MAX(last_updated) FROM thing_jumpgate_history jgh WHERE jgh.station_id=jg.id) > DATE_ADD(NOW(), INTERVAL -1 DAY),1,0) AS in_alliance from thing_jumpgates jg inner join thing_station st on jg.id=st.id inner join thing_corporation c on st.corporation_id=c.id where jg.destination_structure_id is not null UNION SELECT *, 0 AS needs_waypoint, 1 AS in_alliance FROM thing_stargate')
 
         for d in map_data:
             system_id = int(d['system_id'])
@@ -1069,6 +1121,8 @@ def route(request):
 
     current_jbs = dictfetchall(queries.current_bridges)
 
+    alliances = dictfetchall("SELECT a.name, count(*) as ct FROM thing_alliance a inner join thing_corporation co on a.id=co.alliance_id inner join thing_station st on st.corporation_id=co.id WHERE a.jb_approved=1 and co.jb_ignore=0 and st.type_id=35841 and deleted=0 group by a.name ORDER BY a.name")
+
     jb_network = list()
     jb_lookup = set()
 
@@ -1086,8 +1140,10 @@ def route(request):
     if 'char' in request.session:
         charid = request.session['char']['id']
         waypoint_scope = CharacterApiScope.objects.filter(character_id=charid, scope='esi-ui.write_waypoint.v1').first()
+        window_scope = CharacterApiScope.objects.filter(character_id=charid, scope='esi-ui.open_window.v1').first()
     else:
         waypoint_scope = None
+        window_scope = None
 
     maps_route = ''
     maps_link = None
@@ -1098,14 +1154,7 @@ def route(request):
 
         end_systems = list()
 
-        if end.name == '2Q-I6Q':
-            for s in ['O-VWPB', 'NQ-9IH', 'RQOO-U', 'SH1-6P']:
-                sys = System.objects.filter(name=s).first()
-
-                if sys is not None:
-                    end_systems.append(sys.id)
-        else:
-            end_systems.append(end.id)
+        end_systems.append(end.id)
 
 
         route_ids = dijkstra(graph, start.id, end_systems, ignore_external, ignored_jgs)
@@ -1144,8 +1193,10 @@ def route(request):
     return render_page('pgsus/route.html', dict(
         route=optimal_route, 
         start=start_system,
+        alliances=alliances,
         end=end_system, 
         show_waypoints=waypoint_scope is not None, 
+        can_open_window=window_scope is not None,
         maps_link='http://evemaps.dotlan.net/route/%s' % maps_route,
         svg_link='/svg?type=universe&path=%s' % maps_route,
         page_path=request.get_full_path(),
@@ -1153,6 +1204,36 @@ def route(request):
         ignore_external=ignore_external
 
         ), request)
+
+
+def high_gate_usage(request):
+    cur = get_cursor()
+
+    min = request.GET.get('min') or 1000000
+
+    cur.execute(queries.jumpbridge_usage_fees, [int(min)]);
+    rows = cur.fetchall()
+    
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="gatejumps-%d-%s.csv"' % (int(min), datetime.datetime.now())
+
+    if rows:
+        result = list()
+
+        col_names = list()
+        for i in cur.description:
+            col_names.append(i[0])
+
+        result.append(col_names)
+        for row in rows:
+            result.append(row)
+
+        writer = csv.writer(response, dialect='excel', encoding='utf-8')
+        writer.writerows(result)
+
+    return response
+
+
 
 
 def get_cursor(db='default'):

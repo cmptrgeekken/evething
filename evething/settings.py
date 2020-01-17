@@ -305,6 +305,15 @@ CELERYBEAT_SCHEDULE = {
         },
         'args': [],
     },
+    'journal_updater': {
+        'task': 'thing.esijournal',
+        'schedule': timedelta(minutes=60),
+        'options': {
+            'expires': 240 * 60,
+            'queue': 'et_medium'
+        },
+        'args': [],
+    },
     'corp_contract_updater': {
         'task': 'thing.esi_contracts',
         'schedule': timedelta(minutes=5),
@@ -383,7 +392,16 @@ CELERYBEAT_SCHEDULE = {
     # update unknown character/corporation names every hour
     'fix-names': {
         'task': 'thing.fix_names',
-        'schedule': crontab(hour=12),
+        'schedule': timedelta(minutes=30),
+        'options': {
+            'expires': 59 * 60,
+            'queue': 'et_medium'
+        },
+        'args': (),
+    },
+    'charcorps': {
+        'task': 'thing.char_corp_update',
+        'schedule': timedelta(minutes=5),
         'options': {
             'expires': 59 * 60,
             'queue': 'et_medium'

@@ -54,8 +54,8 @@ class EsiMoonObserver(APITask):
         for char in extract_scope_chars:
             if 'Accountant' in char.get_apiroles():
                 if char.corporation_id is not None and char.corporation_id not in seen_corps:
-                    seen_corps.add(char.corporation_id)
-                    self.import_observers(char)
+                    if self.import_observers(char):
+                        seen_corps.add(char.corporation_id)
 
     def import_observers(self, character):
         corp_id = character.corporation_id
@@ -70,7 +70,9 @@ class EsiMoonObserver(APITask):
                     max_pages = int(headers['x-pages'])
 
                 if not success:
-                    break
+                    print(character.name)
+                    print(results)
+                    return False
                 
                 page += 1
                 observers = json.loads(results)

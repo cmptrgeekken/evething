@@ -87,7 +87,7 @@
             <ul class="collapse navbar-collapse" id="bs-navbar-collapse-1">
                 <ul class="nav navbar-nav navbar-right ">
                     <li>
-                        <a href="{{ url('pgsus.views.route') }}">Route Planner</a>
+                        <a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=K45Y5T9QWHFC4&source=url" target="_blank" style="color: yellow;font-style: italic;" title="Please help support this server! &lt;3 Current costs are about $600/yr.">Donate!</a>
                     </li>
                     <li>
                         <a href="{{ url('pgsus.views.extractions') }}">Moon Schedule</a>
@@ -108,6 +108,7 @@
                                     Moon Ore Buyback
                                 </a>
                             </li>
+                            {% if false %}
                             <li>
                                 <a href="{{ url('pgsus.views.freighter') }}">
                                     Freight
@@ -118,6 +119,7 @@
                                     Fuel Blocks
                                 </a>
                             </li>
+                            {% endif %}
                         </ul>
                     </li>
 
@@ -130,6 +132,9 @@
                         <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
                             <li>
                                 <a href="{{ url('pgsus.views.pricer') }}">Purchase Optimizer</a>
+                            </li>
+                            <li>
+                                <a href="{{ url('pgsus.views.route') }}">Route Planner</a>
                             </li>
                             {% if gate_watcher or structure_admin %}
                             <li class="divider"></li>

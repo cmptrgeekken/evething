@@ -37,6 +37,22 @@ $(document).ready(function(){
 
         add_waypoints()
     });
+
+    $('#swap-route').on('click', function(){
+        var ss = $('#start_system');
+        var es = $('#end_system');
+
+        var start = ss.val() || '';
+        var end = es.val() || '';
+
+        ss.empty().append($('<option>' + end + '</option>'));
+        es.empty().append($('<option>' + start + '</option>'));
+
+
+        $('#start_system,#end_system').trigger('change');
+
+        return false;
+    });
 })
 </script>
 {% endblock %}
@@ -66,6 +82,7 @@ $(document).ready(function(){
                             <option selected value="{{ start }}">{{ start }}</option>
                             {% endif %}
                         </select>
+                        <a href="javascript:void(0)" id="swap-route" title="Reverse Route">&#x21C4;</a>
                     </div>
                 </div>
 
@@ -118,30 +135,36 @@ $(document).ready(function(){
 
         </div>
         <div class="col-md-4">
-            <h3>Current Gates</h3>
+            <h3>Current Gates ({{ 2*(current_jbs|length) }})</h3>
             <table>
                 {% for b in current_jbs %}
                 <tr>
-                    <td style="text-align: center">
-                    {% if b.start_in_alliance == 0 %}
-                        <span class="badge alert-warning" title="Non-PH Gate">{{ b.start }}</span>
-                    {% else %}
-                        <span class="badge alert-success">{{ b.start }}</span>
-                    {% endif %}
+                    <td style="text-align: left;font-family: courier new">
+                        <span class="badge {% if b.start_in_alliance == 0 %}alert-warning{% else %}alert-success{% endif %}" title="{% if b.start_in_alliance == 0 %}Non-{% endif %}PH Owned Gate">
+                            <img src="https://images.evetech.net/alliances/{{ b.start_alliance_id }}/logo?size=32" width="16" height="16" title="{{ b.start_alliance_name }}"/>
+                            {{ b.start }}
+                        </span>
                     </td>
                     <td>
                     &nbsp; &lt;&gt; &nbsp;
                     </td>
-                    <td style="text-align: center">
-                    {% if b.end_in_alliance == 0 %}
-                        <span class="badge alert-warning" title="Non-PH Gate">{{ b.end }}</span>
-                    {% else %}
-                        <span class="badge alert-success">{{ b.end }}</span>
-                    {% endif %}
+                    <td style="text-align: left;font-family: courier new">
+                        <span class="badge {% if b.end_in_alliance == 0 %}alert-warning{% else %}alert-success{% endif %}" title="{% if b.end_in_alliance == 0 %}Non-{% endif %}PH Owned Gate">
+                            <img src="https://images.evetech.net/alliances/{{ b.end_alliance_id }}/logo?size=32" width="16" height="16" title="{{ b.end_alliance_name }}"/>
+                            {{ b.end }}
+                        </span>
                     </td>
                 </tr>
                 {% endfor %}
             </table>
+            <div class="form-text text-muted">
+                <h3>Gate Alliances:</h3>
+                <ul>
+                    {% for a in alliances %}
+                    <li>{{ a['name'] }} <small>({{ a['ct'] }} gates)</small></li>
+                    {% endfor %}
+                </ul>
+            </div>
         </div>
       </div>
 </section>

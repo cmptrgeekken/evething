@@ -90,12 +90,39 @@
     {% if filter_types|length > 1 %}
         <div class="col-sm-12">
             <form method="get">
-                <select name="type" class="input-sm" onchange="this.form.submit()">
-                    {% for type in filter_types %}
-                    <option value="{{ type|lower }}"{% if type|lower == moon_type|lower %} selected{% endif %}>{{ type }}</option>
-
-                    {% endfor %}
-                </select>
+				<div class="row">
+					<div class="col-sm-3">
+                        Type:
+		                <select name="type" class="input-sm">
+        		            {% for type in filter_types %}
+                		    <option value="{{ type|lower }}"{% if type|lower == moon_type|lower %} selected{% endif %}>{% if type == 'Public' %}All Public{% else %}{{ type }}{% endif %}</option>
+		                    {% endfor %}
+        		        </select>
+					</div>
+                    <div class="col-sm-3">
+                        Region:
+                        <select name="region" class="input-sm">
+                            <option value="">All Regions</option>
+        		            {% for r in regions %}
+                		    <option value="{{ r }}"{% if r|lower == region|lower %} selected{% endif %}>{{ r }}</option>
+		                    {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-sm-3">
+                        System:
+                        <select name="system" class="input-sm">
+                            <option value="">All Systems</option>
+        		            {% for s in systems %}
+                		    <option value="{{ s }}"{% if s|lower == system|lower %} selected{% endif %}>{{ s }}</option>
+		                    {% endfor %}
+                        
+                        </select>
+                    </div>
+                    <div class="col-sm-3">
+                        <input type="submit" value="Filter"/>
+                    </div>
+                </div>
+            </div>
             </form>
         </div>
 
@@ -113,7 +140,7 @@
                         <div class="panel-heading bg-primary" style="text-align: center;">
                             <h4 class="name">
                                 <a style="color: #FFF;text-decoration:underline;" target="_blank" href="{{ m.structure.station.system.evemaps() }}">{{ m.name }}</a>
-                                <div><small style="color:#FFF;"><b>Buyback Location: </b> <br/>{% if m.refinery %}{{ m.refinery }}{% else %}<i>None, contact landscaper</i>{% endif %}<br/><br/></small></div>
+                                <!--<div><small style="color:#FFF;"><b>Buyback Location: </b> <br/>{% if m.refinery %}{{ m.refinery }}{% else %}<i>None, contact landscaper</i>{% endif %}<br/><br/></small></div>-->
 
                                 <div><small style="color:#FFF;"><b>Region:</b> {{ m.structure.station.system.constellation.region.name }}</small></div>
                                 {% if show_waypoint %}

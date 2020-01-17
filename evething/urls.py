@@ -49,7 +49,8 @@ urlpatterns += patterns(
     url(r'^route', 'route', name='route'),
     url(r'^addgate', 'add_gate', name='add_gate'),
     url(r'^svg', 'svg', name='svg'),
-    url(r'^api/publiccontracts', 'api_publiccontracts', name='api_publiccontracts')
+    url(r'^api/publiccontracts', 'api_publiccontracts', name='api_publiccontracts'),
+    url(r'^highgates', 'high_gate_usage', name='high_gate_usage')
 )
 
 urlpatterns += patterns(

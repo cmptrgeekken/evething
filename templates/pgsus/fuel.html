@@ -15,7 +15,11 @@
 
 <section class="container section-md">
     <div class="row">
-        <div class="col-md-6 col-md-push-1">
+        <div class="col-md-8">
+            <div class="alert alert-warning">
+                <h4 class="alert-heading">Due to the upcoming arrival of my first child, the fuel delivery service will be discontined. Fuel will still be readily available for purchase on the R1O market, but you'll have to use other services (e.g., our freight service) to move fuel to your reaction system. I apologize for any inconvenience this may cause!</h4>
+            </div>
+
             {% if total_reward > 0 %}
             <div class="row">
                 <div class="col-md-6">
@@ -75,6 +79,7 @@
               </div>
             </div>
             {% endif %}
+            {% if false %}
             <h2>Fuel Block Purchasing</h2>
             <i>Pricing is the 5-day Jita average (Last Updated: {{ price_last_updated.strftime('%Y-%m-%d') }})</i>
             <form method="post" action="{{ url('pgsus.views.fuel') }}" class="form-horizontal">
@@ -134,6 +139,7 @@
                     </div>
                 </div>
             </form>
+            {% endif %}
         </div>
     </div>
 </section>

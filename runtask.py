@@ -50,6 +50,12 @@ if __name__ == '__main__':
     if 'assets' in libs:
         to_run.append(EsiAssets())
 
+    if 'charcorp' in libs:
+        to_run.append(CharCorpUpdate())
+
+    if 'journal' in libs:
+        to_run.append(EsiJournal())
+
     if 'contracts' in libs:
         to_run.append(EsiContracts())
 
@@ -85,6 +91,9 @@ if __name__ == '__main__':
 
     if 'publiccontract' in libs:
         to_run.append(EsiPublicContracts())
+
+    if 'fixnames' in libs:
+        to_run.append(FixNames())
 
     for run in to_run:
         print('Running %s...' % run.__name__)

@@ -3,6 +3,15 @@
   
 {% block title %}Contract Seeding &mdash; {{ list.name }}{% endblock %}
 
+{% block extra_css %}
+<style>
+    .tab-pane {
+        overflow-y: auto;
+            height: 300px;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <section class="bg-19 bg-center bg-cover">
     <div>
@@ -19,7 +28,7 @@
             <a href="{{ url('pgsus.views.contractseedlist') }}">Back to List View</a>
             {% endif %}
             <h3>{{ list.station.system.name }} &mdash;{{ list.name }} {% if is_admin or char_id == list.char_id %} <a href="{{ url('pgsus.views.contractseededit') }}?id={{ list.id }}">Edit</a>{% endif %}</h3>
-            <h4>Stock Count: <span style="padding: 0.1em" class="{% if list.get_stock_count() < list.min_qty %}error{% elif list.get_stock_count() < list.min_qty*1.2 %}warning{% else %}success{% endif %}">{{ list.get_stock_count() }} / {{ list.min_qty }}</span></h4>
+            <h4>Stock Count: <span style="padding: 0.1em" class="{% if list.current_qty < list.min_qty %}error{% elif list.current_qty < list.min_qty*1.2 %}warning{% else %}success{% endif %}">{{ list.current_qty }} / {{ list.min_qty }}</span></h4>
             {% if list.estd_price > 0 %}
             <h4>Estd. Cost: <abbr title="Assumes hulls are built locally.">{{ list.estd_price | humanize }} ISK</abbr></h4>
             {% endif %}
@@ -50,7 +59,7 @@
               </div>
             </div>
           <div class="row">
-              <div class="col-lg-8">
+              <div class="col-lg-12">
                 <table id="seeding-table" class="table table-striped table-bordered table-condensed">
                     <thead>
                       <tr class="c">
@@ -94,7 +103,7 @@
                           </td>
                         <td>{{ contract.price | humanize }}</td>
                         <td class="{% if contract.z_matching_pct < 0.5 %}error{% elif contract.z_matching_pct < 0.75 %}warning{% else %}success{% endif %}">{{ (contract.z_matching_pct * 100)|round(0) }}%</td>
-                        <td>{{ contract.date_expired }}</td>
+                        <td><small><time class="timeago" datetime="{{ contract.date_expired|timeago }}">{{ contract.date_expired }}</time></small></td>
                      </tr>
                       {%- else -%}
                       <tr>

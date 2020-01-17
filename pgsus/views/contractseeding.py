@@ -3,6 +3,8 @@ from thing.stuff import render_page
 from thing.utils import dictfetchall
 from thing import queries
 
+import datetime
+
 from django.shortcuts import redirect, render
 
 from django.core.urlresolvers import reverse
@@ -30,8 +32,6 @@ def contractseedlist(request):
     for list in public_lists:
         if list.station.system.name not in station_lists:
             station_lists[list.station.system.name] = []
-
-        list.stock_ct = list.get_stock_count()
 
         station_lists[list.station.system.name].append(list)
 
@@ -161,17 +161,10 @@ def contractseededit(request):
                     if len(parse_results['bad_lines']) > 0:
                         do_redirect = False
 
-            list.estd_price = 0
-
-            for i in list.get_items():
-                i.item.get_current_orders(quantity=i.min_qty, ignore_seed_items=False, dest_station_id=list.station_id, source_station_ids=[60003760])
-                print('%d, %s = %d' % (i.item_id, i.item.name, i.item.z_ttl_price_multibuy))
-                if i.item.item_group.category.name == 'Ship':
-                    list.estd_price += i.item.z_ttl_price_multibuy
-                else:
-                    list.estd_price += i.item.z_ttl_price_with_shipping
-
             list.save()
+
+            update_list(list, char_id)
+
 
             if do_redirect:
                 return redirect('%s?id=%d' % (reverse(contractseededit), list.id))
@@ -205,6 +198,8 @@ def contractseededit(request):
 
             if len(del_ids) > 0:
                 ContractSeedingItem.objects.filter(id__in=del_ids).delete()
+            
+            update_list(list, char_id)
 
             return redirect('%s?id=%d' % (reverse(contractseededit), list.id))
 
@@ -226,6 +221,16 @@ def contractseededit(request):
     )
 
     return out
+
+def update_list(list, char_id):
+    list.estd_price = list.get_estd_price()
+    list.current_qty = list.get_stock_count()
+    list.corp_qty = list.get_corp_stock()
+    list.alliance_qty = list.get_alliance_stock()
+    list.qty_last_modified = datetime.datetime.now()
+    list.last_modified = datetime.datetime.now()
+    list.last_modified_by_id = char_id
+    list.save()
 
 
 def contractseedview(request):

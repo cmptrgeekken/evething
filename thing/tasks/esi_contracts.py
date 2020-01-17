@@ -31,7 +31,7 @@ from decimal import Decimal
 from .apitask import APITask
 import json
 
-from thing.models import Alliance, Character, CharacterApiScope, Contract, ContractItem, Corporation, Event, Item, Station, APIKey, UserProfile
+from thing.models import Alliance, Character, CharacterApiScope, Contract, ContractItem, ContractSeeding, Corporation, Event, Item, Station, APIKey, UserProfile
 from django.db.models import Q
 
 from multiprocessing import Pool, Value, Array
@@ -70,10 +70,26 @@ class EsiContracts(APITask):
                 if 'Contract_Manager' in char.get_apiroles():
                     if char.corporation_id not in seen_corps\
                             and char.corporation_id is not None:
-                        success = self.import_contracts(char, True)
+                        try:
+                            success = self.import_contracts(char, True)
+                        except:
+                            success = False
 
                         if success:
                             seen_corps.add(char.corporation_id)
+
+        self.update_seeding()
+
+    def update_seeding(self):
+        seed_items = ContractSeeding.objects.filter(is_active=True)
+
+        for item in seed_items:
+            item.current_qty = item.get_stock_count()
+            item.corp_qty = item.get_corp_stock()
+            item.alliance_qty = item.get_alliance_stock()
+            item.qty_last_modified = datetime.datetime.now()
+            item.estd_price = item.get_estd_price()
+            item.save()
 
 
     def import_contracts(self, character, for_corp):
@@ -136,6 +152,7 @@ class EsiContracts(APITask):
                 break
 
             contracts.extend(r_contracts)
+
 
         # First we need to get all of the acceptor and assignee IDs
         contract_ids = set()

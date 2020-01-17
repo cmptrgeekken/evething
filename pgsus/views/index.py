@@ -94,6 +94,7 @@ def stats(request):
         'pgsus/stats.html',
         dict(
             login_prompt=request.GET.get('login') == '1',
+            thankyou=request.GET.get('thankyou') == '1',
             fuel_purchase_stats=fuel_purchase_stats,
             fuel_purchase_ttl=fuel_purchase_ttl[0],
             fuel_pending_stats=fuel_pending_stats,
@@ -338,11 +339,11 @@ def fuel(request):
 
 
 def freighter(request):
-    all_price_models = FreighterPriceModel.objects.filter(is_thirdparty=0).distinct()
+    all_price_models = FreighterPriceModel.objects.filter(is_thirdparty=False).distinct()
 
     all_systems = defaultdict(set)
 
-    for fpm in FreighterPriceModel.objects.filter(is_thirdparty=0):
+    for fpm in FreighterPriceModel.objects.filter(is_thirdparty=False):
         pm_systems = fpm.supported_systems()
 
         for r in pm_systems.keys():
@@ -407,7 +408,7 @@ def freighter(request):
             price_models = []
             for start in start_systems:
                 for end in end_systems:
-                    if start.price_model.id == end.price_model.id:
+                    if start.price_model.id == end.price_model.id and not start.price_model.is_thirdparty:
                         price_models.append(start.price_model)
 
             shipping_info = dict(
@@ -533,9 +534,9 @@ def pricer(request):
         stations[destination_station].z_destination_selected = True
     else:
         for id in stations:
-            if stations[id].name.startswith("Jita") or stations[id].name.startswith("BWF-ZZ"):
+            if stations[id].name.startswith("Jita") or stations[id].name.startswith("R1O"):
                 stations[id].z_source_selected = True
-            if stations[id].name.startswith("BWF-ZZ"):
+            if stations[id].name.startswith("R1O"):
                 stations[id].z_destination_selected = True
 
     stations = [stations[id] for id in stations]
@@ -1009,7 +1010,8 @@ def perms(request):
         dict(scope='esi-assets.read_assets.v1', desc='Allows for reading of character assets.', required=False),
         dict(scope='esi-assets.read_corporation_assets.v1', desc='Allows for reading of corporation assets (requires Director role).', required=False),
         dict(scope='esi-characters.read_notifications.v1', desc='Allows for viewing of character notifications', required=False),
-        dict(scope='esi-markets.structure_markets.v1', desc='Allows for reading of structure market data', required=False)
+        dict(scope='esi-markets.structure_markets.v1', desc='Allows for reading of structure market data', required=False),
+        dict(scope='esi-wallet.read_corporation_wallets.v1', desc='Allows for reading of corporation wallets.', required=False),
     ]
 
     for scope in scopes:

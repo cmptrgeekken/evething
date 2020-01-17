@@ -44,7 +44,7 @@ import traceback
 class EsiUniverse(APITask):
     name = 'thing.esiuniverse'
 
-    universe_types_url = 'https://esi.evetech.net/latest/universe/types'
+    universe_types_url = 'https://esi.evetech.net/latest/universe/types?page=%s'
     universe_type_url = 'https://esi.evetech.net/latest/universe/types/%s'
 
     def run(self):
@@ -56,7 +56,7 @@ class EsiUniverse(APITask):
         try:
 
             while max_pages is None or page <= max_pages:
-                success, results, headers = self.fetch_esi_url(self.universe_types_url, None, headers_to_return=['x-pages'])
+                success, results, headers = self.fetch_esi_url(self.universe_types_url % str(page), None, headers_to_return=['x-pages'])
                     
                 if not success:
                     self.log_warn('Failed to load results: %s' % results)
@@ -110,7 +110,6 @@ class EsiUniverse(APITask):
                     db_item.published = bool(item['published'])
 
                     try:
-
                         db_item.save()
                     except Exception, e:
                         print(data)

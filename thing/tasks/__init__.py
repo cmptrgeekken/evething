@@ -52,8 +52,10 @@ from bookmarks import Bookmarks
 from esi_moonextraction import EsiMoonExtraction
 from esi_assets import EsiAssets
 from esi_characterroles import EsiCharacterRoles
+from esi_journal import EsiJournal
 from esi_moonobserver import EsiMoonObserver
 from esi_notifications import EsiNotifications
 from esi_structures import EsiStructures
 from esi_universe import EsiUniverse
 from esi_systems import EsiSystems
+from char_corp_update import CharCorpUpdate

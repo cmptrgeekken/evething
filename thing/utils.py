@@ -150,7 +150,12 @@ class ApiHelper:
         for i in range(batch_size):
             t = Thread(target=do_batch)
             t.daemon = True
-            t.start()
+            try:
+                t.start()
+            except:
+                print('Failed to start thread. Retrying in 5 seconds.')
+                sleep(5)
+                t.start()
 
         try:
             for url in urls:
@@ -206,7 +211,7 @@ class ApiHelper:
             cached_data = cache.get(cache_key)
             headers = cache.get('%s_headers' % cache_key) or dict()
 
-        retry = 3
+        retry = 3 if body is None else 1
 
         key_headers = {'expires', 'date', 'x-esi-error-limit-remain', 'x-esi-error-limit-reset'}
 
@@ -250,6 +255,9 @@ class ApiHelper:
                         lookup = header.lower()
                         if lookup in key_headers:
                             headers[lookup] = response.headers[header]
+
+                    if body is not None:
+                        headers['request_body'] = body
 
                     if 'x-esi-error-limit-remain' in headers \
                             and int(headers['x-esi-error-limit-remain']) < 10:

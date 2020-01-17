@@ -55,6 +55,10 @@ class EsiAsset(MPTTModel):
 
     last_updated = models.DateTimeField()
 
+    x = models.FloatField(default=None)
+    y = models.FloatField(default=None)
+    z = models.FloatField(default=None)
+
     class Meta:
         app_label = 'thing'
 

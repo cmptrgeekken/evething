@@ -33,6 +33,8 @@ from thing.models.contractitem import ContractItem
 from thing.utils import dictfetchall
 from thing import queries
 
+import datetime
+
 from django.core.cache import cache
 
 import math
@@ -51,6 +53,12 @@ class ContractSeeding(models.Model):
     estd_price = models.DecimalField(max_digits=20, decimal_places=2)
     priority = models.IntegerField(default=0)
     is_active = models.BooleanField(default=True)
+    current_qty = models.IntegerField(default=0)
+    last_modified = models.DateTimeField(default=datetime.datetime.now)
+    qty_last_modified = models.DateTimeField(default=None)
+    last_modified_by = models.ForeignKey(Character, on_delete=models.DO_NOTHING, db_column='last_modified_by')
+    alliance_qty = models.IntegerField(default=0)
+    corp_qty = models.IntegerField(default=0)
 
     stock_count = None
     seed_price = None
@@ -60,28 +68,31 @@ class ContractSeeding(models.Model):
 
         return ContractSeedingItem.objects.filter(contractseeding_id=self.id).order_by('-required', 'item__name')
 
+    def get_estd_price(self):
+        estd_price = 0
+        for i in self.get_items():
+            i.item.get_current_orders(quantity=i.min_qty, ignore_seed_items=False, dest_station_id=self.station_id, source_station_ids=[60003760])
+            if i.item.item_group.category.name == 'Ship':
+                estd_price += i.item.z_ttl_price_multibuy
+            else:
+                estd_price += i.item.z_ttl_price_with_shipping
+        return estd_price
+
+
     def get_stock(self, page=1, page_size=20):
-        cache_key = 'get_stock-%d' % (self.id)
 
-        cache_value = cache.get(cache_key)
+        contracts = dictfetchall(queries.contractseeding_contracts % self.id)
+        contract_ids = []
+        for c in contracts:
+            contract_ids.append(c['contract_id'])
 
-        if cache_value is not None:
-            contracts = cache_value
-        else:
-            contracts = dictfetchall(queries.contractseeding_contracts % self.id)
-            contract_ids = []
-            for c in contracts:
-                contract_ids.append(c['contract_id'])
+        contracts = Contract.objects.filter(contract_id__in=contract_ids).order_by('price')
+        contracts_trimmed = dict()
+        for c in contracts:
+            contracts_trimmed[c.contract_id] = c
 
-            contracts = Contract.objects.filter(contract_id__in=contract_ids).order_by('price')
-            contracts_trimmed = dict()
-            for c in contracts:
-                contracts_trimmed[c.contract_id] = c
-
-            contracts = contracts_trimmed.values()
+        contracts = contracts_trimmed.values()
             
-            cache.set(cache_key, contracts, 300)
-
         ttl_pages = int(math.ceil(len(contracts) / float(page_size))) + 1
 
 

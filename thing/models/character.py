@@ -37,6 +37,7 @@ class Character(models.Model):
     sso_refresh_token = models.CharField(max_length=4000)
     sso_error_count = models.IntegerField(default=0)
     not_found = models.BooleanField(default=False)
+    last_updated = models.DateTimeField(auto_now=True)
 
 
     class Meta:

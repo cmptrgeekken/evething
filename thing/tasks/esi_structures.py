@@ -37,6 +37,7 @@ import traceback
 class EsiStructures(APITask):
     name = 'thing.structures'
 
+    jumpgate_search_url = 'https://esi.evetech.net/latest/characters/%s/search?categories=structure&language=en-us&search=%%20%%C2%%BB%%20&strict=false'
     structure_url = 'https://esi.evetech.net/latest/universe/structures/%s/?datasource=tranquility'
     corp_structures_url = 'https://esi.evetech.net/latest/corporations/%s/structures/?datasource=tranquility&language=en-us&page=%s'
 
@@ -44,6 +45,8 @@ class EsiStructures(APITask):
         self.init()
 
         structure_scopes = CharacterApiScope.objects.filter(scope='esi-corporations.read_structures.v1')
+
+        search_scopes = CharacterApiScope.objects.filter(scope='esi-search.search_structures.v1')
 
         seen_corps = set()
 
@@ -55,6 +58,13 @@ class EsiStructures(APITask):
                     success = self.import_structures(char)
                     if success:
                         seen_corps.add(char.corporation_id)
+
+        for scope in search_scopes:
+            char = scope.character
+            if char.name == 'KenGeorge Beck':
+                self.import_jumpgates(char)
+
+
 
     def import_structures(self, character):
         corp_id = character.corporation_id
@@ -214,5 +224,46 @@ class EsiStructures(APITask):
 
                 c.corporation_id = structure_info['owner_id']
                 c.save()
+        
+        return True
+                
+
+
+    def import_jumpgates(self, character):
+        # Get jump gates
+        success, result = self.fetch_esi_url(self.jumpgate_search_url % character.id, character)
+        if not success:
+            print(result)
+            return True
+
+        data = json.loads(result)
+
+        for jg_id in data['structure']:
+            #if jg_id in seen_ids:
+            #    continue
+
+            success, jg_result = self.fetch_esi_url(self.structure_url % jg_id, character)
+            if not success:
+                continue
+
+            jg = json.loads(jg_result)
+
+            station = Station.objects.filter(id=jg_id).first()
+            if station is None:
+                station = Station()
+                station.id = jg_id
+                station.name = jg['name']
+                station.type_id = jg['type_id']
+                station.system_id = jg['solar_system_id']
+                station.corporation_id = jg['owner_id']
+                station.is_unknown = False
+                station.is_citadel = True
+
+            if station.is_thirdparty:
+                station.is_thirdparty = station.corporation_id != character.corporation_id
+            station.deleted = False
+            station.save()
+
+        Station.objects.filter(type_id=35841, is_thirdparty=True).exclude(corporation_id=character.corporation_id).exclude(id__in=data['structure']).update(deleted=True)
 
         return True

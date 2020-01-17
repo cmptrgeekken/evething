@@ -98,9 +98,10 @@ def item_contracts(request):
         contract_id__in=contract_ids,
     ).exclude(
         status__in=['Completed', 'Deleted', 'Rejected', 'finished'],
-    ).exclude(
-        issuer_char_id=F('corporation_id'),
     )
+    #.exclude(
+    #    issuer_char_id=F('corporation_id'),
+    #)
 
     contract_list, char_map, corp_map, alliance_map = populate_contracts(contracts_to_display)
 

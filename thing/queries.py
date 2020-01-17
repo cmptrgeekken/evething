@@ -288,14 +288,14 @@ AND co.name = 'Penny''s Flying Circus'
 """
 
 buyback_contracts = """
-    SELECT DISTINCT c.contract_id	
+    SELECT DISTINCT c.contract_id
     FROM thing_contract c
-         inner join thing_corporation co on c.corporation_id=co.id
-    WHERE c.assignee_id=c.corporation_id
-        AND c.type in ('Item Exchange', 'item_exchange')
-        AND c.issuer_corp_id != c.corporation_id
+         inner join thing_corporation co on c.assignee_id=co.id
+    WHERE
+        c.type in ('Item Exchange', 'item_exchange')
+        AND c.issuer_corp_id != co.id
         AND co.name = 'Penny''s Flying Circus'
-    AND EXISTS (SELECT 1 FROM thing_contractitem ci INNER JOIN thing_pricewatch pw ON ci.item_id=pw.item_id WHERE ci.contract_id=c.id AND ci.included=1 AND pw.active=1)
+
 """
 
 buyback_item_summary = """
@@ -456,7 +456,7 @@ AND EXISTS
 
 summary_shipping_costs = """
 SELECT MIN(date_issued),SUM(reward),SUM(collateral),SUM(volume),ch.name 
-FROM thing_contract c 
+FROM thing_contract c
     INNER JOIN thing_station s ON s.id=c.end_station_id
     INNER JOIN thing_character ch ON c.assignee_id=ch.id 
 WHERE c.issuer_corp_id=c.corporation_id 
@@ -869,6 +869,12 @@ ON DUPLICATE KEY UPDATE
    last_updated=VALUES(last_updated)
 """
 
+bulk_journal_insert = """
+
+INSERT IGNORE INTO thing_esijournal(`journal_id`, `amount`, `balance`, `context_id`, `context_id_type`, `date`, `description`, `first_party_id`, `reason`, `ref_type`, `second_party_id`, `corporation_id`, `wallet_id`) VALUES %s
+"""
+
+
 order_updatemarketorders = """
 update thing_marketorder mo INNER JOIN thing_stationorder so ON mo.order_id=so.order_id SET mo.price=so.price, mo.volume_remaining=so.volume_remaining
 """
@@ -1274,17 +1280,73 @@ select s.name AS station_name, sum(a.quantity) AS qty  from thing_esiasset a  in
 """
 
 current_bridges = """
-select jg.id, st.name as start, e.name as end,
+select jg.id, jg.destination_structure_id AS end_id, st.name as start, e.name as end,
     IF((SELECT MAX(last_updated) FROM thing_jumpgate_history jgh WHERE jgh.station_id=jg.id) > DATE_ADD(NOW(), INTERVAL -1 DAY),1,0) AS start_in_alliance,
-    IF((SELECT MAX(last_updated) FROM thing_jumpgate_history jgh WHERE jgh.station_id=ejg.id) > DATE_ADD(NOW(), INTERVAL -1 DAY),1,0) as end_in_alliance
+    IF((SELECT MAX(last_updated) FROM thing_jumpgate_history jgh WHERE jgh.station_id=jg.destination_structure_id) > DATE_ADD(NOW(), INTERVAL -1 DAY),1,0) as end_in_alliance,
+    ea.id as end_alliance_id,
+    ea.name as end_alliance_name,
+    sa.id as start_alliance_id,
+    sa.name as start_alliance_name
     from thing_jumpgates jg
-        left join thing_jumpgates ejg on ejg.system_id=jg.destination_system_id
-        left join thing_station es on es.id=ejg.id and es.deleted=0
+        inner join thing_station es on es.id=jg.destination_structure_id and es.deleted=0
         left join thing_corporation ec on ec.id=es.corporation_id
+        left join thing_alliance ea on ec.alliance_id=ea.id
         inner join thing_station s on s.deleted=0 AND s.id=jg.id
         inner join thing_corporation c on s.corporation_id=c.id
+        left join thing_alliance sa on c.alliance_id=sa.id
         inner join thing_system st on st.id=jg.system_id
         inner join thing_system e on jg.destination_system_id=e.id
     order by st.name
 """
 
+jumpbridge_usage_fees = """
+SELECT j.date, 
+       COALESCE(IF(ch.name = '*UNKNOWN*', NULL, ch.name), CONCAT('ID: ', j.first_party_id)) AS `char`,
+       COALESCE(IF(co.name='*UNKNOWN*', NULL, co.name), CONCAT('ID: ', ch.corporation_id)) as corp,
+       a.name as alliance_name, 
+       FORMAT(j.amount,0) as fee,
+       COALESCE(st1.name, CONCAT('ID: ', j.context_id)) as gate_name,
+       FORMAT(j.amount/200,0) AS lo_used,
+       ROUND((amount/200 - 50)/.000003/(SQRT(POW(md1.x-md2.x,2) + POW(md1.y-md2.y,2) + POW(md1.z-md2.z,2))/9460730472580800),0) AS rough_mass,
+       (SELECT GROUP_CONCAT(name) FROM thing_item WHERE ABS(rough_mass-mass) / mass < .001 AND published=1 AND market_group_id IS NOT NULL) AS possible_ships
+FROM thing_esijournal j 
+    LEFT JOIN thing_character ch on ch.id = j.first_party_id 
+    LEFT JOIN thing_corporation co ON co.id=ch.corporation_id 
+    LEFT JOIN thing_alliance a on co.alliance_id=a.id
+    LEFT JOIN thing_station st1 on st1.id=j.context_id
+    LEFT JOIN thing_system sy1 ON sy1.name = LEFT(st1.name, POSITION( CHAR(187 using ucs2) IN st1.name) - 2)
+    LEFT JOIN thing_system sy2 ON sy2.name = substr(st1.name,(locate(CONCAT(' ', CHAR(187 using ucs2), ' '),st1.name) + 3),((locate(' - ',st1.name) - locate(CONCAT(' ', CHAR(187 using ucs2), ' '),st1.name)) - 3))
+    LEFT JOIN thing_mapdenormalize md1 ON md1.item_id=sy1.id
+    LEFT JOIN thing_mapdenormalize md2 on md2.item_id=sy2.id
+WHERE ref_type='structure_gate_jump' AND j.amount >= %s
+ORDER BY date DESC;
+"""
+
+jumpgate_create_statement = """
+CREATE OR REPLACE VIEW thing_jumpgates AS SELECT s.id AS id,
+       s.system_id AS system_id,
+       s.name AS name,
+       es.id AS destination_structure_id,
+       end.id AS destination_system_id,
+       35841 AS type_id,
+       NULL AS x,
+       NULL AS y,
+       NULL AS z
+from thing_station s 
+    INNER join thing_system end on substr(s.name,(locate(CONCAT(' ', CHAR(187 using ucs2), ' '),s.name) + 3),((locate(' - ',s.name) - locate(CONCAT(' ', CHAR(187 using ucs2), ' '),s.name)) - 3)) = end.name
+    join thing_system start on start.id = s.system_id
+
+    inner join thing_station es on es.system_id = end.id
+                                  and es.deleted = 0 
+                                  and es.type_id = 35841
+    inner join thing_corporation ec on es.corporation_id=ec.id
+    inner join thing_alliance ea on ec.alliance_id=ea.id
+    inner join thing_corporation sc on s.corporation_id=sc.id
+    inner join thing_alliance sa on sc.alliance_id=sa.id
+where 
+    s.type_id = 35841 
+    and s.deleted = 0
+    and s.corporation_id is not null
+    and sa.jb_approved=1 and ea.jb_approved=1 and sc.jb_ignore=0 and ec.jb_ignore=0
+order by s.name;
+"""

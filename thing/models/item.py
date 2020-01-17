@@ -146,31 +146,39 @@ class Item(models.Model):
             materials = self.get_reprocessed_items()
             for material in materials:
                 # TODO: Calculate reprocessing rate correctly
-                if repro_items is not None and material.id in repro_items:
-                    price_pct = repro_items[material.id]
-                else:
-                    price_pct=pct
+                #if repro_items is not None and material.id in repro_items:
+                #    price_pct = repro_items[material.id]
+                #else:
+                price_pct=pct
 
                 average += material.z_qty * reprocess_pct * material.get_price(buy=buy, pct=price_pct, station_ids=station_ids, order_pct=order_pct)
 
             return round(float(average / self.portion_size), 2)
 
-        orders = StationOrder.objects.filter(item_id__in=item_ids, station_id__in=station_ids, buy_order=buy, price__gt=.01)
+        orders = StationOrder.objects.filter(item_id__in=item_ids, station_id__in=station_ids, buy_order=buy, price__gt=.5)
+        
+        first_item = orders.first()
+        if first_item:
+           top_price = first_item.price
+        else:
+            top_price=0
+        half_price = top_price * Decimal(.25)
 
         if buy:
             orders = orders.order_by('-price')
+            max_order_vol = orders.filter(price__gte=half_price).aggregate(total_volume=Sum('volume_remaining'))['total_volume']
         else:
             orders = orders.order_by('price')
-
-        max_order_vol = orders.aggregate(total_volume=Sum('volume_remaining'))['total_volume']
+            max_order_vol = orders.filter(price__lte=half_price).aggregate(total_volume=Sum('volume_remaining'))['total_volume']
 
         order_vol = 0
         order_sum = 0.0
 
+        max_price = 0
         for o in orders:
             order_vol += o.volume_remaining
             order_sum += float(o.volume_remaining) * float(o.price)
-            
+
             if float(order_vol) > float(max_order_vol)*order_pct:
                 break
 

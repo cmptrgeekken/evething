@@ -53,6 +53,7 @@ class Station(models.Model):
     short_name = models.CharField(max_length=64, default='')
     is_citadel = models.BooleanField(default=False)
     is_unknown = models.BooleanField(default=False)
+    is_thirdparty = models.BooleanField(default=False)
 
     load_market_orders = models.BooleanField(default=False)
     market_profile = models.ForeignKey(Character, null=True, default=None, on_delete=models.DO_NOTHING)
