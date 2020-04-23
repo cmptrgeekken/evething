@@ -113,14 +113,23 @@ class EsiNotifications(APITask):
         if len(ores) > 1:
             cfg.second_ore_id = ores[1]['id']
             cfg.second_ore_pct = ores[1]['m3'] / ttl_m3
+        else:
+            cfg.second_ore_id = None
+            cfg.second_ore_pct = None
 
         if len(ores) > 2:
             cfg.third_ore_id = ores[2]['id']
             cfg.third_ore_pct = ores[2]['m3'] / ttl_m3
+        else:
+            cfg.third_ore_id = None
+            cfg.third_ore_pct = None
          
         if len(ores) > 3:
             cfg.fourth_ore_id = ores[3]['id']
             cfg.fourth_ore_pct = ores[3]['m3'] / ttl_m3
+        else:
+            cfg.fourth_ore_id = None
+            cfg.fourth_ore_pct = None
 
         if cfg.first_ore_id is not None:
             cfg.save()

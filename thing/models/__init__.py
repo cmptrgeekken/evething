@@ -104,3 +104,4 @@ from thing.models.moonobserverentry import MoonObserverEntry
 from thing.models.moonextraction import MoonExtraction
 from thing.models.moonextractionhistory import MoonExtractionHistory
 from thing.models.notification import Notification
+from thing.models.links import Links 

@@ -82,9 +82,10 @@ class PriceUpdater(APITask):
             self.log_error('No refresh token found for station %d!' % primary_station.id)
             return False
 
+        self.log_info('Importing data for station %s...' % primary_station.name)
+
         start_time = datetime.now()
 
-        #self.log_debug('Fetching started at %s' % start_time)
         initial_url = api_url + str(page_number)
         success, data, headers = self.fetch_esi_url(initial_url, primary_station.market_profile, headers_to_return=['x-pages'])
         if not success:
@@ -100,7 +101,7 @@ class PriceUpdater(APITask):
         else:
             all_station_data = dict()
 
-        #self.log_debug('Fetched %d URLs in %d seconds' % (len(urls)+1, (datetime.now()-start_time).total_seconds()))
+        self.log_debug('Fetched %d URLs in %d seconds' % (len(urls)+1, (datetime.now()-start_time).total_seconds()))
 
         all_station_data[initial_url] = (success, data)
 
@@ -179,6 +180,8 @@ class PriceUpdater(APITask):
                     #self.log_debug('Inserting %d records...%s' % (len(sql_inserts), datetime.now()))
                     self.execute_query(sql_inserts)
                     sql_inserts = []
+
+        self.log_info('Finished importing data for %s' % primary_station.name)
 
         #self.log_debug('Inserting %d records...%s' % (len(sql_inserts), datetime.now()))
         self.execute_query(sql_inserts)

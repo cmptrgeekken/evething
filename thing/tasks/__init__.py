@@ -13,6 +13,7 @@ from taskspawner import task_spawner
 #from charactersheet import CharacterSheet
 #from citadels import Citadels
 from esi_contracts import EsiContracts
+from esi_contractseeding import EsiContractSeeding
 from esi_publiccontracts import EsiPublicContracts
 #from corporationsheet import CorporationSheet
 #from industryjobs import IndustryJobs

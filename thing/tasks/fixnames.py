@@ -127,6 +127,8 @@ class FixNames(APITask):
 
         Character.objects.filter(name='*UNKNOWN*', not_found=False, id__in=char_map.keys()).update(not_found=True)
 
+        # Update any characters previously marked as not_found
+        cursor.execute('update thing_character set not_found=0 where name=\'*UNKNOWN*\' AND id in (select first_party_id from thing_esijournal)');
 
         # And finally delete any characters that have equivalent corporations now
         cursor.execute('DELETE FROM thing_character WHERE id IN (SELECT id FROM thing_corporation WHERE name != \'*UNKNOWN*\')')

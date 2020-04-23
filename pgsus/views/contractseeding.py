@@ -9,8 +9,23 @@ from django.shortcuts import redirect, render
 
 from django.core.urlresolvers import reverse
 
+from django.http import HttpResponse
+
+import json
+
 from pgsus.parser import parse, iter_types
 import evepaste
+
+def contractseedapi(request):
+    data = dictfetchall("select c.id, c.name, c.current_qty, c.min_qty, s.name AS station_name, CASE WHEN priority = 0 THEN 'Low' WHEN priority = 1 THEN 'Medium' WHEN priority = 2 THEN 'High' END AS priority, c.qty_last_modified as last_updated from thing_contractseeding c inner join thing_station s on c.station_id=s.id where c.is_private=0 and c.is_active=1 order by s.name, c.priority DESC, c.name;")
+
+    results = list()
+    for d in data:
+        d['last_updated'] = d['last_updated'].strftime('%Y-%m-%d %H:%M:%S')
+        results.append(d)
+
+    return HttpResponse(json.dumps(results), content_type='application/json')
+
 
 
 """
@@ -34,6 +49,9 @@ def contractseedlist(request):
             station_lists[list.station.system.name] = []
 
         station_lists[list.station.system.name].append(list)
+
+    station_lists = station_lists.items()
+    station_lists.reverse()
 
     out = render_page(
         'pgsus/contractseedlist.html',

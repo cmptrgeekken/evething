@@ -52,7 +52,7 @@ class CharCorpUpdate(APITask):
         
         # Fetch chars to update corps
         no_corp_map = {}
-        for char in Character.objects.filter(Q(corporation_id=None) | Q(last_updated__lte=datetime.datetime.now() - datetime.timedelta(days=1)),not_found=False).exclude(name='*UNKNOWN*')[0:10000]:
+        for char in Character.objects.filter(Q(corporation_id=None) | Q(last_updated__lte=datetime.datetime.now() - datetime.timedelta(days=1)),not_found=False).exclude(name='*UNKNOWN*').order_by('corporation_id')[0:10000]:
             no_corp_map[char.id] = char
 
         # Fetch all unknown Corporation objects

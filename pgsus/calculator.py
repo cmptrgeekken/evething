@@ -72,8 +72,9 @@ class Calculator:
               determine the best location for purchasing the minerals or ores
         dest_station_id: station_id
             - ID of the station where the minerals / ores are required
+        ore_quantities: dict(int=>int): Mapping of ore ID's to quantities, indicating an existing stash
     """
-    def calculate_optimal_ores(self, target_minerals, max_mineral_overages=None, allow_mineral_purchase=True, optimization_strategy=OPTIMIZATION_PRICE, source_station_ids=None, dest_station_id=None, reprocess_pct=0.875):
+    def calculate_optimal_ores(self, target_minerals, max_mineral_overages=None, allow_mineral_purchase=True, optimization_strategy=OPTIMIZATION_PRICE, source_station_ids=None, dest_station_id=None, reprocess_pct=0.875, ore_quantities=None):
         mineralids = target_minerals.keys()
         requirements = target_minerals.values()
         overage = [max_mineral_overages[key]
@@ -133,12 +134,17 @@ class Calculator:
 
                 max_order_qty = item.get_max_order_volume(item_ids=item.z_related_ids, station_ids=source_station_ids)
 
-                item.z_max_qty = min(max_qty, max_order_qty)
+                if ore_quantities is not None:
+                    user_max_qty = ore_quantities[item.id] if item.id in ore_quantities else 0
+                else:
+                    user_max_qty = max_order_qty
+
+                item.z_max_qty = min(max_qty, user_max_qty)
 
                 # TODO: Properly calculate shipping?
-                item.z_total_price = int(float(item.sell_fivepct_price) * 1.15 + float(item.volume * 290))
+                item.z_total_price = int(float(item.sell_fivepct_price) * 1.015 + float(item.volume * 840))
 
-                item_maxes.append(item.z_max_qty)
+                item_maxes.append(item.z_max_qty or 0)
 
         if allow_mineral_purchase:
             mineral_items = Item.objects.filter(id__in=mineralids)
@@ -151,9 +157,9 @@ class Calculator:
                 item.z_related_ids = [item.id]
                 item.z_max_qty = requirements[minidx]
 
-                item.z_total_price = int(float(item.sell_fivepct_price)* 1.15 + float(item.volume*290))
+                item.z_total_price = int(float(item.sell_fivepct_price)* 1.015 + float(item.volume*840))
 
-                item_maxes.append(item.z_max_qty)
+                item_maxes.append(item.z_max_qty or 0)
                 items.append(item)
 
         ttl_price_obj_fn = [i.z_total_price for i in items]
@@ -162,19 +168,19 @@ class Calculator:
 
         if optimization_strategy == self.OPTIMIZATION_PRICE:
             obj_fns = [
-                ttl_price_obj_fn,
-                base_price_obj_fn,
-                volume_obj_fn,
+                ('Market Price',ttl_price_obj_fn),
+                ('Base Price', base_price_obj_fn),
+                ('Volume', volume_obj_fn),
             ]
         else:
             obj_fns = [
-                volume_obj_fn,
-                ttl_price_obj_fn,
-                base_price_obj_fn,
+                ('Volume',volume_obj_fn),
+                ('Market Price', ttl_price_obj_fn),
+                ('Base Price', base_price_obj_fn),
             ]
 
         for obj_fn in obj_fns:
-            results = self.solve(obj_fn, mineralids, requirements, overage, items, item_maxes, source_station_ids=source_station_ids, dest_station_id=dest_station_id, reprocess_pct=reprocess_pct)
+            results = self.solve(obj_fn[1], mineralids, requirements, overage, items, item_maxes, timeout=30, source_station_ids=source_station_ids, dest_station_id=dest_station_id, reprocess_pct=reprocess_pct)
 
             if results is not None:
                 all_items, total_price, fulfilled_all = results
@@ -199,7 +205,9 @@ class Calculator:
 
                 mineral_value_ratio = total_price / full_mineral_value if full_mineral_value > 0 else 1
 
-                return all_items, fulfilled_all, mineral_value_ratio, minerals.values(), total_price
+                
+
+                return all_items, fulfilled_all, mineral_value_ratio, minerals.values(), total_price, obj_fn[0]
             else:
                 print("No solution found...")
 

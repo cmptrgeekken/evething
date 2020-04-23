@@ -98,6 +98,7 @@ class Item(models.Model):
 
         materials = ItemMaterial.objects.filter(
             item_id=self.id,
+            active=True
         ).select_related('item_material')
 
         items = []
@@ -156,6 +157,10 @@ class Item(models.Model):
             return round(float(average / self.portion_size), 2)
 
         orders = StationOrder.objects.filter(item_id__in=item_ids, station_id__in=station_ids, buy_order=buy, price__gt=.5)
+        if buy:
+            orders = orders.order_by('-price')
+        else:
+            orders = orders.order_by('price')
         
         first_item = orders.first()
         if first_item:
@@ -165,10 +170,8 @@ class Item(models.Model):
         half_price = top_price * Decimal(.25)
 
         if buy:
-            orders = orders.order_by('-price')
             max_order_vol = orders.filter(price__gte=half_price).aggregate(total_volume=Sum('volume_remaining'))['total_volume']
         else:
-            orders = orders.order_by('price')
             max_order_vol = orders.filter(price__lte=half_price).aggregate(total_volume=Sum('volume_remaining'))['total_volume']
 
         order_vol = 0
@@ -238,12 +241,12 @@ class Item(models.Model):
 SELECT price / (SUM(im.quantity*i.sell_fivepct_price) /
     (SELECT SUM(im2.quantity*i2.sell_fivepct_price)
     FROM thing_itemmaterial im2
-    INNER JOIN thing_item i2 on im2.material_id=i2.id
+    INNER JOIN thing_item i2 on im2.material_id=i2.id and im2.active=1
     WHERE im2.item_id IN(%s)
     GROUP BY im2.item_id
     ORDER BY SUM(im2.quantity*i2.sell_fivepct_price)
     LIMIT 1)) + (%s)
-    FROM thing_itemmaterial im INNER JOIN thing_item i on i.id=im.material_id WHERE im.item_id=thing_stationorder.item_id
+    FROM thing_itemmaterial im INNER JOIN thing_item i on i.id=im.material_id and im.active=1 WHERE im.item_id=thing_stationorder.item_id
             ''' % (item_id_lookup, shipping_query),
             'shipping': shipping_query
         })

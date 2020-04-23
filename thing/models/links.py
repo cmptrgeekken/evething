@@ -23,19 +23,27 @@
 # OF SUCH DAMAGE.
 # ------------------------------------------------------------------------------
 
+import datetime
+
+from django.contrib.auth.models import User
 from django.db import models
 
-from thing.models.item import Item
+from core.util import total_seconds
 
 
-class ItemMaterial(models.Model):
-    item = models.ForeignKey(Item, related_name='item', on_delete=models.DO_NOTHING)
-    material = models.ForeignKey(Item, related_name='item_material', on_delete=models.DO_NOTHING)
-    quantity = models.IntegerField()
-    active = models.BooleanField()
+class Links(models.Model):
+    page = models.TextField()
+    path = models.TextField()
+    input_data = models.TextField()
+    output_data = models.TextField()
+    date_created = models.DateTimeField(auto_now=True)
 
     class Meta:
         app_label = 'thing'
 
-    def __unicode__(self):
-        return self.name
+    def genKey(self):
+        import shortuuid
+
+        return shortuuid.uuid()
+
+

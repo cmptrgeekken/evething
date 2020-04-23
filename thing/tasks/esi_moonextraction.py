@@ -24,6 +24,7 @@
 # ------------------------------------------------------------------------------
 
 import datetime
+import urllib2
 
 from .apitask import APITask
 import json
@@ -39,6 +40,7 @@ class EsiMoonExtraction(APITask):
 
     mining_url = 'https://esi.evetech.net/latest/corporation/%s/mining/extractions/?datasource=tranquility'
     write_structure_url = 'https://esi.evetech.net/latest/corporations/%s/structures/%s/?datasource=tranquility&language=en-us'
+    micrim_url = 'http://infinity-bay.com/citadels/kgb.php'
 
     def run(self):
         self.init()
@@ -53,7 +55,6 @@ class EsiMoonExtraction(APITask):
 
             if 'Director' in char.get_apiroles():
                 if char.corporation_id is not None and char.corporation_id not in seen_corps:
-                    print('Importing for %s (%s)' % (char.name, char.corporation.name))
                     if self.import_moon(char):
                         seen_corps.add(char.corporation_id)
 
@@ -68,6 +69,19 @@ class EsiMoonExtraction(APITask):
                     self.update_vuln_schedule(char)
                     seen_corps.add(char.corporation_id)
         '''
+        # Update from Micrim's dump
+        response = urllib2.urlopen(self.micrim_url)
+        data = response.read()
+
+        moon_data = json.loads(data)
+        for d in moon_data:
+            cfg = MoonConfig.objects.filter(structure__station_id=d['structure_id']).first()
+            if cfg is None:
+                cfg = MoonConfig()
+                cfg.is_nationalized = False
+            cfg.next_date_override = d['planned_chunk']
+
+            cfg.save()
 
     def update_vuln_schedule(self, character):
         corp_id = character.corporation_id

@@ -521,7 +521,8 @@ class Importer:
             materials.append(ItemMaterial(
                 item_id=int(row[0]),
                 material_id=int(row[1]),
-                quantity=int(row[2])
+                quantity=int(row[2]),
+                active=True
             ))
 
             added += 1

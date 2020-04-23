@@ -199,11 +199,23 @@ CELERY_STORE_ERRORS_EVEN_IF_IGNORED = True
 # Set up our queues
 CELERY_DEFAULT_QUEUE = 'et_medium'
 CELERY_QUEUES = (
-    Queue('et_medium', Exchange('et_medium'), routing_key='et_medium'),
     Queue('et_high', Exchange('et_high'), routing_key='et_high'),
-    Queue('et_contract', Exchange('et_contract'), routing_key='et_contract'),
+    Queue('et_medium', Exchange('et_medium'), routing_key='et_medium'),
+    Queue('et_avg_calc', Exchange('et_avg_calc'), routing_key='et_avg_calc'),
+    Queue('et_history', Exchange('et_history'), routing_key='et_history'),
+    Queue('et_notifications', Exchange('et_notifications'), routing_key='et_notifications'),
+    Queue('et_assets', Exchange('et_assets'), routing_key='et_assets'),
+    Queue('et_journal', Exchange('et_journal'), routing_key='et_journal'),
+    Queue('et_corp_contracts', Exchange('et_corp_contracts'), routing_key='et_corp_contracts'),
+    Queue('et_contractseeding', Exchange('et_contractseeding'), routing_key='et_contractseeding'),
+    Queue('et_public_contracts', Exchange('et_public_contracts'), routing_key='et_public_contracts'),
+    Queue('et_moons', Exchange('et_moons'), routing_key='et_moons'),
+    Queue('et_structs', Exchange('et_structs'), routing_key='et_structs'),
+    Queue('et_roles', Exchange('et_roles'), routing_key='et_roles'),
     Queue('et_prices', Exchange('et_prices'), routing_key='et_prices'),
-    Queue('et_assets', Exchange('et_assets'), routing_key='et_assets')
+    Queue('et_universe', Exchange('et_universe'), routing_key='et_universe'),
+    Queue('et_fix_names', Exchange('et_fix_names'), routing_key='et_fix_names'),
+    Queue('et_charcorps', Exchange('et_charcorps'), routing_key='et_charcorps')
 )
 
 # Periodic tasks
@@ -214,15 +226,15 @@ from thing import queries
 
 CELERYBEAT_SCHEDULE = {
     # spawn tasks every 30 seconds
-    'task_spawner': {
-        'task': 'thing.task_spawner',
-        'schedule': timedelta(seconds=10),
-        'options': {
-            'expires': 9,
-            'queue': 'et_high',
-        },
-        'args': (),
-    },
+    #'task_spawner': {
+    #    'task': 'thing.task_spawner',
+    #    'schedule': timedelta(seconds=10),
+    #    'options': {
+    #        'expires': 9,
+    #        'queue': 'et_high',
+    #    },
+    #    'args': (),
+    #},
     # clean up various table messes every 5 minutes
     'table_cleaner': {
         'task': 'thing.table_cleaner',
@@ -233,46 +245,12 @@ CELERYBEAT_SCHEDULE = {
         'args': (),
     },
 
-'''
-    # update history data every 4 hours
-    'history_updater': {
-        'task': 'thing.history_updater',
-        'schedule': timedelta(hours=4),
-        'options': {
-            'expires': 239 * 60,
-        },
-        'args': (),
-    },
-'''
-
-'''
-    # update price data every 30 minutes
-    'price_updater': {
-        'task': 'thing.price_updater',
-        'schedule': timedelta(minutes=30),
-        'options': {
-            'expires': 29 * 60,
-        },
-        'args': (),
-    },
-'''
-'''
-    'localprice_cache': {
-        'task': 'thing.periodic_query_runner',
-        'schedule': crontab(minute='*/30'),
-        'options': {
-            'expires': 239*60,
-            'queue': 'et_medium',
-        },
-        'args': [queries.stationorder_localprice_truncate, queries.stationorder_localprice_update],
-    },
-'''
     'avg_calculator': {
         'task': 'thing.avg_calculator',
         'schedule': crontab(hour=0, minute=0),
         'options': {
             'expires': 239*60,
-            'queue': 'et_medium',
+            'queue': 'et_avg_calc',
         },
         'args': (),
     },
@@ -282,7 +260,7 @@ CELERYBEAT_SCHEDULE = {
         'schedule': timedelta(hours=6),
         'options': {
             'expires': 239*60,
-            'queue': 'et_medium',
+            'queue': 'et_history',
         },
         'args': [],
     },
@@ -292,7 +270,7 @@ CELERYBEAT_SCHEDULE = {
         'schedule': timedelta(minutes=10),
         'options': {
             'expires': 240 * 60,
-            'queue': 'et_medium'
+            'queue': 'et_notifications'
         },
         'args': [],
     },
@@ -310,7 +288,7 @@ CELERYBEAT_SCHEDULE = {
         'schedule': timedelta(minutes=60),
         'options': {
             'expires': 240 * 60,
-            'queue': 'et_medium'
+            'queue': 'et_journal'
         },
         'args': [],
     },
@@ -319,7 +297,16 @@ CELERYBEAT_SCHEDULE = {
         'schedule': timedelta(minutes=5),
         'options': {
             'expires': 240*60,
-            'queue': 'et_contract'
+            'queue': 'et_corp_contracts'
+        },
+        'args': [],
+    },
+    'contractseeding': {
+        'task': 'thing.esi_contractseeding',
+        'schedule': timedelta(minutes=60),
+        'options': {
+            'expires': 240*60,
+            'queue': 'et_contractseeding'
         },
         'args': [],
     },
@@ -328,7 +315,7 @@ CELERYBEAT_SCHEDULE = {
         'schedule': timedelta(minutes=30),
         'options': {
             'expires': 240*60,
-            'queue': 'et_medium'
+            'queue': 'et_public_contracts'
         },
         'args': [],
     },
@@ -337,7 +324,7 @@ CELERYBEAT_SCHEDULE = {
         'schedule': timedelta(minutes=30),
         'options': {
             'expires': 240 * 60,
-            'queue': 'et_medium'
+            'queue': 'et_moons'
         },
         'args': [],
     },
@@ -346,7 +333,7 @@ CELERYBEAT_SCHEDULE = {
         'schedule': timedelta(hours=1),
         'options': {
             'expires': 240 * 60,
-            'queue': 'et_medium'
+            'queue': 'et_structs'
         },
         'args': [],
     },
@@ -355,7 +342,7 @@ CELERYBEAT_SCHEDULE = {
         'schedule': timedelta(hours=1),
         'options': {
             'expires': 240 * 60,
-            'queue': 'et_medium'
+            'queue': 'et_moons'
         },
         'args': [],
     },
@@ -364,13 +351,13 @@ CELERYBEAT_SCHEDULE = {
         'schedule': crontab(hour=1),
         'options': {
             'expires': 240 * 60,
-            'queue': 'et_medium'
+            'queue': 'et_roles'
         },
         'args': [],
     },
     'price_updater': {
         'task': 'thing.price_updater',
-        'schedule': timedelta(minutes=30),
+        'schedule': timedelta(minutes=20),
         'options': {
             'expires': 10 * 60,
             'queue': 'et_prices'
@@ -383,7 +370,7 @@ CELERYBEAT_SCHEDULE = {
         'schedule': crontab(hour=12),
         'options': {
             'expires': 10 * 60,
-            'queue': 'et_medium'
+            'queue': 'et_universe'
         },
         'args': [],
     },
@@ -395,7 +382,7 @@ CELERYBEAT_SCHEDULE = {
         'schedule': timedelta(minutes=30),
         'options': {
             'expires': 59 * 60,
-            'queue': 'et_medium'
+            'queue': 'et_fix_names'
         },
         'args': (),
     },
@@ -404,7 +391,7 @@ CELERYBEAT_SCHEDULE = {
         'schedule': timedelta(minutes=5),
         'options': {
             'expires': 59 * 60,
-            'queue': 'et_medium'
+            'queue': 'et_charcorps'
         },
         'args': (),
     },

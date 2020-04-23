@@ -47,6 +47,8 @@ from math import ceil
 
 import re
 
+import simplejson as json
+
 from pgsus.parser import parse, iter_types
 import evepaste
 
@@ -132,6 +134,44 @@ def svg(request):
     http_response['Content-Length'] = len(content)
 
     return http_response
+
+def api_jumpgates(request):
+    current_jbs = dictfetchall(queries.current_bridges)
+
+    return JsonResponse(dict(gates=current_jbs))
+
+def api_lys(request):
+    systems = request.GET.getlist('system')
+    if not systems:
+        systems = request.GET.getlist('systems')
+
+    if len(systems) == 1:
+        systems = re.split(',|:',systems[0])
+
+    query = '''
+    SELECT SQRT(POW(md1.x-md2.x,2)+POW(md1.y-md2.y,2)+POW(md1.z-md2.z,2))/9460730472580800 AS lys
+    FROM thing_system s1
+         INNER JOIN thing_system s2
+         INNER JOIN thing_mapdenormalize md1 ON s1.id=md1.item_id
+         INNER JOIN thing_mapdenormalize md2 ON s2.id=md2.item_id
+         WHERE s1.name=%s AND s2.name=%s
+    '''
+
+    
+    cursor = connections['default'].cursor()
+
+    ttl_lys = 0
+
+    for i in range(0,len(systems)-1):
+        start = systems[i]
+        end = systems[i+1]
+
+        cursor.execute(query, [start, end])
+
+        ttl_lys += float(cursor.fetchone()[0])
+
+    return JsonResponse(dict(lys=round(ttl_lys,2)))
+
 
 def api_systems(request):
     systems = System.objects.filter(name__istartswith=request.GET.get('term'))
@@ -474,15 +514,49 @@ def freighter(request):
 
     return out
 
-
-def pricer(request):
+def pricer(request, key):
     parse_results = None
     text_input = ''
+    existing_ores = None
 
     reprocess_pct = 87.6
 
-    if request.method == 'POST':
-        text_input = request.POST.get('text_input')
+    input_data = None
+    output_data = None
+
+    is_post = False
+
+    if key is not None:
+        data = Links.objects.filter(page='pricer', path=key).first()
+
+        if data is not None:
+            input_data = json.loads(data.input_data)
+            try:
+                output_data = json.loads(data.output_data)
+
+                is_post = True
+            except:
+                is_post = True
+        else:
+            key = None
+    elif request.method == 'POST':
+        input_data = dict(
+            text_input=request.POST.get('text_input'),
+            existing_ores=request.POST.get('existing_ores'),
+            reprocess_pct=request.POST.get('reprocess_pct'),
+            destination_station=request.POST.get('destination_station'),
+            source_stations=request.POST.getlist('source_stations'),
+            multiplier=request.POST.get('multiplier'),
+            buy_all_tolerance=request.POST.get('buy_all_tolerance'),
+            compress_ores='compress_ores' in request.POST
+        )
+
+        is_post = True
+
+
+    if is_post:
+        text_input = input_data.get('text_input')
+        existing_ores = input_data.get('existing_ores')
 
         try:
             parse_results = parse(text_input)
@@ -490,9 +564,15 @@ def pricer(request):
             parse_results = None
 
         try:
-            reprocess_pct = float(request.POST.get('reprocess_pct'))
+            existing_ores = parse(existing_ores)
+        except evepaste.Unparsable:
+            existing_ores = None
+
+        try:
+            reprocess_pct = float(input_data.get('reprocess_pct'))
         except Exception:
             ''''''
+
 
     source_stations = None
     destination_station = None
@@ -520,13 +600,14 @@ def pricer(request):
     compressed_minerals = None
     mineral_value_ratio = None
     total_mineral_price = None
+    compress_method = None
 
-    if request.method == 'POST':
-        destination_station = int(request.POST.get('destination_station'))
-        source_stations = [int(i) for i in request.POST.getlist('source_stations')]
-        multiplier = int(request.POST['multiplier'])
-        buy_all_tolerance = float(request.POST['buy_all_tolerance'])
-        compress_ores = 'compress_ores' in request.POST
+    if is_post:
+        destination_station = int(input_data.get('destination_station'))
+        source_stations = [int(i) for i in input_data.get('source_stations')]
+        multiplier = int(input_data.get('multiplier'))
+        buy_all_tolerance = float(input_data.get('buy_all_tolerance'))
+        compress_ores = input_data.get('compress_ores')
 
         for id in source_stations:
             stations[id].z_source_selected = True
@@ -546,6 +627,17 @@ def pricer(request):
     station_orders = dict()
     items_list = []
     bad_lines = dict()
+
+    ore_stock = dict()
+
+    if existing_ores is not None:
+        for kind, parsed in existing_ores['results']:
+            for entry in iter_types(kind, parsed):
+                name = entry['name'].lower()
+                if name not in ore_stock:
+                    ore_stock[name] = 0
+                ore_stock[name] += entry.get('quantity', 1)
+
     if parse_results is not None:
         for kind, parsed in parse_results['results']:
             for entry in iter_types(kind, parsed):
@@ -592,7 +684,7 @@ def pricer(request):
                 for i in mineral_items:
                     items.append(i)
             else:
-                all_items, fulfilled_all, mineral_value_ratio, compressed_minerals, total_mineral_price = results
+                all_items, fulfilled_all, mineral_value_ratio, compressed_minerals, total_mineral_price, compress_method = results
 
             if not fulfilled_all:
                 for mineral in compressed_minerals:
@@ -668,30 +760,45 @@ def pricer(request):
 
     bad_lines = [k for k, v in bad_lines.items() if v]
 
+    output = output_data if output_data is not None else dict(
+		items_list=items_list,
+    		station_orders=station_orders,
+		text_input=text_input,
+		compress_method=compress_method,
+		compress_ores=compress_ores,
+		bad_lines=bad_lines,
+		has_unfulfilled=has_unfulfilled,
+		parse_results=parse_results,
+		total_best=total_best,
+		total_worst=total_worst,
+		total_volume=total_volume,
+		total_shipping=total_shipping,
+		total_price_with_shipping=total_price_with_shipping,
+		price_last_updated=price_last_updated,
+		stations=stations,
+		multiplier=multiplier,
+		buy_all_tolerance=buy_all_tolerance,
+		compressed_minerals=compressed_minerals,
+		mineral_value_ratio=mineral_value_ratio,
+		total_mineral_price=total_mineral_price,
+		reprocess_pct=reprocess_pct
+	    ) 
+
+    if is_post and key is None:
+        link = Links()
+        link.page = 'pricer'
+	link.path = link.genKey()
+        link.input_data = json.dumps(input_data)
+        #link.output_data = json.dumps(output)
+	link.save()
+
+	output['link_key'] = link.path
+    else:
+	output['link_key'] = key
+
     out = render_page(
         'pgsus/pricer.html',
-        dict(
-            items_list=items_list,
-            station_orders=station_orders,
-            text_input=text_input,
-            compress_ores=compress_ores,
-            bad_lines=bad_lines,
-            has_unfulfilled=has_unfulfilled,
-            parse_results=parse_results,
-            total_best=total_best,
-            total_worst=total_worst,
-            total_volume=total_volume,
-            total_shipping=total_shipping,
-            total_price_with_shipping=total_price_with_shipping,
-            price_last_updated=price_last_updated,
-            stations=stations,
-            multiplier=multiplier,
-            buy_all_tolerance=buy_all_tolerance,
-            compressed_minerals=compressed_minerals,
-            mineral_value_ratio=mineral_value_ratio,
-            total_mineral_price=total_mineral_price,
-            reprocess_pct=reprocess_pct
-        ),
+	output,
         request,
     )
 
@@ -1053,3 +1160,4 @@ def perms(request):
         ),
         request
     )
+

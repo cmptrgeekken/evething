@@ -611,7 +611,7 @@ SELECT
    COALESCE(i.sell_fivepct_price,0) AS fivepct_price, 
    COALESCE(MAX(pm.cross_region_collateral), 0.02) AS shipping_collateral,
    COALESCE(MAX(pm.cross_region_m3), 400) AS shipping_m3,
-   ROUND(i.sell_fivepct_price*COALESCE(MAX(pm.cross_region_collateral), 0.02)+i.volume*COALESCE(MAX(pm.cross_region_m3), 400), 2) AS jita_shipping
+   ROUND(i.sell_fivepct_price*COALESCE(MAX(pm.cross_region_collateral), 0.02)+IF(i.packaged_volume > 0,i.packaged_volume,i.volume)*COALESCE(MAX(pm.cross_region_m3), 400), 2) AS jita_shipping
 FROM thing_itemstationseed iss
 LEFT JOIN thing_stationorder so ON iss.item_id=so.item_id AND iss.station_id=so.station_id AND so.buy_order=0
 LEFT JOIN thing_station s ON s.id=iss.station_id
@@ -880,7 +880,7 @@ update thing_marketorder mo INNER JOIN thing_stationorder so ON mo.order_id=so.o
 """
 
 order_calculateshipping = """
-    SELECT COALESCE(i.volume * CASE WHEN stdest.id=storig.id THEN 0
+    SELECT COALESCE(IF(i.packaged_volume > 0, i.packaged_volume,i.volume) * CASE WHEN stdest.id=storig.id THEN 0
                      WHEN sydest.id=syorig.id THEN in_system_m3
                      WHEN cdest.region_id=corig.region_id THEN in_region_m3
                      ELSE cross_region_m3 END
@@ -1103,11 +1103,11 @@ GROUP BY t.item_name
 ) inner_group
 GROUP BY inner_group.item_id
 ) outer_group
-LEFT JOIN thing_itemmaterial im ON im.item_id=outer_group.item_id
+LEFT JOIN thing_itemmaterial im ON im.item_id=outer_group.item_id and im.active=1
 LEFT JOIN thing_item imi ON im.material_id=imi.id
 WHERE item_name NOT LIKE '%Fuel Block'
 GROUP BY outer_group.item_id) material_group
-LEFT JOIN thing_itemmaterial im ON im.item_id=material_group.item_id
+LEFT JOIN thing_itemmaterial im ON im.item_id=material_group.item_id and im.active=1
 LEFT JOIN thing_item imi ON im.material_id=imi.id
 ) final_group
 GROUP BY final_group.item_name
@@ -1320,6 +1320,25 @@ FROM thing_esijournal j
     LEFT JOIN thing_mapdenormalize md2 on md2.item_id=sy2.id
 WHERE ref_type='structure_gate_jump' AND j.amount >= %s
 ORDER BY date DESC;
+"""
+
+jumpbridge_usage_fees_fast = """
+SELECT j.date,
+       COALESCE(IF(ch.name = '*UNKNOWN*', NULL, ch.name), CONCAT('ID: ', j.first_party_id)) AS `char`,
+       COALESCE(IF(co.name='*UNKNOWN*', NULL, co.name), CONCAT('ID: ', ch.corporation_id)) as corp,
+       a.name as alliance_name,
+       FORMAT(j.amount,0) as fee,
+       COALESCE(st1.name, CONCAT('ID: ', j.context_id)) as gate_name,
+       FORMAT(j.amount/200,0) AS lo_used,
+       '' AS rough_mass,
+       '' AS possible_ships
+FROM thing_esijournal j
+    LEFT JOIN thing_character ch on ch.id = j.first_party_id
+    LEFT JOIN thing_corporation co ON co.id=ch.corporation_id
+    LEFT JOIN thing_alliance a on co.alliance_id=a.id
+    LEFT JOIN thing_station st1 on st1.id=j.context_id
+WHERE ref_type='structure_gate_jump' AND j.amount >= %s
+ORDER BY date DESC
 """
 
 jumpgate_create_statement = """

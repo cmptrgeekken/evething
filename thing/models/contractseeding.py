@@ -43,7 +43,7 @@ class ContractSeeding(models.Model):
     PRIORITIES = ['Low', 'Medium', 'High']
 
     id = models.AutoField(primary_key=True)
-    char = models.ForeignKey(Character, on_delete=models.DO_NOTHING)
+    char = models.ForeignKey(Character, on_delete=models.DO_NOTHING, db_column='char_id')
     corp = models.ForeignKey(Corporation, on_delete=models.DO_NOTHING)
     station = models.ForeignKey(Station, on_delete=models.DO_NOTHING)
     name = models.CharField(max_length=4000)
@@ -56,7 +56,7 @@ class ContractSeeding(models.Model):
     current_qty = models.IntegerField(default=0)
     last_modified = models.DateTimeField(default=datetime.datetime.now)
     qty_last_modified = models.DateTimeField(default=None)
-    last_modified_by = models.ForeignKey(Character, on_delete=models.DO_NOTHING, db_column='last_modified_by')
+    last_modified_by = models.ForeignKey(Character, on_delete=models.DO_NOTHING, db_column='last_modified_by', related_name='last_modified_by')
     alliance_qty = models.IntegerField(default=0)
     corp_qty = models.IntegerField(default=0)
 

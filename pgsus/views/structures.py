@@ -368,7 +368,7 @@ class MoonDetails:
         if self.remaining_volume > 0:
             self.remaining_isk_per_m3 = self.remaining_value / float(self.remaining_volume)
 
-        self.remaining_pct = float(self.remaining_value / self.total_value)
+        self.remaining_pct = float(self.remaining_value / self.total_value) if self.total_value > 0 else .5
 
         if self.remaining_pct > 0.9:
             self.remaining_pct = 1
@@ -794,7 +794,7 @@ def refinerylist(request):
     constellation_list = set()
     system_list = set()
 
-    type_list = ['N64', 'R64', 'R32', 'R16', 'S16', 'R4', 'Athena']
+    type_list = ['N64', 'R64', 'R32', 'R16', 'S16', 'R4', 'RIG', 'Athena']
 
     region_filter = request.GET.get('region')
     constellation_filter = request.GET.get('constellation')
@@ -1210,8 +1210,9 @@ def high_gate_usage(request):
     cur = get_cursor()
 
     min = request.GET.get('min') or 1000000
+    fast = request.GET.get('fast') or False
 
-    cur.execute(queries.jumpbridge_usage_fees, [int(min)]);
+    cur.execute(queries.jumpbridge_usage_fees if fast is False and min >= 250000 else queries.jumpbridge_usage_fees_fast, [int(min)]);
     rows = cur.fetchall()
     
     response = HttpResponse(content_type='text/csv')

@@ -45,7 +45,7 @@
                   <div class="col-sm-8">
                       <select name="station_id" id="station_id" class="js-select2 input-lg" required="required">
                           {% for sta in stations %}
-                          <option value="{{sta.id}}"{% if sta.z_seed_selected %} selected{% endif %}>{{ sta.get_display_name() }}</option>
+                          <option value="{{sta.id}}"{% if sta.z_seed_selected %} selected{% endif %}>{{ sta.name }}</option>
                           {% endfor %}
                       </select>
                   </div>

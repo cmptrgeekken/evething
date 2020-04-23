@@ -78,20 +78,6 @@ class EsiContracts(APITask):
                         if success:
                             seen_corps.add(char.corporation_id)
 
-        self.update_seeding()
-
-    def update_seeding(self):
-        seed_items = ContractSeeding.objects.filter(is_active=True)
-
-        for item in seed_items:
-            item.current_qty = item.get_stock_count()
-            item.corp_qty = item.get_corp_stock()
-            item.alliance_qty = item.get_alliance_stock()
-            item.qty_last_modified = datetime.datetime.now()
-            item.estd_price = item.get_estd_price()
-            item.save()
-
-
     def import_contracts(self, character, for_corp):
         char_id = character.id
         corp_id = character.corporation_id
