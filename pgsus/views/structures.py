@@ -49,6 +49,8 @@ from ics import Calendar, Event
 import uuid
 import random
 
+import urllib
+
 
 def mooncomp(request):
     if 'char' not in request.session:
@@ -398,6 +400,8 @@ def extractions(request):
 
     ore_values = dict()
 
+    ical_cid = 'http://pgsus.space/extractions?format=ical'
+
     if 'char' in request.session:
         charid = request.session['char']['id']
         waypoint_scope = CharacterApiScope.objects.filter(character_id=charid, scope='esi-ui.write_waypoint.v1').first()
@@ -414,11 +418,16 @@ def extractions(request):
 
     ticker = request.GET.get('ticker') or 'THXFC'
 
+    ical_cid += '&ticker=%s' % ticker
+
     moon_type = (request.GET.get('type') or 'public').lower()
     if role is None and moon_type == 'n64':
         moon_type = 'public'
     #elif moon_type.lower() == 'r16':
     #    moon_type = 's16'
+
+    if moon_type != 'n64':
+        ical_cid += '&type=%s' % moon_type
 
     if moon_type == 'n64':
         min_date = min_date_rigged
@@ -427,9 +436,20 @@ def extractions(request):
         max_visible_days = 25
     
     region_filter = request.GET.get('region')
-    constellation_filter = request.GET.get('constellation')
-    system_filter = request.GET.get('system')
+    if region_filter is not None:
+        ical_cid += '&region=%s' % region_filter
 
+    constellation_filter = request.GET.get('constellation')
+    if constellation_filter is not None:
+        ical_cid += '&constellation=%s' % constellation_filter
+
+    system_filter = request.GET.get('system')
+    if system_filter is not None:
+        ical_cid += '&system_filter=%s' % system_filter
+
+    in_range_filter = request.GET.get('in_range_of')
+    if in_range_filter is not None:
+        ical_cid += '&in_range_of=%s' % in_range_filter
     
     max_date = datetime.datetime.utcnow() + datetime.timedelta(days=max_visible_days)
     cache_key = 'extractions-%s-%s-%d' % (ticker, moon_type, max_visible_days)
@@ -444,6 +464,11 @@ def extractions(request):
     region_list = set()
     constellation_list = set()
     system_list = set()
+
+    valid_systems = None
+    if in_range_filter is not None:
+        in_range_systems = dictfetchall(queries.in_range_systems % in_range_filter)
+        valid_systems = set([sy['name'] for sy in in_range_systems])
 
 
     if moon_list is None:
@@ -521,18 +546,26 @@ def extractions(request):
         if system_filter and m.structure.station.system.name != system_filter:
             continue
 
+        if valid_systems is not None and m.structure.station.system.name not in valid_systems:
+            continue
+
+
         filtered_list.append(m)
 
 
     if 'format' in request.GET and request.GET.get('format') == 'ical':
+        filter_label = None
+        if in_range_filter is not None:
+            filter_label = 'in range of %s' % in_range_filter
+
         cal = Calendar(imports=[
             'BEGIN:VCALENDAR',
             'PRODID:-//PGSUS//Penny\'s Flying Circus//EN',
-            'X-WR-CALNAME:%s Moon Extractions' % ticker,
+            'X-WR-CALNAME:%s Moon Extractions %s' % (ticker, filter_label),
             'X-PUBLISHED-TTL:PT1H',
             'END:VCALENDAR',
         ])
-        for l in moon_list:
+        for l in filtered_list:
             base_url = request.build_absolute_uri(reverse(extractions))
 
             event_url = "%s?ticker=%s&event=" % (base_url, ticker)
@@ -565,7 +598,8 @@ def extractions(request):
             region=region_filter,
             constellation=constellation_filter,
             system=system_filter,
-            moon_type=moon_type
+            moon_type=moon_type,
+            ical_url='https://calendar.google.com/calendar/r?cid=%s' % urllib.quote(ical_cid)
         ),
         request,
     )

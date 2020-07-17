@@ -8,6 +8,7 @@ import datetime
 from django.shortcuts import redirect, render
 
 from django.core.urlresolvers import reverse
+from django.utils.text import slugify
 
 from django.http import HttpResponse
 
@@ -15,6 +16,7 @@ import json
 
 from pgsus.parser import parse, iter_types
 import evepaste
+
 
 def contractseedapi(request):
     data = dictfetchall("select c.id, c.name, c.current_qty, c.min_qty, s.name AS station_name, CASE WHEN priority = 0 THEN 'Low' WHEN priority = 1 THEN 'Medium' WHEN priority = 2 THEN 'High' END AS priority, c.qty_last_modified as last_updated from thing_contractseeding c inner join thing_station s on c.station_id=s.id where c.is_private=0 and c.is_active=1 order by s.name, c.priority DESC, c.name;")
@@ -44,14 +46,53 @@ def contractseedlist(request):
 
     station_lists = dict()
 
-    for list in public_lists:
-        if list.station.system.name not in station_lists:
-            station_lists[list.station.system.name] = []
+    for l in public_lists:
+        sname = l.station.short_name or l.station.name
+        if sname not in station_lists:
+            station_lists[sname] = []
 
-        station_lists[list.station.system.name].append(list)
+        station_lists[sname].append(l)
 
     station_lists = station_lists.items()
-    station_lists.reverse()
+    #station_lists.reverse()
+
+    if request.GET.get('export') == 'json':
+        slug = request.GET.get('slug')
+        station_list = None
+        for sname, l in station_lists:
+            if slugify(sname) == slug:
+                station_list = l
+                break
+        if station_list is not None:
+            data = dict()
+
+            data['station'] = sname
+            data['fits'] = list()
+            for l in station_list:
+                entry = dict()
+                entry['name'] = l.name
+                entry['min_qty'] = l.min_qty
+                if l.priority == 0:
+                    entry['priority'] = 'Low'
+                elif l.priority == 1:
+                    entry['priority'] = 'Medium'
+                else:
+                    entry['priority'] = 'High'
+                entry['last_updated'] = l.last_modified.strftime('%Y-%m-%d %H:%M:%S')
+                entry['items'] = list()
+
+                for i in l.get_items():
+                    item = dict()
+                    item['id'] = i.item.id
+
+                    item['name'] = i.item.name
+                    item['identifier'] = i.required
+                    item['min_qty'] = i.min_qty
+
+                    entry['items'].append(item)
+                data['fits'].append(entry)
+            return HttpResponse(json.dumps(data, indent=4), content_type='application/json')
+
 
     out = render_page(
         'pgsus/contractseedlist.html',

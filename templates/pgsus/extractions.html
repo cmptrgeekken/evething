@@ -127,10 +127,13 @@
         </div>
 
     {% endif %}
-        <div class="col-lg-2">
-            <a href="https://calendar.google.com/calendar/r?cid=http://pgsus.space/extractions?format%3Dical" target="_blank" title="Add to Google Calendar">
+        <div class="col-lg-1">
+            <a href="{{ ical_url }}" target="_blank" title="Add to Google Calendar">
                 <img src="{{ STATIC_URL }}pgsus/img/google-calendar.png" width="32" height="32" alt=""/>
             </a>
+        </div>
+        <div class="col-lg-2" style="line-height: 2em;">
+            Number of Moons: {{ moon_list | length }}
         </div>
         <div class="col-lg-12">
             <div class="row">

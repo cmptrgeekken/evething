@@ -2,7 +2,33 @@
 {% import 'macros/common.html' as common %}
   
 {% block title %}Contract Fits{% endblock %}
+{% block extra_js %}
+<script type="text/javascript">
+$('a.station-tab-link[data-toggle]').on("click", function (e) {
+    var href = $(this).attr("href");
 
+    history.pushState(null, null, href);
+
+    var showForId = $(this).prop('id');
+
+    $('a[id="' + showForId + '"').tab('show');
+    $('.tab-pane').removeClass('active');
+    $('.tab-pane[id="' + showForId + '"]').addClass('active');
+
+    e.preventDefault();
+});
+
+  $(document).ready(() => {
+    var url = window.location.href;
+    if (url.indexOf("#") > 0){
+      var activeTab = url.substring(url.indexOf("#") + 1);
+      if (activeTab) {
+        $('li.station-entry:not(.active) a[href="#'+activeTab+'"]').click();
+      }
+    }
+  });
+</script>
+{% endblock %}
 {% block content %}
 <section class="bg-19 bg-center bg-cover">
     <div>
@@ -23,8 +49,8 @@
                     <div class="col-lg-12">
                         <ul class="nav nav-tabs" style="border-bottom: 0;">
                             {% for station,lists in station_lists %}
-                                <li class="{% if loop.index == 1 %}active{% endif %}">
-                                    <a href="#content-{{ station|slugify }}" data-toggle="tab">{{ station }}</a>
+                                <li class="station-entry{% if loop.index == 1 %} active{% endif %}">
+                                    <a class="station-tab-link" href="#content-{{ station|slugify }}" data-toggle="tab">{{ station }}</a>
                                 </li>
                             {% endfor %}
                             </ul>
@@ -35,7 +61,10 @@
                                 <div class="tab-pane{% if loop.index == 1 %} active{% endif %}" id="content-{{ station|slugify }}">
                                     <table class="table table-bordered">
                                         <tr>
-                                            <th>Fit Name</th>
+                                            <th>
+                                                Fit Name
+                                                <i><sup><a href="?export=json&slug={{ station|slugify }}">json</a></sup></i>
+                                            </th>
                                             <th style="text-align: center;" width="20%" colspan="2">Quantity</th>
                                             <th>Priority</th>
                                             <th>Est. Seed Cost</th>

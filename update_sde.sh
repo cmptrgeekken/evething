@@ -18,10 +18,17 @@ fi
 if [ $local_ctime = false ] || [ $local_ctime -lt $remote_ctime ]; then
     cd /home/kbeck/projects/thingenv/evething
     curl -sS $remote_file > $local_file
-    bzip2 -dk -f $local_file
-    force="--force"
-    source ../bin/activate
-    python import.py
+    FILESIZE=$(stat -c%s "$local_file")
+
+    if [ $FILESIZE -gt 78643200 ]; then
+        bzip2 -dk -f $local_file
+        source ../bin/activate
+        python import.py
+
+        exit 0
+    else
+        rm "$local_file"
+    fi
 fi
 
 if [ "$force" ==  "--force" ]; then

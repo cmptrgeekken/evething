@@ -80,31 +80,12 @@ def index(request):
     #return out
 
 def stats(request):
-    fuel_purchase_stats = dictfetchall(queries.fuelblock_purchase_stats)
-    fuel_purchase_ttl = dictfetchall(queries.fuelblock_purchase_ttl)
-    fuel_pending_stats = dictfetchall(queries.fuelblock_pending_stats)
-    fuel_job_stats = dictfetchall(queries.fuelblock_job_stats)
-    courier_completed_stats = dictfetchall(queries.courier_completed_stats)
-    courier_pending_stats = dictfetchall(queries.courier_pending_stats)
-    buyback_completed_stats = dictfetchall(queries.buyback_completed_stats)
-    buyback_pending_stats = dictfetchall(queries.buyback_pending_stats)
-
-
-
 
     out = render_page(
         'pgsus/stats.html',
         dict(
             login_prompt=request.GET.get('login') == '1',
             thankyou=request.GET.get('thankyou') == '1',
-            fuel_purchase_stats=fuel_purchase_stats,
-            fuel_purchase_ttl=fuel_purchase_ttl[0],
-            fuel_pending_stats=fuel_pending_stats,
-            fuel_job_stats=fuel_job_stats,
-            courier_completed_stats=courier_completed_stats[0],
-            courier_pending_stats=courier_pending_stats[0],
-            buyback_completed_stats=buyback_completed_stats[0],
-            buyback_pending_stats=buyback_pending_stats[0],
         ),
         request,
     )
@@ -556,7 +537,7 @@ def pricer(request, key):
 
     if is_post:
         text_input = input_data.get('text_input')
-        existing_ores = input_data.get('existing_ores')
+        existing_ores = input_data.get('existing_ores') or ''
 
         try:
             parse_results = parse(text_input)

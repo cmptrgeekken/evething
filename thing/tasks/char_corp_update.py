@@ -44,8 +44,6 @@ class CharCorpUpdate(APITask):
     def run(self):
         self.init()
 
-        count = Character.objects.filter(Q(corporation_id=None) | Q(last_updated__lte=datetime.datetime.now() - datetime.timedelta(days=1)),not_found=False).exclude(name='*UNKNOWN*').count()
-
         self.doit()
 
     def doit(self):

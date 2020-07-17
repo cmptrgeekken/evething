@@ -1132,11 +1132,14 @@ SELECT c.contract_id, cs.id AS csid, COUNT(DISTINCT ci.item_id) AS matching_valu
 FROM thing_contract c
         INNER JOIN thing_contractitem ci ON c.id=ci.contract_id
         INNER JOIN thing_contractseeding cs ON c.start_station_id=cs.station_id
+        LEFT JOIN thing_corporation co ON co.id = c.assignee_id
+        LEFT JOIN thing_alliance al ON al.id = c.assignee_id
     WHERE 
 		ci.item_id IN (SELECT csi.item_id FROM thing_contractseedingitem csi WHERE csi.contractseeding_id=cs.id AND csi.required=1)
         AND c.status='outstanding' 
         AND cs.id = %d
         AND cs.is_active=1
+        AND ( (co.id IS NOT NULL and co.alliance_id=99005338) OR (co.id IS NULL AND al.id = 99005338) ) 
     GROUP BY c.contract_id, cs.id) search ON c.contract_id=search.contract_id AND search.csid=cs.id
 WHERE 
 	cs.id = search.csid
@@ -1320,6 +1323,14 @@ FROM thing_esijournal j
     LEFT JOIN thing_mapdenormalize md2 on md2.item_id=sy2.id
 WHERE ref_type='structure_gate_jump' AND j.amount >= %s
 ORDER BY date DESC;
+"""
+
+in_range_systems = """
+SELECT sy2.id, sy2.name
+FROM thing_system sy1 INNER JOIN thing_mapdenormalize md1 ON md1.item_id=sy1.id,
+ thing_system sy2 INNER JOIN thing_mapdenormalize md2 ON md2.item_id=sy2.id
+ WHERE sy1.name='%s'
+       AND (SQRT(POW(md1.x-md2.x,2) + POW(md1.y-md2.y,2) + POW(md1.z-md2.z,2))/9460730472580800) <= 6
 """
 
 jumpbridge_usage_fees_fast = """

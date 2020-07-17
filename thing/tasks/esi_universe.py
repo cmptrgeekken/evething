@@ -109,6 +109,42 @@ class EsiUniverse(APITask):
                     db_item.icon_id = int(item['icon_id']) if 'icon_id' in item else None
                     db_item.published = bool(item['published'])
 
+
+                    if 'dogma_effects' in item:
+                        slot = None
+                        for e in item['dogma_effects']:
+                            if e['effect_id'] == 11:
+                                slot = 'loPower'
+                            elif e['effect_id'] == 12:
+                                slot = 'hiPower'
+                            elif e['effect_id'] == 13:
+                                slot = 'medPower'
+                            elif e['effect_id'] == 2663:
+                                slot = 'rigSlot'
+                            elif e['effect_id'] == 3772:
+                                slot = 'subSystem'
+                            elif e['effect_id'] == 6306:
+                                slot = 'serviceSlot'
+
+                        db_item.item_slot = slot
+
+                    if 'dogma_attributes' in item:
+                        for a in item['dogma_attributes']:
+                            aid = a['attribute_id']
+                            av = a['value']
+                            if aid == 12:
+                                db_item.lo_slots = av
+                            elif aid == 13:
+                                db_item.med_slots = av
+                            elif aid == 14:
+                                db_item.hi_slots = av
+                            elif aid == 1137 or aid == 1154:
+                                db_item.rig_slots = av
+                            elif aid == 1367:
+                                db_item.subsystem_slots = av
+                            elif aid == 2056:
+                                db_item.service_slots = av
+
                     try:
                         db_item.save()
                     except Exception, e:
