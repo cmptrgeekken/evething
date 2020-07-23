@@ -50,8 +50,8 @@ class EsiAssets(APITask):
     def run(self):
         self.init()
 
-        char_asset_scopes = CharacterApiScope.objects.filter(scope='esi-assets.read_assets.v1')
-        corp_asset_scopes = CharacterApiScope.objects.filter(scope='esi-assets.read_corporation_assets.v1')
+        char_asset_scopes = CharacterApiScope.objects.filter(scope='esi-assets.read_assets.v1',enabled=True)
+        corp_asset_scopes = CharacterApiScope.objects.filter(scope='esi-assets.read_corporation_assets.v1', enabled=True)
 
         seen_corps = set()
 
@@ -63,9 +63,11 @@ class EsiAssets(APITask):
                         and char.corporation_id is not None:
                     success = self.import_assets(char, True)
                     if not success:
+                        self.scope_failure(scope)
                         continue
 
                     self.import_asset_locations(char, True)
+
 
                     seen_corps.add(char.corporation_id)
                     if char.corporation.alliance_id is not None:
@@ -150,7 +152,7 @@ class EsiAssets(APITask):
 
             success, data, headers = self.fetch_esi_url(initial_url, character, headers_to_return=['x-pages', 'last-modified'])
             if not success:
-                self.log_error('Failed to load assets for %d' % (char.corporation.name if is_corporation else char.name))
+                self.log_error('Failed to load assets for %s (%s)' % (character.corporation.name if is_corporation else '', character.name))
                 return False
 
             max_pages = int(headers['x-pages']) if 'x-pages' in headers else 1

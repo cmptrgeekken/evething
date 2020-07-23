@@ -1,0 +1,488 @@
+{% extends "web_template.html" %}
+{% import 'macros/common.html' as common %}
+  
+{% block title %}Public Contracts{% endblock %}
+{% block extra_css %}
+<style>
+    table>tbody>tr>td, table>thead>tr>td {
+        line-height: 1 !important;
+    }
+
+    .table-danger {
+        background-color: #f5c6cb;
+    }
+
+    .table-info {
+        background-color: #bee5eb;
+    }
+
+    .item-list td {
+        vertical-align: middle !important;
+    }
+</style>
+
+{% endblock %}
+{% block content %}
+<section class="bg-19 bg-center bg-cover">
+    <div>
+        <div class="container section-sm">
+            <h1 class="top-title">Public Contracts</h1>
+        </div>
+    </div>
+</section>
+
+<section class="container-fluid section-md">
+      <div class="row">
+        <div class="col-lg-3">
+            <h2>
+                Contract Search
+            </h2>
+            <div class="form-group">
+                <select id="type_id" class="js-select2 input-lg search_field" style="width: 260px">
+                    <option value="" selected="selected">All Items</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <select id="location_id" class="js-select2 input-lg search_field" style="width: 260px">
+                    <option value="" selected="selected">All Locations
+                </select>
+            </div>
+            <div class="form-group">
+                <select id="contract_type" class="js-select2 input-lg search_field" style="width: 260px">
+                    <option value="">Any Contract Type</option>
+                    <option value="wts">Want to Sell</option>
+                    <option value="wtb">Want to Buy</option>
+                    <option value="auction">Auctions</option>
+                    <option value="exclude_wtb">Exclude Want to Buy</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <select id="contract_status" class="js-select2 input-lg search_field" style="width: 260px">
+                    <option value="all">Any Status</option>
+                    <option value="outstanding" selected="selected">Outstanding</option>
+                    <option value="maybe_expired">Maybe Expired</option>
+                    <option value="maybe_fulfilled">Maybe Fulfilled</option>
+                    <option value="maybe_relisted">(Not Implemented) Maybe Relisted</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <select id="category_id" class="js-select2 input-lg search_field" style="width: 260px">
+                    <option value="" selected="selected">All Categories</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <select id="group_id" class="js-select2 input-lg search_field" style="width: 260px;">
+                    <option value="" selected="selected">All Groups</option>
+                </select>
+            </div>
+            <div class="form-group" style="display: none" id="bp-type">
+                <label class="col-sm-12 col-form-label">BP Type</label>
+                <div class="col-sm-3">
+                    <input type="radio" id="bps_to_include-both" name="bps_to_include"  checked="checked" value="both"/> <label for="bps_to_include-both">Both</label>
+                </div>
+                <div class="col-sm-3">
+                    <input type="radio" id="only_bpo" name="bps_to_include" class="search_field" value="bpo"/> <label for="only_bpo">BPO</label>
+                </div>
+                <div class="col-sm-3">
+                    <input type="radio" id="only_bpc" name="bps_to_include" class="search_field" value="bpc"/> <label for="only_bpc">BPC</label>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-6 col-form-label" for="exclude_multiple">Exclude Multiple:</label>
+                <div class="col-sm-1">
+                    <input id="exclude_multiple" class="search_field" type="checkbox" value="1">
+                </div>
+            </div>
+            <div class="form-group" style="display: none;">
+                <label class="col-sm-5 col-form-label" for="exact_type_match">Exact Type Match:</label>
+                <div class="col-sm-1">
+                    <input id="exact_type_match" class="search_field" type="checkbox" value="1">
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-12 col-form-label">Price (million)</label>
+                <div class="col-sm-3">
+                    <input type="number" min="1" id="min_price" class="search_field" style="width: 70px;" placeholder="Min" />
+                </div>
+                <div class="col-sm-3">
+                    <input type="number" min="1" id="max_price" class="search_field" style="width: 70px;" placeholder="Max" />
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-12 col-form-label">Security Filters</label>
+                <div class="col-sm-3">
+                    <input type="checkbox" id="security_high" class="search_field" checked="checked" value="1"> High
+                </div>
+                <div class="col-sm-3">
+                    <input type="checkbox" id="security_low" class="search_field" checked="checked" value="1"> Low
+                </div>
+                <div class="col-sm-3">
+                    <input type="checkbox" id="security_null" class="search_field" checked="checked" value="1"> Null
+                </div>
+            </div>
+            <div class="form-group">
+                <select id="issuer_id" class="js-select2 input-lg search_field" style="width: 260px;">
+                    <option value="" selected="selected">All Issuers</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <input type="submit" id="search" value="Search" />
+            </div>
+        </div>
+        <div class="col-lg-9" id="contract-table">
+            
+        </div>
+      </div>
+</section>
+{% endblock %}
+{% block extra_js %}
+<script src="{{ STATIC_URL}}js/handlebars.js"></script>
+<script type="text/x-handlebars-template" id="contract-table-tmpl">
+    {% raw %}
+    <table class="table table-condensed table-bordered table-striped">
+        <tr>
+            <th style="width:25%">You Get</th>
+            <th>They Get</th>
+            <th>Location</th>
+            <th>Issuer</th>
+            <th>Time Left</th>
+            <th>Last Seen</th>
+        </tr>
+        {{#each contracts}}
+        <tr>
+            <td id="contract-{{id}}">
+                {{#if has_reward }}
+                    <img src="/static/pgsus/img/isk.png" width="32"/>
+                    {{ reward_humanized }}
+                {{/if}}
+                {{#if wts_single}}
+                    <table>
+                        <tr>
+                            <td>
+                                <a href="javascript:void(0)" class="toggle-items" data-id="{{ id }}"> 
+                                    <img src="{{ wts_item.icon }}" alt="" style="margin-right: 3px;" />
+                                </a>
+                            </td>
+                            <td style="line-height: 1;">
+                                <a href="javascript:void(0)" class="toggle-items" data-id="{{ id }}"> 
+                                    {{ wts_item.type_name }}
+                                </a>
+                                <small>x{{ wts_item.quantity }}</small>
+                                {{#if wts_item.is_blueprint }}
+                                    {{#if wts_item.is_blueprint_copy}}
+                                        (Copy)
+                                        <br/><small><b>Copy:</b> Runs: {{ wts_item.runs }}, {{ wts_item.me }}ME/{{ wts_item.te }}TE</small>
+                                    {{else}}
+                                        <br/><small><b>Original:</b> {{ wts_item.me }}ME/{{ wts_item.te }}TE</small>
+                                    {{/if}}
+                                {{/if}}
+                                {{#if title }}
+                                    <br/><small><b>Title:</b> {{ title }}</small>
+                                {{/if}}
+                            </td>
+                        </tr>
+                    </table>
+                {{else}}
+                    {{#if items_offered }}
+                        <a href="javascript:void(0)" class="toggle-items" data-id="{{ id }}">
+                            [Multiple Items]
+                        </a>
+                        <br/><small><b>Items: </b> {{ items_offered_count }}</small>
+                    {{/if}}
+                    {{#if title }}
+                        <div>
+                            <small><b>Desc:</b> {{ title }}</small>
+                        </div>
+                    {{/if}}
+                {{/if}}
+            </td>
+            <td>
+                {{#if has_price }}
+                    <img src="/static/pgsus/img/isk.png" width="32"/>
+                    {{ price_humanized }}
+                {{/if}}
+                {{#if wtb_single}}
+                <table>
+                    <tr>
+                        <td>
+                            <a href="javascript:void(0)" class="toggle-items" data-id="{{ id }}"> 
+                                <img src="{{ wtb_item.icon }}" alt="" style="margin-right: 3px;" />
+                            </a>
+                        </td>
+                        <td style="line-height: 1;">
+                            <a href="javascript:void(0)" class="toggle-items" data-id="{{ id }}"> 
+                                {{ wtb_item.type_name }}
+                            </a>
+                            <small>x{{ wtb_item.quantity }}</small>
+                            {{#if wtb_item.is_blueprint }}
+                                {{#if wtb_item.is_blueprint_copy}}
+                                    (Copy)
+                                    <br/><small><b>Copy:</b> Runs: {{ wtb_item.runs }}, {{ wtb_item.me }}ME/{{ wtb_item.te }}TE</small>
+                                {{else}}
+                                    <br/><small><b>Original:</b> {{ wtb_item.me }}ME/{{ wtb_item.te }}TE</small>
+                                {{/if}}
+                            {{/if}}
+                        </td>
+                    </tr>
+                </table>
+            {{else}}
+                {{#if wtb_multiple}}
+                    <div>
+                        <a href="javascript:void(0)" class="toggle-items" data-id="{{ id }}">
+                            [Multiple Items]
+                        </a>
+                        <br/><small><b>Items: </b> {{ items_requested_count }}</small>
+                        {{#if title }}
+                            <br/><small><b>Desc:</b> {{ title }}</small>
+                        {{/if}}
+                    </div>
+                {{/if}}
+            {{/if}}
+            </td>
+            <td>
+                {{ start_system_name }}
+            </td>
+            <td>
+                {{#if for_corp}}
+                    {{ issuer_corp_name }}
+                {{else}}
+                    <img src="https://images.evetech.net/characters/{{ issuer_char_id }}/portrait?size=32" width="32" />
+                    {{ issuer_char_name }}
+                {{/if}}
+            </td>
+            <td><time class="timeago" datetime="{{ date_expired_fmt }}">{{ date_expired_fmt }}</time></td>
+            <td><time class="timeago" datetime="{{ date_lastseen_fmt }}">{{ date_lastseen_fmt }}</time></td>
+        </tr>
+        <tr id="items-{{id}}" class="item-list" style="display:none;">
+            <td colspan="7">
+                {{#if has_price }}
+                    <h3>You will pay: <img src="/static/pgsus/img/isk.png" width="32"/><span class="alert-danger">{{ price_humanized }} ISK</span></h3>
+                {{/if}}
+                {{#if has_reward }}
+                    <h3>You will receive: <img src="/static/pgsus/img/isk.png" width="32"/><span class="alert-success">{{ reward_humanized }} ISK</span></h3>
+                {{/if}}
+                {{#if items_requested }}
+                <h4>Items you'll provide...</h4>
+                <table class="table table-striped table-bordered table-condensed">
+                    <tr>
+                        <th></th>
+                        <th>Item</th>
+                        <th>Type</th>
+                        <th>Category</th>
+                    </tr>
+                    {{#each items_requested}}
+                    <tr class="table-danger">
+                        <td>{{inc @index}}</td>
+                        <td>
+                            <table>
+                                <tr>
+                                    <td><img src="{{ icon }}" width="32" style="margin-right: 3px;"/></td>
+                                    <td style="line-height: 1;">
+                                        {{ type_name }} <small>x{{ quantity }}</small>
+                                        {{#if is_blueprint_copy }}
+                                            <br/><small><b>Copy:</b> Runs: {{ runs }}, {{ me }}ME/{{ te }}TE</small>
+                                        {{else}}
+                                            {{#if is_blueprint }}
+                                                <br/><small><b>Original:</b> ME{{me}}/TE{{te}}</small>
+                                            {{/if}}
+                                        {{/if}}
+                                        
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                        <td>
+                            {{ group_name }}
+                        </td>
+                        <td>
+                            {{ category_name }}
+                        </td>
+                    </tr>
+                    {{/each}}
+                </table>
+                {{/if}}
+
+                {{#if items_offered}}
+                <h4>Items you'll receive...</h4>
+                <table class="table table-striped table-bordered table-condensed">
+                    <tr>
+                        <th></th>
+                        <th>Item</th>
+                        <th>Type</th>
+                        <th>Category</th>
+                    </tr>
+                    {{#each items_offered}}
+                    <tr class="table-info">
+                        <td>{{inc @index}}</td>
+                        <td>
+                            <table>
+                                <tr>
+                                    <td><img src="{{ icon }}" width="32" style="margin-right: 3px;"/></td>
+                                    <td style="line-height: 1;">
+                                        {{ type_name }} <small>x{{quantity}}</small>
+                                        {{#if is_blueprint_copy }}
+                                            <br/><small><b>Copy:</b> Runs: {{ runs }}, {{ me }}ME/{{ te }}TE</small>
+                                        {{else}}
+                                            {{#if is_blueprint }}
+                                                <br/><small><b>Original:</b> ME{{me}}/TE{{te}}</small>
+                                            {{/if}}
+                                        {{/if}}
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                        <td>
+                            {{ group_name }}
+                        </td>
+                        <td>
+                            {{ category_name }}
+                        </td>
+                    </tr>
+
+                    {{/each}}
+
+                </table>
+                {{/if}}
+            </td>
+        </tr>
+
+        {{/each}}
+    </table>
+    {% endraw %}
+</script>
+<script>
+$(function(){
+    var contractListTemplate = Handlebars.compile($('#contract-table-tmpl').html())
+    Handlebars.registerHelper("inc", function(value, options)
+    {
+        return parseInt(value) + 1;
+    });
+    $('#search').on('click', function() {
+        var searchFields = $('.search_field');
+
+        var params = [];
+        searchFields.each(function() {
+            var $this = $(this);
+
+            var selected = false;
+            if ($this.attr('type') == 'checkbox' || $this.attr('type') == 'radio') {
+                selected = $this.is(':checked');
+            } else if ($this.val()) {
+                selected = $this.val();
+            }
+
+            if (selected) {
+                params.push($this.attr('id') + '=' + $this.val());
+            }
+        });
+
+        var searchUrl = '/api/publiccontracts?' + params.join('&');
+
+        $.get(searchUrl, function(r) {
+            $('#contract-table').html(contractListTemplate(r));
+            var strs = jQuery.timeago.settings.strings
+            for(var str in strs) {
+                if (!strs.hasOwnProperty(str)) {
+                    continue;
+                }
+
+                var val = strs[str];
+                if (val && val.replace) {
+                    strs[str] = val.replace('about ', '');
+                }
+            }
+            strs['suffixFromNow'] = ''
+
+            $('.timeago').timeago()
+        });
+    });
+
+    $('#contract-table').on('click', '.toggle-items', function() {
+        var target = $('#items-' + $(this).data('id'));
+        $('.item-list').not(target).hide();
+        target.toggle();
+    });
+
+    var mapping = {
+        '#type_id': {
+            url: '/api/items',
+            placeholder: 'Item'
+        },
+        '#location_id': {
+            url: '/api/locations',
+            placeholder: 'Location'
+        },
+        '#category_id': {
+            url: '/api/categories',
+            placeholder: 'Category',
+            minimumInputLength: 0
+        },
+        '#group_id': {
+            url: function() {
+                return '/api/groups?category_id=' + $('#category_id').val()
+            },
+            placeholder: 'Group',
+            dependsOn: '#category_id',
+            minimumInputLength: 0
+        },
+        '#issuer_id': {
+            url: '/api/issuers',
+            placeholder: 'Issuer'
+        }
+    };
+
+    for(var id in mapping) {
+        if (!mapping.hasOwnProperty(id)) {
+            continue;
+        }
+
+        var entry = mapping[id];
+
+        var target = $('.js-select2' + id);
+
+        target.select2({
+            ajax: {
+                url: entry.url,
+                dataType: 'json',
+                delay: 250,
+                processResults: function(data) {
+                    return {
+                        results: $.map(data.response, function (i) {
+                            return {
+                                text: i.name,
+                                id: i.id
+                            }
+                        })
+                    }
+                }
+            },
+            allowClear: true,
+            placeholder: entry.placeholder,
+            minimumInputLength: entry.minimumInputLength === undefined ? 3 : entry.minimumInputLength
+        });
+
+        if (entry.dependsOn) {
+            // Yay JS variable scopes...
+            (function(entry, target){
+                $(entry.dependsOn).on('change', function() {
+                    if ($(this).val()) {
+                        target.next().show();
+                    } else {
+                        target.next().hide();
+                    }  
+                }).trigger('change');
+            })(entry, target);
+        }
+    }
+
+    $('#category_id').on('change', function(){
+        if ($(this).val() == 9) { // Blueprint
+            $('#bp-type').show();
+        } else {
+            $('#bp-type').hide();
+        } 
+    }).trigger('change');
+})
+</script>
+{% endblock %}

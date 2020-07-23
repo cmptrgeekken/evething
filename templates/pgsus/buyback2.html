@@ -22,15 +22,15 @@
     <div class="row">
         <div class="col-md-8">
             {% if 'pennys' in buyback_name %}
-            <div class="alert alert-warning">
-                <h4 class="alert-heading">Please create all contracts going forward to <b>Uno Mas Unicorns</b>.
+            <div class="alert alert-danger">
+                <h4 class="alert-heading">Due to a massive surplus and not enough demand, this Ice Buyback has been shut down. Please use one of Pandemic Horde's many <a href="https://www.pandemic-horde.org/forum/index.php?threads/industry-buyback-freight-megathread.410/" target="_blank">buyback or shipping services</a> moving forward. We apologize for any inconvenience this may cause!</b>.
             </div>
-            <div class="alert alert-info">
+            <!--<div class="alert alert-info">
                 <h4 class="alert-heading">Our buyback locations have been reduced to the following:</h4>
                 <ul>
                     <li>R1O-GN - B E A N S T A R</li>
                 </ul>
-            </div>
+            </div>-->
             {% elif 'bteam' in buyback_name %}
             <div class="alert alert-warning">
                 <h4 class="alert-heading"><b>Please note the following updates for contract acceptance:</b></h4>
@@ -106,25 +106,28 @@
                 </div>
             </div>
             {% endif %}
-            <div>
-            <h2>What would you like to sell?</h2>
-            <form id="formEntry" class="form-horizontal" method="post">
-                <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
-                <div class="form-group">
-                    <div class="col-sm-12">
-                        <textarea name="buyback_input" rows="15" style="width: 85%;" placeholder="Paste items to sell here (e.g., 1000 Robotics)">{{ buyback_input }}</textarea>
-                    </div>
+            {% if 'pennys' not in buyback_name %}
+                <div>
+                    <h2>What would you like to sell?</h2>
+                    <form id="formEntry" class="form-horizontal" method="post">
+                        <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                        <div class="form-group">
+                            <div class="col-sm-12">
+                                <textarea name="buyback_input" rows="15" style="width: 85%;" placeholder="Paste items to sell here (e.g., 1000 Robotics)">{{ buyback_input }}</textarea>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="col-sm-6">
+                                <button type="submit" class="btn btn-primary">
+                                    Submit
+                                </button>
+                            </div>
+                        </div>
+                    </form>
                 </div>
-                <div class="form-group">
-                    <div class="col-sm-6">
-                        <button type="submit" class="btn btn-primary">
-                            Submit
-                        </button>
-                    </div>
-                </div>
-            </form>
-            </div>
+            {% endif %}
         </div>
+        {% if 'pennys' not in buyback_name %}
         <div class="col-md-4">
             <h2>Accepted Items</h2>
             <i>Pricing Last Updated: {{ price_last_updated.strftime('%Y-%m-%d') }}</i>
@@ -212,6 +215,7 @@
                 </div>
             {% endfor %}
         </div>
+        {% endif %}
     </div>
 </section>
 

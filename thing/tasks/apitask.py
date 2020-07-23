@@ -152,6 +152,16 @@ class APITask(Task):
                 if self.apikey.needs_apikeyinfo and getattr(self, 'name') != 'thing.api_key_info':
                     return False
 
+    def scope_success(self, scope):
+        scope.failures = 0
+        scope.save()
+
+    def scope_failure(self, scope):
+        scope.failures += 1
+        if scope.failures > 5:
+            scope.enabled = False
+        scope.save()
+
     # -----------------------------------------------------------------------
 
     def on_failure(self, exc, task_id, args, kwargs, einfo):

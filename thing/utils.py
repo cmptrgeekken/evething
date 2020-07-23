@@ -36,7 +36,7 @@ KEY_ERRORS = {
 }
 
 
-def dictfetchall(query, cache_key=None, cache_time=None):
+def dictfetchall(query, cache_key=None, cache_time=None, parms=None):
     "Returns all rows from a cursor as a dict"
     from django.core.cache import caches
     query_cache = caches['default']
@@ -46,7 +46,7 @@ def dictfetchall(query, cache_key=None, cache_time=None):
             return results
 
     cursor = connections['default'].cursor()
-    cursor.execute(query)
+    cursor.execute(query, parms)
     desc = cursor.description
     results = [
             dict(zip([col[0] for col in desc], row))

@@ -36,7 +36,7 @@ from decimal import *
 
 from django.core.cache import cache
 
-from django.db import transaction
+from django.db import transaction, connections
 
 import traceback
 
@@ -46,6 +46,31 @@ class EsiUniverse(APITask):
 
     universe_types_url = 'https://esi.evetech.net/latest/universe/types?page=%s'
     universe_type_url = 'https://esi.evetech.net/latest/universe/types/%s'
+
+    db = connections['default']
+
+    bulk_query = '''INSERT INTO thing_item(id,name,item_group_id,market_group_id,portion_size,volume,packaged_volume,mass,description,icon_id,published,item_slot,lo_slots,med_slots,hi_slots,rig_slots,subsystem_slots,service_slots) 
+VALUES %s 
+ON DUPLICATE KEY UPDATE
+    name=VALUES(name),
+    item_group_id=VALUES(item_group_id),
+    market_group_id=VALUES(market_group_id),
+    portion_size=VALUES(portion_size),
+    volume=VALUES(volume),
+    packaged_volume=VALUES(packaged_volume),
+    mass=VALUES(mass),
+    description=VALUES(description),
+    icon_id=VALUES(icon_id),
+    published=VALUES(published),
+    item_slot=VALUES(item_slot),
+    lo_slots=VALUES(lo_slots),
+    med_slots=VALUES(med_slots),
+    hi_slots=VALUES(hi_slots),
+    rig_slots=VALUES(rig_slots),
+    subsystem_slots=VALUES(subsystem_slots),
+    service_slots=VALUES(service_slots)
+'''
+    bulk_query_row = '(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)'
 
     def run(self):
         self.init()
@@ -77,6 +102,7 @@ class EsiUniverse(APITask):
 
                 all_data = self.fetch_batch_esi_urls(urls, None, batch_size=10)
                 sql_inserts = []
+                sql_params = []
 
                 for url, type_data in all_data.items():
                     success, data = type_data
@@ -92,12 +118,9 @@ class EsiUniverse(APITask):
                         continue
 
                     item_id = int(item['type_id'])
-                    db_item = Item.objects.filter(id=item['type_id']).first()
+                    db_item = Item()
 
-                    if db_item is None:
-                        db_item = Item()
-                        db_item.id=item_id
-
+                    db_item.id=item_id
                     db_item.name = item['name']
                     db_item.item_group_id = int(item['group_id']) if 'group_id' in item else None
                     db_item.market_group_id = int(item['market_group_id']) if 'market_group_id' in item else None
@@ -108,7 +131,6 @@ class EsiUniverse(APITask):
                     db_item.description = item['description']
                     db_item.icon_id = int(item['icon_id']) if 'icon_id' in item else None
                     db_item.published = bool(item['published'])
-
 
                     if 'dogma_effects' in item:
                         slot = None
@@ -145,12 +167,31 @@ class EsiUniverse(APITask):
                             elif aid == 2056:
                                 db_item.service_slots = av
 
-                    try:
-                        db_item.save()
-                    except Exception, e:
-                        print(data)
-                        traceback.print_exc(e)
-                        return False
+                    sql_inserts.append(self.bulk_query_row)
+                    sql_params.extend([
+                        db_item.id,
+                        db_item.name,
+                        db_item.item_group_id,
+                        db_item.market_group_id,
+                        db_item.portion_size,
+                        db_item.volume,
+                        db_item.packaged_volume,
+                        db_item.mass,
+                        db_item.description,
+                        db_item.icon_id,
+                        db_item.published,
+                        db_item.item_slot,
+                        db_item.lo_slots,
+                        db_item.med_slots,
+                        db_item.hi_slots,
+                        db_item.rig_slots,
+                        db_item.subsystem_slots,
+                        db_item.service_slots
+                    ])
+
+                self.execute_query(sql_inserts, sql_params)
+                sql_inserts = []
+                sql_params = []
 
 
         except Exception, e:
@@ -158,3 +199,23 @@ class EsiUniverse(APITask):
             return False
 
         return True
+
+    @transaction.atomic
+    def execute_query(self, sql_inserts, params):
+        cursor = self.db.cursor()
+
+        order_ct = len(sql_inserts)
+
+        if order_ct == 0:
+            return
+
+        sql = ','.join(sql_inserts)
+
+        cursor.execute('SET autocommit=0')
+        cursor.execute('SET unique_checks=0')
+        cursor.execute('SET foreign_key_checks=0')
+        cursor.execute(self.bulk_query % sql, params)
+        cursor.execute('SET foreign_key_checks=1')
+        cursor.execute('SET unique_checks=1')
+        cursor.execute('SET autocommit=1')
+        transaction.set_dirty()
