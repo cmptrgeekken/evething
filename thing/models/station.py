@@ -90,7 +90,9 @@ class Station(models.Model):
         out = []
 
         parts = self.name.split(' - ')
-        if len(parts) == 1:
+        if self.is_citadel:
+            self.short_name = self.name
+        elif len(parts) == 1:
             self.short_name = self.name
         else:
             a_parts = parts[0].split()

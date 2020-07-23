@@ -10,13 +10,125 @@ from django.shortcuts import redirect, render
 from django.core.urlresolvers import reverse
 from django.utils.text import slugify
 
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 
 import json
 
 from pgsus.parser import parse, iter_types
 import evepaste
 
+
+def contractadmin(request):
+    if 'char' in request.session:
+        char_id = request.session['char']['id']
+
+        role = CharacterRole.objects.filter(character_id=char_id, role='contracts').first()
+    else:
+        role = None
+
+    if role is None:
+        return redirect('/')
+
+    fits = request.POST.getlist('fit')
+
+    if request.POST.get('move') == 'move':
+        method = request.POST.get('move_method')
+        target_station = request.POST.get('target_station')
+
+        station = Station.objects.filter(id=target_station).first()
+
+        if station is not None:
+            station.load_market_orders = True
+            station.market_profile_id = 96243993
+            station.save()
+
+
+        if method == 'move':
+            rows = ContractSeeding.objects.filter(id__in=fits).update(station_id=target_station)
+
+            return redirect('%s?msg=moved&count=%d' % (reverse(contractadmin), rows))
+        elif method == 'copy':
+            existing = ContractSeeding.objects.filter(id__in=fits)
+            for e in existing:
+                e.id = e.pk = None
+                e.station_id = target_station
+                e.save()
+
+                for item in e.get_items():
+                    item.id = item.pk = None
+                    item.contractseeding_id = e.id
+                    item.save()
+            return redirect('%s?msg=copied&count=%d' % (reverse(contractadmin), len(existing)))
+
+    if request.POST.get('delete') == 'delete':
+        count = ContractSeeding.objects.filter(id__in=fits).count()
+
+        ContractSeedingItem.objects.filter(contractseeding_id__in=fits).delete()
+        ContractSeeding.objects.filter(id__in=fits).delete()
+
+        return redirect('%s?msg=deleted&count=%d' % (reverse(contractadmin), count))
+    
+    if request.POST.get('activate') == 'activate':
+        rows = ContractSeeding.objects.filter(id__in=fits).update(is_active=True)
+
+        return redirect('%s?msg=activated&count=%d' % (reverse(contractadmin), rows))
+
+    if request.POST.get('deactivate') == 'deactivate':
+        rows = ContractSeeding.objects.filter(id__in=fits).update(is_active=False)
+
+        return redirect('%s?msg=deactivated&count=%d' % (reverse(contractadmin), rows))
+
+    active_seeding_entries = ContractSeeding.objects.filter(is_active=True, is_private=False).order_by('name')
+    inactive_seeding_entries = ContractSeeding.objects.filter(is_active=False, is_private=False).order_by('name')
+
+    station_entries = dict()
+    for entry in active_seeding_entries:
+        row = station_entries.setdefault(entry.station.name, {
+            'station_id': entry.station_id,
+            'station_name': entry.station.name,
+            'active_count': 0, 
+            'inactive_count': 0,
+            'entries': []
+        })
+
+        entry.is_active = True
+
+        row['active_count'] += 1
+
+        row['entries'].append(entry)
+
+    for entry in inactive_seeding_entries:
+        row = station_entries.setdefault(entry.station.name, {
+            'station_id': entry.station_id,
+            'station_name': entry.station.name,
+            'active_count': 0, 
+            'inactive_count': 0,
+            'entries': []
+        })
+
+        row['inactive_count'] += 1
+
+        entry.is_active = False
+
+        row['entries'].append(entry)
+
+    message = None
+
+    if request.GET.get('msg') is not None:
+        msg = request.GET.get('msg')
+        if msg in ['updated', 'deleted', 'deactivated', 'activated', 'copied', 'moved']:
+            message = 'Successfully %s %d fits' % (msg, int(request.GET.get('count')))
+
+    out = render_page(
+        'pgsus/contractseedadmin.html',
+        dict(
+            station_entries=station_entries,
+            message=message
+        ),
+        request
+    )
+
+    return out
 
 def contractseedapi(request):
     data = dictfetchall("select c.id, c.name, c.current_qty, c.min_qty, s.name AS station_name, CASE WHEN priority = 0 THEN 'Low' WHEN priority = 1 THEN 'Medium' WHEN priority = 2 THEN 'High' END AS priority, c.qty_last_modified as last_updated from thing_contractseeding c inner join thing_station s on c.station_id=s.id where c.is_private=0 and c.is_active=1 order by s.name, c.priority DESC, c.name;")

@@ -186,6 +186,74 @@ def add_waypoint(request):
 
     return HttpResponse('')
 
+def api_stations(request):
+    name = request.GET.get('term')
+
+    stations = list()
+    if len(name) >= 3:
+        stations = Station.objects.filter(name__icontains=name)
+
+    return JsonResponse(dict(
+        items=[{'id': s.id, 'name': s.name} for s in stations]
+    ))
+
+def api_populatestations(request):
+    search_url = 'https://esi.evetech.net/latest/characters/%s/search/?datasource=tranquility&categories=structure&search=%s'
+    structure_url = 'https://esi.evetech.net/latest/universe/structures/%s?datasource=tranquility'
+    system = request.GET.get('system')
+
+    helper = ApiHelper()
+    kgb = Character.objects.filter(name='KenGeorge Beck').first()
+
+    success, response = helper.fetch_esi_url(search_url % (kgb.id, system), kgb)
+
+    if not success:
+        return JsonResponse(dict(
+            success=False
+        ))
+
+    station_ids = json.loads(response)
+
+    results = list()
+
+    all_success = True
+
+    if len(station_ids) > 0:
+        for station_id in station_ids['structure']:
+            success, response = helper.fetch_esi_url(structure_url % station_id, kgb)
+
+            if not success:
+                results.append(response)
+                continue
+
+            esi_station = json.loads(response)
+
+            station = Station.objects.filter(id=station_id).first()
+
+            if station is None:
+                station = Station()
+                results.append(esi_station['name'])
+            elif station.is_unknown:
+                results.append(esi_station['name'])
+
+            station.id = station_id
+            station.name = esi_station['name']
+            station.corporation_id = esi_station['owner_id']
+            station.system_id = esi_station['solar_system_id']
+            station.type_id = esi_station['type_id']
+            station.is_citadel = True
+            station.is_unknown = False
+            station.deleted = False
+
+            station.save()
+    else:
+        results.append('No structure found.')
+
+    return JsonResponse(dict(
+        success=all_success,
+        results=results
+    ))
+
 def api_jumpgate_history(request):
     station_id = int(request.GET.get('id'))
     page = int(request.GET.get('page') or '1')

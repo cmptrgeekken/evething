@@ -34,6 +34,7 @@ urlpatterns += patterns(
     url(r'^seeding/edit', 'seededit', name='seededit'),
     url(r'^seeding/view', 'seedview', name='seedview'),
     url(r'^contractseeding$', 'contractseedlist', name='contractseedlist'),
+    url(r'^contractadmin', 'contractadmin', name='contractadmin'),
     url(r'^contractseeding/edit', 'contractseededit', name='contractseededit'),
     url(r'^contractseeding/view', 'contractseedview', name='contractseedview'),
     url(r'^contractseeding/raw', 'contractseedapi', name='contractseedapi'),
@@ -44,6 +45,7 @@ urlpatterns += patterns(
     url(r'^api/systems', 'api_systems', name='api_systems'),
     url(r'^api/jumpgatehistory', 'api_jumpgate_history', name='api_jumpgate_history'),
     url(r'^api/jumpgates', 'api_jumpgates', name='api_jumpgates'),
+    url(r'^api/stations', 'api_stations', name='api_stations'),
     url(r'^perms', 'perms', name='perms'),
     url(r'^mooncomp', 'mooncomp', name='mooncomp'),
     url(r'^extractions', 'extractions', name='extractions'),
@@ -61,6 +63,7 @@ urlpatterns += patterns(
     url(r'^api/categories', 'api_categories', name='api_categories'),
     url(r'^api/groups', 'api_groups', name='api_groups'),
     url(r'^api/locations', 'api_locations', name='api_locations'),
+    url(r'^api/populatestations', 'api_populatestations', name='api_populatestations')
 )
 
 urlpatterns += patterns(

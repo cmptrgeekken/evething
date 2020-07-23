@@ -1,0 +1,213 @@
+{% extends "web_template.html" %}
+{% import 'macros/common.html' as common %}
+
+{% block title %}Contract Seed Administration{% endblock %}
+
+{% block content %}
+
+<section class="bg-19 bg-center bg-cover">
+    <div>
+        <div class="container section-sm">
+            <h1 class="top-title">Manage Seeding</h1>
+        </div>
+    </div>
+</section>
+
+<section class="container section-md">
+    <div class="row">
+        <div class="col-md-12">
+            <a href="{{ url('pgsus.views.contractseedlist') }}">Back to List View</a>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-lg-8">
+            {% if message %}
+            <div class="form-group">
+                <div class="alert alert-success">
+                    <h4 class="alert-heading"><b>{{ message }}</b></h4>
+                </div>
+            </div>
+            {% endif %}
+            <form method="post" action="{{ url('pgsus.views.contractadmin') }}">
+                <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                <table class="table table-striped table-bordered">
+                    <tr>
+                        <th></th>
+                        <th>Station</th>
+                        <th>Fits Active</th>
+                        <th>Fits Inactive</th>
+                    </tr>
+                    {% for name, station in station_entries.iteritems() %}
+                    <tr>
+                        <td><input type="checkbox" id="station-{{ station.station_id }}" class="station-all" name="station" value="{{ station.station_id }}"/></td>
+                        <td><a href="javascript:void(0)" title="Show/Hide Fits" class="toggle-fits" data-id="{{ station.station_id }}">{{ name }}</a></td>
+                        <td>{{ station.active_count }}</td>
+                        <td>{{ station.inactive_count }}</td>
+                    </tr>
+                    <tr id="fit-list-{{ station.station_id }}" class="fit-list" style="display: none">
+                        <td></td>
+                        <td colspan="3">
+                            <table class="table table-striped table-bordered">
+                                <tr>
+                                    <th><input type="checkbox" class="fit-all" /></th>
+                                    <th>Fit</th>
+                                    <th>Active?</th>
+                                </tr>
+                                {% for entry in station.entries %}
+                                <tr>
+                                    <td><input type="checkbox" id="fit-{{ entry.id }}" class="fit-entry" name="fit" value="{{ entry.id }}"/></td>
+                                    <td>
+                                        <a href="{{url('pgsus.views.contractseedview')}}?id={{entry.id}}" target="_blank">{{ entry.name }}</a> &mdash;
+                                        <a href="{{url('pgsus.views.contractseededit')}}?id={{entry.id}}" target="_blank">Edit</a>
+                                    </td>
+                                    <td>{{ entry.is_active }}</td>
+                                </tr>
+                                {% endfor %}
+                            </table>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </table>
+
+                <h3>Migrate Fits</h3>
+                <div class="form-group">
+                    <div class="col-lg-12">
+                        <div class="form-group">
+                            <input type="radio" name="move_method" value="move" id="move_method-move" checked="checked"> <label for="move_method-move">Move</label>
+                        </div>
+                        <div class="form-group">
+                            <input type="radio" name="move_method" value="copy" id="move_method-copy"> <label for="move_method-copy">Copy</label>
+                        </div>
+                        <div class="form-group">
+                            <select name="target_station" id="target_station" class="js-select2 input-lg station" style="width: 300px;"></select>
+                        </div>
+                        <div class="form-group">
+                            <button name="move" type="submit" value="move" class="btn btn-warning" onclick="return validateMigrate()">
+                                Migrate
+                            </button>            
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <h3>Not finding your structure?</h3>
+                    <p>Try populating the system!</p>
+                    <select name="target_system" id="target_system" class="js-select2 input-lg system" style="width: 150px;"></select>
+                    <button id="populate-system" type="button" class="btn btn-success" onclick="populateStructures()">
+                        Populate!
+                    </button>
+                </div>
+                
+
+                <div class="form-group">
+                    <h3>Other Actions</h3>
+                    <button style="margin-right: 30px;" name="activate" type="submit" value="activate" class="btn btn-primary" onclick="return confirm('Are you sure you want to mark the selected fits active?')">
+                        Mark Active
+                    </button>
+    
+                    <button style="margin-right: 30px;" name="deactivate" type="submit" value="deactivate" class="btn btn-warning" onclick="return confirm('Are you sure you want to mark the selected fits inactive?')">
+                        Mark Inactive
+                    </button>
+    
+                    <button name="delete" type="submit" value="delete" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete the selected fits? This action is not reversible.')">
+                        Delete Fits!
+                    </button>
+                </div>
+            </form>
+        </div>
+</section>
+{% endblock %}
+{% block extra_js %}
+<script>
+    function validateMigrate(){
+        var fits = $('.fit-entry:checked');
+
+        if (fits.length == 0) {
+            alert('Please select at least one fit!');
+
+            return false;
+        }
+
+        if(!$('.station').val()) {
+            alert('You must select a station to migrate to!');
+
+            return false;
+        }
+        return confirm('Are you sure you want to migrate these ' + fits.length + ' fits?')
+    }
+
+    function populateStructures(){
+        var system = $('#target_system').val();
+        if (system) {
+            $('#populate-system').attr('disabled', 'disabled');
+            $.get('/api/populatestations?system=' + system, function(r) {
+                $('#populate-system').attr('disabled', false);
+                if (!r.success) {
+                    alert('Error populating structures. Please try again later!');
+                } 
+                else if (r.results && r.results.length){
+                    alert('Populated the following structures:\r\n' + r.results.join('\r\n'));
+                } else {
+                    alert('No new structures found!');
+                }
+            });
+        } else {
+            alert('Please select a system!');
+        }
+    }
+
+    $(function(){
+        $('.js-select2.system')
+            .select2({
+                ajax: {
+                    url: '/api/systems',
+                    dataType: 'json',
+                    processResults: function(data) {
+                        return {
+                            results: $.map(data.items, function(i){return {text: i.text, id: i.text}})
+                        };
+                    }
+                        
+                },
+                placeholder: 'System',
+                minimumInputLength:3
+            });
+
+        $('.js-select2.station')
+            .select2({
+                ajax: {
+                    url: '/api/stations',
+                    dataType: 'json',
+                    processResults: function(data) {
+                        return {
+                            results: $.map(data.items, function(i){return {text: i.name, id: i.id}})
+                        };
+                    }
+                        
+                },
+                placeholder: 'New Station',
+                minimumInputLength:3
+            });
+        $('.fit-all').on('click', function(){
+            var checked = $(this).is(':checked');
+
+            $(this).parents('.fit-list').find('input[type=checkbox]').prop('checked', checked);
+        });
+
+        $('.station-all').on('click', function() {
+            var checked = $(this).is(':checked');
+
+            $('#fit-list-' + $(this).attr('value')).find('input[type=checkbox]').prop('checked', checked);
+        });
+
+        $('.fit-entry').on('click', function(){
+            $(this).parents('.fit-list').find('.fit-all').prop('checked', false);
+            $(this).parents('.fit-list').prev('tr').find('.station-all').prop('checked', false);
+        })
+
+        $('.toggle-fits').on('click', function(){
+            $('#fit-list-' + $(this).data('id')).toggle();
+        })
+    });
+</script>
+{% endblock %}

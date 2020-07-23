@@ -43,6 +43,9 @@ $('a.station-tab-link[data-toggle]').on("click", function (e) {
         <div class="col-lg-12">
             <h4>
                 <a href="{{ url('pgsus.views.contractseededit') }}">Add Fit!</a>
+                {% if is_admin %}
+                | <a href="{{ url('pgsus.views.contractadmin') }}">Admin Tools</a>
+                {% endif %}
             </h4>
             {% if station_lists|length > 0 %}
                 <div class="row clearfix">
