@@ -58,6 +58,8 @@ if __name__ == '__main__':
 
     if 'contracts' in libs:
         to_run.append(EsiContracts())
+    if 'contractseeding' in libs:
+        to_run.append(EsiContractSeeding())
 
     if 'moonobserver' in libs:
         to_run.append(EsiMoonObserver())

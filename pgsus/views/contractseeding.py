@@ -50,11 +50,16 @@ def contractadmin(request):
         elif method == 'copy':
             existing = ContractSeeding.objects.filter(id__in=fits)
             for e in existing:
+                items = list(e.get_items())
+
                 e.id = e.pk = None
                 e.station_id = target_station
+                e.current_qty = 0
+                e.corp_qty = 0
+                e.alliance_qty = 0
                 e.save()
 
-                for item in e.get_items():
+                for item in items:
                     item.id = item.pk = None
                     item.contractseeding_id = e.id
                     item.save()

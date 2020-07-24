@@ -40,7 +40,7 @@ class EsiMoonExtraction(APITask):
 
     mining_url = 'https://esi.evetech.net/latest/corporation/%s/mining/extractions/?datasource=tranquility'
     write_structure_url = 'https://esi.evetech.net/latest/corporations/%s/structures/%s/?datasource=tranquility&language=en-us'
-    micrim_url = 'http://infinity-bay.com/citadels/kgb.php'
+    micrim_url = 'http://ph.infinity-bay.com/kgb.php'
 
     def run(self):
         self.init()
@@ -80,6 +80,8 @@ class EsiMoonExtraction(APITask):
                 cfg = MoonConfig()
                 cfg.is_nationalized = False
             cfg.next_date_override = d['planned_chunk']
+
+            print('Updating %s: %s' % (cfg.structure.station.name, cfg.next_date_override))
 
             cfg.save()
 
