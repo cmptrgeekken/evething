@@ -197,6 +197,17 @@ def api_stations(request):
         items=[{'id': s.id, 'name': s.name} for s in stations]
     ))
 
+def api_characters(request):
+    name = request.GET.get('term')
+
+    chars = list()
+    if len(name) >= 3:
+        chars = Character.objects.filter(name__istartswith=name)
+
+    return JsonResponse(dict(
+        items=[{'id': c.id, 'name': c.name} for c in chars]
+    ))
+
 def api_populatestations(request):
     search_url = 'https://esi.evetech.net/latest/characters/%s/search/?datasource=tranquility&categories=structure&search=%s'
     structure_url = 'https://esi.evetech.net/latest/universe/structures/%s?datasource=tranquility'

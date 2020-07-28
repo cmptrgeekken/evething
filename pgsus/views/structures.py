@@ -51,6 +51,57 @@ import random
 
 import urllib
 
+def moonadmin(request):
+    charid = request.session['char']['id']
+
+    role = CharacterRole.objects.filter(character_id=charid, role='moon').first()
+
+    if role is None:
+        return redirect('/?perm=1')
+
+    message = None
+    alerts = None
+
+    if request.POST.get('add') == 'add':
+        chars = request.POST.getlist('characters_to_add')
+        character_role = request.POST.get('character_role')
+
+        message = list()
+
+        for char in chars:
+            existing = CharacterRole.objects.filter(role__in=['moon', 'moonbean', 'spodcmd'], character_id=char).first()
+            if existing:
+                if alerts is None:
+                    alerts = list()
+                alerts.append('%s already in role \'%s\'' % (existing.character.name, existing.role))
+            else:
+                ch = Character.objects.filter(id=char).first()
+                cr = CharacterRole()
+                cr.character_id = char
+                cr.role = character_role
+                cr.added_by_id = request.session['char']['id'] if 'char' in request.session else None
+                message.append('%s added to role \'%s\'' % (ch.name, character_role))
+                cr.save()
+    elif request.POST.get('delete') == 'delete':
+        chars = request.POST.getlist('character')
+
+        char_ct = CharacterRole.objects.filter(role__in=['moon', 'moonbean', 'spodcmd'], character_id__in=chars).count()
+
+        CharacterRole.objects.filter(role__in=['moon', 'moonbean', 'spodcmd'], character_id__in=chars).delete()
+
+        message = list()
+
+        message.append('%d character roles deleted!' % char_ct)
+
+    roles = CharacterRole.objects.filter(role__in=['moon', 'moonbean', 'spodcmd']).order_by('role', 'character__name')
+
+    out = render_page('pgsus/moonadmin.html', dict(
+        roles=roles,
+        message=message,
+        alerts=alerts
+    ), request)
+
+    return out
 
 def mooncomp(request):
     if 'char' not in request.session:
@@ -755,10 +806,6 @@ def ihubs(request):
         ),
         request,
     )
-     
-
-
-
 
 def refinerylist(request):
     if 'char' not in request.session:

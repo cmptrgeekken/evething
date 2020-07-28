@@ -15,6 +15,11 @@
 <section class="container section-md">
     <div class="row">
         <div class="col-lg-12">
+            <h4>
+                {% if is_admin %}
+                | <a href="{{ url('pgsus.views.moonadmin') }}">Admin Tools</a>
+                {% endif %}
+            </h4>
             <form id="formEntry" class="form-horizontal" method="get" action="{{ url('pgsus.views.refinerylist') }}">
                 <div class="form-group">
                   <label class="col-sm-2 col-form-label" for="region">Region</label>

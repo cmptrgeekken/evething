@@ -42,4 +42,5 @@ class CharacterRole(models.Model):
 
     character = models.ForeignKey(Character, on_delete=models.DO_NOTHING)
     role = models.CharField(max_length=50, choices=ROLES)
+    added_by = models.ForeignKey(Character, default=None, on_delete=models.DO_NOTHING, related_name='added_by_id')
 
