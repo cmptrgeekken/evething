@@ -17,7 +17,7 @@ fi
 
 if [ $local_ctime = false ] || [ $local_ctime -lt $remote_ctime ]; then
     cd /home/kbeck/projects/thingenv/evething
-    curl -sS $remote_file > $local_file
+    curl --insecure -sS $remote_file > $local_file
     FILESIZE=$(stat -c%s "$local_file")
 
     if [ $FILESIZE -gt 78643200 ]; then

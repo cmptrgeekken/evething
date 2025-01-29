@@ -23,20 +23,46 @@
 # OF SUCH DAMAGE.
 # ------------------------------------------------------------------------------
 
+from xml.sax.saxutils import unescape
+
 from django.db import models
 
 from thing.models.character import Character
+from thing.models.corporation import Corporation
+from thing.models.corpwallet import CorpWallet
+from thing.models.reftype import RefType
 
 
-class CharacterApiScope(models.Model):
-    character = models.ForeignKey(Character, on_delete=models.DO_NOTHING)
-    scope = models.CharField(max_length=50)
-    enabled = models.BooleanField(default=True)
-    failure_count = models.IntegerField(default=0)
+class EsiJournal(models.Model):
+    """Wallet journal entries"""
+    corporation = models.ForeignKey(Corporation, on_delete=models.DO_NOTHING, db_index=True)
+    wallet_id = models.IntegerField(db_index=True)
+    journal_id = models.BigIntegerField(db_index=True)
+    
+    amount = models.DecimalField(max_digits=14, decimal_places=2)
+    balance = models.DecimalField(max_digits=17, decimal_places=2)
+    context_id = models.BigIntegerField()
+    context_id_type = models.CharField(max_length=30)
+
+    date = models.DateTimeField(db_index=True)
+    description = models.TextField()
+
+    first_party_id = models.IntegerField()
+    reason = models.TextField()
+    ref_type = models.CharField(max_length=255)
+    second_party_id = models.IntegerField()
+
+    tax = models.DecimalField(max_digits=17, decimal_places=2)
+    tax_receiver_id = models.IntegerField()
 
     class Meta:
         app_label = 'thing'
+        ordering = ('-date',)
 
-    def __unicode__(self):
-        return "%s - %s" % (self.character.name, self.scope)
+    def get_unescaped_reason(self):
+        if len(self.reason) > 0:
+            return unescape(self.reason)
+        else:
+            return self.reason
 
+# ------------------------------------------------------------------------------

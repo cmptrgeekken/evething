@@ -53,8 +53,11 @@ if __name__ == '__main__':
     if 'charcorp' in libs:
         to_run.append(CharCorpUpdate())
 
+    if 'corps' in libs:
+        to_run.append(CorpAllianceUpdate())
+
     if 'journal' in libs:
-        to_run.append(EsiJournal())
+        to_run.append(EsiJournalTask())
 
     if 'contracts' in libs:
         to_run.append(EsiContracts())

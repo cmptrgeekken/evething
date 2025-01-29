@@ -92,6 +92,12 @@ def stats(request):
 
     return out
 
+def handler404(request):
+    return render_page('pgsus/not_found.html')
+
+def handler500(request):
+    return render_page('pgsus/error.html')
+
 def svg(request):
     import urllib2
 
@@ -1164,7 +1170,6 @@ def perms(request):
         dict(scope='esi-contracts.read_character_contracts.v1', desc='Allows for reading of character contracts.', required=False),
         dict(scope='esi-contracts.read_corporation_contracts.v1', desc='Allows for reading of corporation contracts.', required=False),
         dict(scope='esi-corporations.read_structures.v1', desc='Allows for retrieval of information about corporation structures (requires Station Manager role).', required=False),
-        dict(scope='esi-corporations.write_structures.v1', desc='Allows for updating vulnerability schedules for structures you have access to.', required=False),
         dict(scope='esi-universe.read_structures.v1', desc='Allows for retrieval of public structure information.', required=False),
         dict(scope='esi-search.search_structures.v1', desc='Allows for searching of structures character has access to.', required=False),
         dict(scope='esi-industry.read_corporation_mining.v1', desc='Allows for reading of moon extraction schedule (requires Station Manager role) and mining ledger (requires Accountant role).', required=False),

@@ -28,7 +28,7 @@ import datetime
 from .apitask import APITask
 import json
 
-from thing.models import Character, Corporation, CharacterApiScope, MoonObserver, MoonObserverEntry
+from thing.models import Character, Corporation, CharacterApiScope, EsiAsset, MoonObserver, MoonObserverEntry
 from thing import queries
 from thing.utils import dictfetchall
 
@@ -44,6 +44,9 @@ class EsiMoonObserver(APITask):
     observer_url = 'https://esi.evetech.net/latest/corporation/%s/mining/observers/?datasource=tranquility&page=%s'
     observer_detail_url = 'https://esi.evetech.net/latest/corporation/%s/mining/observers/%s/?datasource=tranquility&page=%s'
 
+    stability_rig_1_id = 46325
+    stability_rig_2_id = 46326
+
     def run(self):
         self.init()
 
@@ -54,8 +57,9 @@ class EsiMoonObserver(APITask):
         for char in extract_scope_chars:
             if 'Accountant' in char.get_apiroles():
                 if char.corporation_id is not None and char.corporation_id not in seen_corps:
-                    if self.import_observers(char):
-                        seen_corps.add(char.corporation_id)
+                    if char.name == 'KenGeorge Beck':
+                      if self.import_observers(char):
+                          seen_corps.add(char.corporation_id)
 
     def import_observers(self, character):
         corp_id = character.corporation_id
@@ -83,8 +87,6 @@ class EsiMoonObserver(APITask):
                 for observer in observers:
                     db_observer = MoonObserver.objects.filter(observer_id=observer['observer_id']).first()
 
-
-
                     do_import = True
 
                     current_time = datetime.datetime.utcnow()
@@ -98,6 +100,11 @@ class EsiMoonObserver(APITask):
 
                         db_observer.save()
 
+                    drill_rig = EsiAsset.objects.filter(location_id=db_observer.observer_id, type_id__in=[self.stability_rig_1_id, self.stability_rig_2_id], location_flag__in=['RigSlot0','RigSlot1','RigSlot2']).first()
+                    if drill_rig:
+                        db_observer.drill_stability_rig = drill_rig.type_id - self.stability_rig_1_id + 1
+                    else:
+                        db_observer.drill_stability_rig = 0
                     if do_import:
                         initial_url = self.observer_detail_url % (corp_id, db_observer.observer_id, 1)
                         success, results, headers = self.fetch_esi_url(
@@ -181,6 +188,7 @@ class EsiMoonObserver(APITask):
                             db_entry.last_updated = detail['last_updated']
                             db_entry.quantity = detail['quantity']
                             db_entry.save()
+
 
                         db_observer.last_updated = observer['last_updated']
                         db_observer.save()

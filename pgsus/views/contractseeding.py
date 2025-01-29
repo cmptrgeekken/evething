@@ -136,7 +136,7 @@ def contractadmin(request):
     return out
 
 def contractseedapi(request):
-    data = dictfetchall("select c.id, c.name, c.current_qty, c.min_qty, s.name AS station_name, CASE WHEN priority = 0 THEN 'Low' WHEN priority = 1 THEN 'Medium' WHEN priority = 2 THEN 'High' END AS priority, c.qty_last_modified as last_updated from thing_contractseeding c inner join thing_station s on c.station_id=s.id where c.is_private=0 and c.is_active=1 order by s.name, c.priority DESC, c.name;")
+    data = dictfetchall("select c.id, c.name, c.current_qty, CAST(c.estd_price AS INTEGER) AS estd_price, c.min_qty, s.name AS station_name, CASE WHEN priority = 0 THEN 'Low' WHEN priority = 1 THEN 'Medium' WHEN priority = 2 THEN 'High' END AS priority, c.qty_last_modified as last_updated from thing_contractseeding c inner join thing_station s on c.station_id=s.id where c.is_private=0 and c.is_active=1 order by s.name, c.priority DESC, c.name;")
 
     results = list()
     for d in data:

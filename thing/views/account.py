@@ -50,6 +50,8 @@ from requests_oauth2 import OAuth2
 
 
 def account_oauth_callback(request):
+    CHAR_INFO_URL = 'https://esi.evetech.net/latest/characters/%d/'
+
     oauth_code = request.GET['code']
     state = request.GET['state']
 
@@ -84,10 +86,17 @@ def account_oauth_callback(request):
         try:
             user_info = json.loads(results)
             char = Character.objects.filter(id=user_info['CharacterID']).first()
+            
             if char is None:
                 char = Character(id=user_info['CharacterID'], name=user_info['CharacterName'])
             elif char.name != user_info['CharacterName']:
                 char.name = user_info['CharacterName']
+            
+            success, char_results = helper.fetch_esi_url(CHAR_INFO_URL % user_info['CharacterID'])
+            if char_results is not None:
+                char_info = json.loads(char_results)
+                char.corporation_id = char_info['corporation_id']
+                char.name = char_info['name']
             char.save()
         except Exception,e:
             user_info = None

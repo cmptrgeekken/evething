@@ -155,6 +155,18 @@ where
     or exists (select 1 from thing_buybackitem bi inner join thing_marketgroup mg1 on bi.market_group_id=mg1.id WHERE mg1.lft<=mg.lft and mg1.rght >= mg.rght and mg1.tree_id=mg.tree_id and accepted=1))
     and not exists (select 1 from thing_buybackitem where item_id=i.id and accepted=0)
     and not exists (select 1 from thing_buybackitem bi inner join thing_marketgroup mg1 on bi.market_group_id=mg1.id WHERE mg1.lft<=mg.lft and mg1.rght >= mg.rght and mg1.tree_id=mg.tree_id and accepted=0)
+UNION
+select distinct im.material_id as item_id, 10000002 as region_id
+FROM thing_item i
+        inner join thing_marketgroup mg on i.market_group_id=mg.id
+        inner join thing_itemmaterial im on im.item_id=i.id
+        where
+                (exists (select 1 from thing_buybackitem where item_id=i.id and accepted=1 and reprocess=1)
+                    or exists (select 1 from thing_buybackitem bi inner join thing_marketgroup mg1 on bi.market_group_id=mg1.id WHERE mg1.lft<=mg.lft and mg1.rght >= mg.rght and mg1.tree_id=mg.tree_id and accepted=1 and reprocess=1))
+                        and not exists (select 1 from thing_buybackitem where item_id=i.id and accepted=0)
+                            and not exists (select 1 from thing_buybackitem bi inner join thing_marketgroup mg1 on bi.market_group_id=mg1.id WHERE mg1.lft<=mg.lft and mg1.rght >= mg.rght and mg1.tree_id=mg.tree_id and accepted=0)
+UNION
+SELECT DISTINCT iss.item_id, c.region_id from thing_itemstationseed iss inner join thing_seedlist sl on iss.list_id=sl.id inner join thing_station s on iss.station_id=s.id inner join thing_system sy on s.system_id=sy.id inner join thing_constellation c on sy.constellation_id=c.id where iss.active=1 and sl.is_private=0
 """
 
 ''' Add if we want all local stuff
@@ -588,8 +600,8 @@ stationorder_seeding_breakdown = """
 SELECT *,
     ROUND(jita_min_price+jita_shipping, 2) AS jita_price_plus_shipping,
     ROUND((jita_min_price+jita_shipping)*1.025*1.02, 2) AS imported_price,
-    ROUND((jita_min_price+jita_shipping)*1.025*1.02*1.2, 2) AS twentypct_profit,
-    CAST((avg_price / ((jita_min_price + jita_shipping)*1.025*1.02)) * 10000 AS UNSIGNED)/100 AS overpriced_pct
+    ROUND((jita_min_price)*1.025*1.02*1.2, 2) AS twentypct_profit,
+    CAST((avg_price / ((jita_min_price)*1.025*1.02)) * 10000 AS UNSIGNED)/100 AS overpriced_pct
 FROM (
 SELECT
    i.id AS item_id,
@@ -1321,7 +1333,7 @@ FROM thing_esijournal j
     LEFT JOIN thing_system sy2 ON sy2.name = substr(st1.name,(locate(CONCAT(' ', CHAR(187 using ucs2), ' '),st1.name) + 3),((locate(' - ',st1.name) - locate(CONCAT(' ', CHAR(187 using ucs2), ' '),st1.name)) - 3))
     LEFT JOIN thing_mapdenormalize md1 ON md1.item_id=sy1.id
     LEFT JOIN thing_mapdenormalize md2 on md2.item_id=sy2.id
-WHERE ref_type='structure_gate_jump' AND j.amount >= %s
+WHERE ref_type='structure_gate_jump' AND j.amount >= %s AND j.date >= DATE_ADD(NOW(), INTERVAL %s DAY)
 ORDER BY date DESC;
 """
 
@@ -1348,7 +1360,7 @@ FROM thing_esijournal j
     LEFT JOIN thing_corporation co ON co.id=ch.corporation_id
     LEFT JOIN thing_alliance a on co.alliance_id=a.id
     LEFT JOIN thing_station st1 on st1.id=j.context_id
-WHERE ref_type='structure_gate_jump' AND j.amount >= %s
+WHERE ref_type='structure_gate_jump' AND j.amount >= %s AND j.date >= DATE_ADD(NOW(), INTERVAL %s DAY)
 ORDER BY date DESC
 """
 
@@ -1379,4 +1391,16 @@ where
     and s.corporation_id is not null
     and sa.jb_approved=1 and ea.jb_approved=1 and sc.jb_ignore=0 and ec.jb_ignore=0
 order by s.name;
+"""
+
+ihub_stats = """
+select DATE_FORMAT(date, '%%Y-%%m') AS month, r.name as label,r.name AS region, SUM(amount) AS cost from thing_esijournal ej inner join thing_system s on ej.context_id=s.id inner join thing_constellation c on s.constellation_id=c.id inner join thing_region r on c.region_id=r.id inner join thing_corporation co on co.id=ej.corporation_id where co.alliance_id in (99008228, 99005338) and ref_type='infrastructure_hub_maintenance' AND date BETWEEN '%s' AND '%s' group by DATE_FORMAT(date, '%%Y-%%m'), r.name order by DATE_FORMAT(date, '%%Y-%%m'), r.name;
+"""
+
+ihub_system_stats = """
+select DATE_FORMAT(date, '%%Y-%%m') AS month, s.name as label, s.name AS system, r.name AS region, SUM(amount) AS cost from thing_esijournal ej inner join thing_system s on ej.context_id=s.id inner join thing_constellation c on s.constellation_id=c.id inner join thing_region r on c.region_id=r.id inner join thing_corporation co on co.id=ej.corporation_id where co.alliance_id in (99008228, 99005338) and ref_type='infrastructure_hub_maintenance' AND date BETWEEN '%s' AND '%s' group by DATE_FORMAT(date, '%%Y-%%m'), s.name order by DATE_FORMAT(date, '%%Y-%%m'), s.name;
+"""
+
+update_jackpots = """
+UPDATE thing_moonextractionhistory meh  SET is_jackpot=1      WHERE EXISTS          (SELECT 1           FROM thing_moonobserver mo             INNER JOIN thing_moonobserverentry moe ON mo.id=moe.observer_id           WHERE mo.observer_id=meh.structure_id AND moe.start_time BETWEEN meh.chunk_arrival_time AND DATE_ADD(meh.chunk_arrival_time, INTERVAL 10 DAY)              AND EXISTS (SELECT 1 FROM thing_item i where (i.name LIKE '%Twinkling%' OR i.name LIKE '%Shimmering%' OR i.name LIKE '%Shining%' OR i.name LIKE '%Glowing%' OR i.name LIKE '%Glistening%') AND moe.type_id=i.id)         );
 """

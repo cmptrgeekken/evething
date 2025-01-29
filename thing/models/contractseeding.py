@@ -71,7 +71,7 @@ class ContractSeeding(models.Model):
     def get_estd_price(self):
         estd_price = 0
         for i in self.get_items():
-            i.item.get_current_orders(quantity=i.min_qty, ignore_seed_items=False, dest_station_id=self.station_id, source_station_ids=[60003760])
+            i.item.get_current_orders(quantity=i.min_qty, ignore_seed_items=False, dest_station_id=60003760, source_station_ids=[60003760])
             if i.item.item_group.category.name == 'Ship':
                 estd_price += i.item.z_ttl_price_multibuy
             else:

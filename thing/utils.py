@@ -14,6 +14,7 @@ from django.core.cache import cache
 from django.db import connections
 import json, re
 import traceback
+import time
 
 from Queue import Queue
 from threading import Thread
@@ -154,7 +155,7 @@ class ApiHelper:
                 t.start()
             except:
                 print('Failed to start thread. Retrying in 5 seconds.')
-                sleep(5)
+                time.sleep(5)
                 t.start()
 
         try:
@@ -342,12 +343,14 @@ class ApiHelper:
         return ET.fromstring(data.encode('utf-8'))
 
     def get_access_token(self, character):
-        oauth_handler = self.oauth_handler()
+        oauth_handler = self.oauth_handler(character.sso_refresh_token)
 
         response = oauth_handler.get_token("", grant_type='refresh_token', refresh_token=character.sso_refresh_token)
         if response is not None and 'access_token' in response:
             #character.sso_error_count = 0
-            #character.save()
+            if 'refresh_token' in response and response['refresh_token'] != character.sso_refresh_token:
+               character.sso_refresh_token = response['refresh_token']
+               character.save()
             return response['access_token'], datetime.datetime.now() + datetime.timedelta(
                 seconds=response['expires_in'])
 
@@ -361,7 +364,7 @@ class ApiHelper:
 
         return None, None
 
-    def oauth_handler(self):
+    def oauth_handler(self, refresh_token=None):
         return OAuth2(
             settings.OAUTH_CLIENT_ID,
             settings.OAUTH_CLIENT_SECRET,

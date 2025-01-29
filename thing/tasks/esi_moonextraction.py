@@ -77,11 +77,18 @@ class EsiMoonExtraction(APITask):
         for d in moon_data:
             cfg = MoonConfig.objects.filter(structure__station_id=d['structure_id']).first()
             if cfg is None:
+                st = Structure.objects.filter(station__id=d['structure_id']).first()
+                if st is None:
+                    continue
+
                 cfg = MoonConfig()
+                cfg.structure_id=st.id
                 cfg.is_nationalized = False
             cfg.next_date_override = d['planned_chunk']
+            cfg.chunk_days = d['days']
 
-            print('Updating %s: %s' % (cfg.structure.station.name, cfg.next_date_override))
+            if cfg.structure_id is not None:
+              print('Updating %s: %s' % (cfg.structure.station.name, cfg.next_date_override))
 
             cfg.save()
 

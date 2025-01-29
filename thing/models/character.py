@@ -38,6 +38,7 @@ class Character(models.Model):
     sso_error_count = models.IntegerField(default=0)
     not_found = models.BooleanField(default=False)
     last_updated = models.DateTimeField(auto_now=True)
+    last_corp_update = models.DateTimeField(default=None)
 
 
     class Meta:

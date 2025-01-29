@@ -29,6 +29,7 @@ from django.shortcuts import redirect, render
 
 from pgsus.parser import parse, iter_types
 import evepaste
+import re
 
 
 def index(request):
@@ -67,6 +68,8 @@ def buyback(request, buyback_name):
 
     if request.method == 'POST':
         buyback_input = request.POST.get('buyback_input')
+        if buyback_input is not None:
+          buyback_input = re.sub('  +', '\t', buyback_input)
 
         try:
             parse_results = parse(buyback_input)
@@ -87,16 +90,18 @@ def buyback(request, buyback_name):
 
     for g in buyback_groups:
         for i in g.get_items():
-            item_lookup[i.item.name.lower()] = i
-
+            item_lookup[i.item.name.lower().strip()] = i
     buyback_items = []
 
     if parse_results is not None:
         for kind, results in parse_results['results']:
             for entry in iter_types(kind, results):
-                item_name = entry['name'].lower()
+                item_name = entry['name'].lower().strip()
 
                 if item_name in item_lookup:
+                    if request.GET.get('debug') == '1':
+                        parse_results['bad_lines'].append('FOUND: "%s"' % item_name)
+
                     buyback_item = item_lookup[item_name]
                     if buyback_qty.get(buyback_item.item.id) is None:
                         buyback_qty[buyback_item.item.id] = 0
@@ -106,6 +111,8 @@ def buyback(request, buyback_name):
                     total_reward += entry['quantity'] * buyback_item.get_price()
                     total_volume += entry['quantity'] * buyback_item.item.volume
                 else:
+                    if request.GET.get('debug') == '1':
+                        parse_results['bad_lines'].append('NOT FOUND: "%s"' % item_name)
                     parse_results['bad_lines'].append(entry['name'])
 
     out = render_page(

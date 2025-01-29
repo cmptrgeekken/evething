@@ -41,6 +41,7 @@ class MoonExtractionHistory(models.Model):
     laser_fire_time = models.DateTimeField()
     laser_fired_by = models.ForeignKey(Character, on_delete=models.DO_NOTHING, to_field='id', related_name='laser_fired_by_id')
     extraction_started_by = models.ForeignKey(Character, on_delete=models.DO_NOTHING, to_field='id', related_name='extraction_started_by_id')
+    is_jackpot = models.BooleanField(default=False)
 
     class Meta:
         app_label = 'thing'

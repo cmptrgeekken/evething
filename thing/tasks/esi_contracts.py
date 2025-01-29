@@ -55,7 +55,8 @@ class EsiContracts(APITask):
 
         for scope in char_contract_scopes:
             char = scope.character
-            success = self.import_contracts(char, False)
+            if len(char.sso_refresh_token) == 24:
+               success = self.import_contracts(char, False)
 
         contract_scopes = CharacterApiScope.objects.filter(
             scope__in=['esi-contracts.read_corporation_contracts.v1']
@@ -67,7 +68,7 @@ class EsiContracts(APITask):
             char = scope.character
 
             if 'corporation' in scope.scope:
-                if 'Contract_Manager' in char.get_apiroles():
+                if 'Director' in char.get_apiroles():
                     if char.corporation_id not in seen_corps\
                             and char.corporation_id is not None:
                         try:

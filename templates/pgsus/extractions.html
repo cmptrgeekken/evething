@@ -90,12 +90,19 @@
     {% if filter_types|length > 1 %}
         <div class="col-sm-12">
             <form method="get">
+               <input type="hidden" name="ticker" value="{{ ticker }}"/>
 				<div class="row">
 					<div class="col-sm-3">
                         Type:
 		                <select name="type" class="input-sm">
         		            {% for type in filter_types %}
+                                      {% if type == 'pankrab' %}
+                                         <optgroup label="Restricted">
+                                           <option value="pankrab"{% if type|lower == moon_type|lower %} selected{% endif %}>PANKRAB</option>
+                                         </optgroup>
+                                      {% else %}
                 		    <option value="{{ type|lower }}"{% if type|lower == moon_type|lower %} selected{% endif %}>{% if type == 'Public' %}All Public{% else %}{{ type }}{% endif %}</option>
+                                      {% endif %}
 		                    {% endfor %}
         		        </select>
 					</div>
@@ -127,10 +134,25 @@
         </div>
 
     {% endif %}
+        {% if moon_type == 'pankrab' %}
+<div class="row"><br>
+<div class="col-md-12">
+    <div class="alert alert-danger">
+                <h4 class="alert-heading"><b>These moons are RESTRICTED:</b></h4>
+                <ul>
+                    <li>These moons are only to be used by members of <a href="https://www.pandemic-horde.org/forum/index.php?threads/b-i-g-pankrab-hordes-umbrella-and-crab-sigs-rorqual-beans-marauder-beans-super-bears-carrier-beans-krabnaught-beans-updated-2022-03-01.2040/" target="_blank">PANKRAB</a>. Do not try to mine these moons if you are not a part of PANKRAB.</li>
+                </ul>
+    </div>
+            </div>
+
+</div>
+        {% endif %}
         <div class="col-lg-1">
+            {% if moon_type != 'pankrab' and moon_type != 'n64' %}
             <a href="{{ ical_url }}" target="_blank" title="Add to Google Calendar">
                 <img src="{{ STATIC_URL }}pgsus/img/google-calendar.png" width="32" height="32" alt=""/>
             </a>
+            {% endif %}
         </div>
         <div class="col-lg-2" style="line-height: 2em;">
             Number of Moons: {{ moon_list | length }}
@@ -156,6 +178,7 @@
                                 <b>Chunk Time:</b> <span>{{ m.chunk_days }} days</span>
                                 <br/><b>Chunk Arrival:</b> <span>{{ m.extraction.chunk_arrival_time }} UTC</span>
                                 <br/><b>Self-Destructs:</b> <span>{{ m.extraction.natural_decay_time }} UTC</span>
+                                <br/><b>Field Stability: </b><span>{{ m.expiration_days }} days</span>
                             </i></small>
                         </div>
                         <div class="panel-body" style="position: relative; text-align: center;">
@@ -177,7 +200,7 @@
                                 <small>
                                     <i>
                                         <br/>Self-Destructs <time class="timeago" datetime="{{ m.extraction.natural_decay_time|timeago }}">{{ m.extraction.natural_decay_time}}</time>
-                                        <br/><br/>If not there, please post the following in #mining-beans:
+                                        <br/><br/>After flying to the moon, if it is not popped, please post the following in #mining-beans:
 
                                     </i>
                                     <br/>@moon-beans {{ m.name }} is ready to pop at your earliest convenience!
@@ -185,11 +208,17 @@
                                 </small>
                             </div>
                             {% else %}
-                            <div class="error">
+                            <div class="error" data-test="{{ m.structure.station.system.is_esi_gated }}">
                                 Ready <time class="timeago" datetime="{{ m.extraction.chunk_arrival_time|timeago }}">{{ m.extraction.chunk_arrival_time }}</time>
                                 <small><i>
                                     <br/>Self-Destructs <time class="timeago" datetime="{{ m.extraction.natural_decay_time|timeago }}">{{ m.extraction.natural_decay_time}}</time>
                                 </i></small>
+                            </div>
+                            {% endif %}
+                            {% if m.is_gated %}
+                            <div class="bg-primary" style="padding: 0.5em 0; margin-bottom: 0.5em;">
+                                Gated Space<br/>
+                                <small>You must be a part of a fleet to mine this moon.</small>
                             </div>
                             {% endif %}
                             <ul class="info-list md-list primary info-list-border">
@@ -240,15 +269,16 @@
                                             {% elif ore.remaining_pct >= 0.15 %}
                                             <button title="{{ ore.remaining_volume|humanize }} m3" class="ore-type btn btn-warning" style="font-size: 10px;margin-right:3px;cursor: default;">Some</button>
                                             {% elif ore.remaining_pct > 0 %}
-                                            <button title="{{ ore.remaining_volume|humanize }} m3" class="ore-type btn btn-danger" style="font-size: 10px;margin-right:3px;cursor: default;">Low!</button>
+                                            <button title="{{ ore.remaining_volume|humanize }} m3" class="ore-type btn btn-danger" style="font-size: 10px;margin-right:3px;cursor: default;">Some</button>
                                             {% else %}
-                                            <button title="{{ ore.remaining_volume|humanize }} m3" class="ore-type btn btn-danger" style="font-size: 10px;margin-right:3px;cursor: default;">Out</button>
+                                            <button title="{{ ore.remaining_volume|humanize }} m3" class="ore-type btn btn-danger" style="font-size: 10px;margin-right:3px;cursor: default;">Low!</button>
                                             {% endif %}
                                         </small>
                                     {% endif %}
                                     <br/>
                                     {{ (ore.pct*100)|commas(0) }}% {{ ore.ore.name }}
                                     <abbr title="{{ ore.ship_m3_tooltip }}"><small><span>{{ ore.remaining_isk_per_m3|commas(0) }} isk/m<sup>3</sup></span></small></abbr>
+                                    <sup><abbr title="100% Jita Buy @ 90% Reprocessing">?</abbr></sup>
                                     <br/>
                                     <small>
                                     {% if m.is_popped %}

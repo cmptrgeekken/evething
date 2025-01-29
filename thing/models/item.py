@@ -30,6 +30,8 @@ from django.db.models import Sum, F
 
 from django.core.cache import cache
 
+import math
+
 from thing.models.itemgroup import ItemGroup
 from thing.models.marketgroup import MarketGroup
 from thing.models.orderlist import OrderList
@@ -143,7 +145,7 @@ class Item(models.Model):
             item_ids = [self.id]
 
         if station_ids is None:
-            station_ids = [60003760] # Jita IV-4
+            station_ids = [60003760] # Jita IV-4, Perimeter TTT
 
         cache_key = 'get_price_%s-%s-%s-%s-%s-%s-%s' % (buy, ','.join(str(e) for e in item_ids), ','.join(str(e) for e in station_ids), order_pct, reprocess, reprocess_pct, pct)
         cache_val = None #cache.get(cache_key)
@@ -161,7 +163,7 @@ class Item(models.Model):
                 #else:
                 price_pct=pct
 
-                average += material.z_qty * reprocess_pct * material.get_price(buy=buy, pct=price_pct, station_ids=station_ids, order_pct=order_pct)
+                average += math.floor(material.z_qty * reprocess_pct) * material.get_price(buy=buy, pct=price_pct, station_ids=station_ids, order_pct=order_pct)
 
             return round(float(average / self.portion_size), 2)
 
@@ -245,7 +247,7 @@ class Item(models.Model):
 
         # TODO: Move Shipping Calculation to separate table
         orders = orders.extra(select={
-            'price_with_shipping': 'price + (%s)' % shipping_query,
+            'price_with_shipping': 'price + COALESCE((%s), price*.015 + volume*1000)' % shipping_query,
             'scaled_price_with_shipping': '''
 SELECT price / (SUM(im.quantity*i.sell_fivepct_price) /
     (SELECT SUM(im2.quantity*i2.sell_fivepct_price)
@@ -257,7 +259,7 @@ SELECT price / (SUM(im.quantity*i.sell_fivepct_price) /
     LIMIT 1)) + (%s)
     FROM thing_itemmaterial im INNER JOIN thing_item i on i.id=im.material_id and im.active=1 WHERE im.item_id=thing_stationorder.item_id
             ''' % (item_id_lookup, shipping_query),
-            'shipping': shipping_query
+            'shipping': 'COALESCE((%s), price*.015 + volume*1000)' % shipping_query
         })
 
         orders = orders.filter(buy_order=buy)
@@ -275,6 +277,7 @@ SELECT price / (SUM(im.quantity*i.sell_fivepct_price) /
 
         for order in orders:
             if order.price_with_shipping is None:
+                # order.price_with_shipping = Decimal(order.price)*Decimal(1.015) + Decimal(order.volume)*Decimal(1000)
                 continue
 
             if qty_remaining is None:

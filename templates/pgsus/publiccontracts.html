@@ -39,12 +39,18 @@
             </h2>
             <div class="form-group">
                 <select id="type_id" class="js-select2 input-lg search_field" style="width: 260px">
-                    <option value="" selected="selected">All Items</option>
+                    <option value=""{% if not type %} selected="selected"{% endif %}>All Items</option>
+                    {% if type %}
+                    <option value="{{ type['id'] }}" selected="selected">{{ type['name'] }}</option>
+                    {% endif %}
                 </select>
             </div>
             <div class="form-group">
                 <select id="location_id" class="js-select2 input-lg search_field" style="width: 260px">
-                    <option value="" selected="selected">All Locations
+                    <option value=""{% if not location %} selected="selected"{% endif %}>All Locations
+                    {% if location %}
+                    <option value="{{ location['id'] }}" selected="selected">{{ location['name'] }}</option>
+                    {% endif %}
                 </select>
             </div>
             <div class="form-group">
@@ -68,12 +74,18 @@
 
             <div class="form-group">
                 <select id="category_id" class="js-select2 input-lg search_field" style="width: 260px">
-                    <option value="" selected="selected">All Categories</option>
+                    <option value=""{% if not category %} selected="selected"{% endif %}>All Categories</option>
+                    {% if category %}
+                    <option value="{{ category['id'] }}" selected="selected">{{ category['name'] }}</option>
+                    {% endif %}
                 </select>
             </div>
             <div class="form-group">
                 <select id="group_id" class="js-select2 input-lg search_field" style="width: 260px;">
-                    <option value="" selected="selected">All Groups</option>
+                    <option value=""{% if not group %} selected="selected"{% endif %}>All Groups</option>
+                    {% if group %}
+                    <option value="{{ group['id'] }}" selected="selected">{{ group['name'] }}</option>
+                    {% endif %}
                 </select>
             </div>
             <div class="form-group" style="display: none" id="bp-type">
@@ -123,7 +135,10 @@
             </div>
             <div class="form-group">
                 <select id="issuer_id" class="js-select2 input-lg search_field" style="width: 260px;">
-                    <option value="" selected="selected">All Issuers</option>
+                    <option value=""{% if not issuer %} selected="selected"{% endif %}>All Issuers</option>
+                    {% if issuer %}
+                    <option value="{{ issuer['id'] }}" selected="selected">{{ issuer['name'] }}</option>
+                    {% endif %}
                 </select>
             </div>
             <div class="form-group">
@@ -241,7 +256,7 @@
             {{/if}}
             </td>
             <td>
-                {{ start_system_name }}
+                {{ start_station_name  }}<br/><i>{{ start_region_name }}</i>
             </td>
             <td>
                 {{#if for_corp}}
@@ -354,14 +369,17 @@
 <script>
 $(function(){
     var contractListTemplate = Handlebars.compile($('#contract-table-tmpl').html())
+    var searchFields = $('.search_field');
+    var lastReq = null;
     Handlebars.registerHelper("inc", function(value, options)
     {
         return parseInt(value) + 1;
     });
-    $('#search').on('click', function() {
-        var searchFields = $('.search_field');
 
+    $('#search').on('click', function() {
         var params = [];
+        var state = {};
+        var qs = '?'
         searchFields.each(function() {
             var $this = $(this);
 
@@ -374,12 +392,22 @@ $(function(){
 
             if (selected) {
                 params.push($this.attr('id') + '=' + $this.val());
+                if (qs != '?') {
+                    qs += '&';
+                }
+                qs += $this.attr('id') + '=' + $this.val();
             }
         });
 
+        history.pushState(state, document.title, qs);
+
         var searchUrl = '/api/publiccontracts?' + params.join('&');
 
-        $.get(searchUrl, function(r) {
+        if (lastReq) {
+            lastReq.abort()
+        }
+
+        lastReq = $.get(searchUrl, function(r) {
             $('#contract-table').html(contractListTemplate(r));
             var strs = jQuery.timeago.settings.strings
             for(var str in strs) {
@@ -397,6 +425,20 @@ $(function(){
             $('.timeago').timeago()
         });
     });
+    
+    var url = new URL(window.location);
+    searchFields.each(function() {
+        var $this = $(this);
+        var state = url.searchParams.get($this.attr('id'));
+        if ($this.attr('type') == 'checkbox' || $this.attr('type') == 'radio') {
+            if ($this.val() == state) {
+                $this.prop('checked', true);
+            }
+        } else if (state) {
+            $this.val(state).trigger('change');
+        }
+    });
+    
 
     $('#contract-table').on('click', '.toggle-items', function() {
         var target = $('#items-' + $(this).data('id'));
@@ -483,6 +525,9 @@ $(function(){
             $('#bp-type').hide();
         } 
     }).trigger('change');
+    {% if do_search %}
+    $('#search').click()
+    {% endif %}
 })
 </script>
 {% endblock %}

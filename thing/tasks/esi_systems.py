@@ -28,7 +28,7 @@ import datetime
 from .apitask import APITask
 import json
 
-from thing.models import Stargate, System
+from thing.models import Region, Constellation, Stargate, System
 from thing import queries
 from thing.utils import dictfetchall
 
@@ -44,6 +44,12 @@ import traceback
 class EsiSystems(APITask):
     name = 'thing.esisystems'
 
+    regions_url = 'https://esi.evetech.net/latest/universe/regions/'
+    region_url = 'https://esi.evetech.net/latest/universe/regions/%s'
+
+    constellations_url = 'https://esi.evetech.net/latest/universe/constellations/'
+    constellation_url = 'https://esi.evetech.net/latest/universe/constellations/%s'
+
     systems_url = 'https://esi.evetech.net/latest/universe/systems/'
     system_url = 'https://esi.evetech.net/latest/universe/systems/%s'
 
@@ -51,6 +57,111 @@ class EsiSystems(APITask):
 
     def run(self):
         self.init()
+
+        self.import_regions()
+        self.import_constellations()
+        self.import_gates()
+
+    def import_regions(self):
+        try:
+            success, results = self.fetch_esi_url(self.regions_url, None)
+
+            if not success:
+                self.log_warn('Failed to load regions: %s' % results)
+
+            existing_ids = set(Region.objects.values_list('id', flat=True))
+
+            region_ids = json.loads(results)
+
+            missing_regions = dict()
+
+            region_constellations = dict()
+
+            if len(region_ids) == 0:
+                self.log_warn('Received empty type list')
+                return False
+            urls = [self.region_url % str(i) for i in region_ids]
+
+            print('[%s] Fetching %d regions' % (datetime.datetime.utcnow(), len(urls)))
+
+            all_data = self.fetch_batch_esi_urls(urls, None, batch_size=10)
+            
+            for url, region_data in all_data.items():
+                success, data = region_data
+
+                if not success:
+                    self.log_warn('API returned an error for url %s' % url)
+                    continue
+
+                region = json.loads(data)
+
+                region_id = region['region_id']
+
+                db_region = Region()
+                db_region.id = region_id
+                db_region.name = region['name']
+                db_region.save()
+
+                region_constellations[region_id] = region['constellations']
+
+        except Exception, e:
+            traceback.print_exc(e)
+            return False
+
+        return region_constellations
+
+    def import_constellations(self):
+        try:
+            success, results = self.fetch_esi_url(self.constellations_url, None)
+
+            if not success:
+                self.log_warn('Failed to load constellations: %s' % results)
+
+            existing_ids = set(Constellation.objects.values_list('id', flat=True))
+
+            constellation_ids = json.loads(results)
+
+            missing_constellations = dict()
+
+            constellation_constellations = dict()
+
+            if len(constellation_ids) == 0:
+                self.log_warn('Received empty type list')
+                return False
+            urls = [self.constellation_url % str(i) for i in constellation_ids]
+
+            print('[%s] Fetching %d constellations' % (datetime.datetime.utcnow(), len(urls)))
+
+            all_data = self.fetch_batch_esi_urls(urls, None, batch_size=10)
+            
+            for url, constellation_data in all_data.items():
+                success, data = constellation_data
+
+                if not success:
+                    self.log_warn('API returned an error for url %s' % url)
+                    continue
+
+                constellation = json.loads(data)
+
+                constellation_id = constellation['constellation_id']
+
+                db_constellation = Constellation()
+                db_constellation.id = constellation_id
+                db_constellation.region_id = constellation['region_id']
+                db_constellation.name = constellation['name']
+                db_constellation.save()
+
+                # constellation_constellations[constellation_id] = constellation['constellations']
+
+        except Exception, e:
+            traceback.print_exc(e)
+            return False
+
+        return constellation_constellations
+
+
+    def import_gates(self):
+        current_gates = dictfetchall('SELECT id, system_id FROM thing_stargate')
 
 
         try:
@@ -76,6 +187,8 @@ class EsiSystems(APITask):
             print('[%s] %d systems retrieved!' % (datetime.datetime.utcnow(), len(urls)))
             gate_ids = []
 
+            gates_to_delete = set(Stargate.objects.values_list('id', flat=True))
+
             for url, system_data in all_data.items():
                 success, data = system_data
 
@@ -91,9 +204,19 @@ class EsiSystems(APITask):
 
                 system_id = int(system['system_id'])
 
-                if 'stargates' in system:
-                    gate_ids += [id for id in system['stargates']]
+                db_system = System.objects.filter(id=system_id).first()
+                if db_system is None:
+                    db_system = System()
+                    db_system.id = system_id
+                db_system.name = system['name']
+                db_system.constellation_id = system['constellation_id']
+                db_system.save()
 
+                if 'stargates' in system:
+                    for id in system['stargates']:
+                        if id in gates_to_delete:
+                            gates_to_delete.remove(id)
+                        gate_ids.append(id)
 
             gate_urls = [self.stargate_url % str(i) for i in gate_ids]
 
@@ -138,6 +261,11 @@ class EsiSystems(APITask):
 
                 sql_inserts.append(sql_insert)
 
+            if len(gates_to_delete) > 0:
+                print('[%s] Deleting %d gates' % (datetime.datetime.utcnow(), len(gates_to_delete)))
+
+                Stargate.objects.filter(id__in=gates_to_delete).delete()
+
 	    cursor = self.get_cursor()
 	    self.execute_query(cursor, sql_inserts) 
 
@@ -156,7 +284,7 @@ class EsiSystems(APITask):
 
         sql = ','.join(sql_inserts)
 
-	print('[%s] Inserting %d records!' % (datetime.datetime.utcnow(), len(sql_inserts)))
+        print('[%s] Inserting %d records!' % (datetime.datetime.utcnow(), len(sql_inserts)))
 
         cursor.execute('SET autocommit=0')
         cursor.execute('SET unique_checks=0')

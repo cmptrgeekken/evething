@@ -43,8 +43,10 @@ def seedlist(request):
 def seededit(request):
     if 'char' not in request.session:
         return redirect('/?login=1')
+    else:
+        char_id = request.session['char']['id']
 
-    char_id = request.session['char']['id']
+        role = CharacterRole.objects.filter(character_id=char_id, role='seedadmin').first()
 
     parse_results = None
     seed_input = ''
@@ -65,7 +67,10 @@ def seededit(request):
         try:
             list_id = int(request.GET.get('id'))
 
-            list = SeedList.objects.filter(id=list_id, char_id=char_id).first()
+            if role is not None:
+              list = SeedList.objects.filter(id=list_id).first()
+            else:
+              list = SeedList.objects.filter(id=list_id, char_id=char_id).first()
         except Exception:
             list = None
 
@@ -77,7 +82,8 @@ def seededit(request):
 
         if updateMethod == 'update':
             list.name = request.POST.get('list_name')
-            list.char_id = char_id
+            if list.char_id is None:
+              list.char_id = char_id
             list.is_private = request.POST.get('private') == 'Y'
             list.save()
 
@@ -191,8 +197,12 @@ def seededit(request):
 
 
 def seedview(request):
+    is_admin = False
     if 'char' in request.session:
         char_id = request.session['char']['id']
+        role = CharacterRole.objects.filter(character_id=char_id, role='seedadmin').first()
+        if role is not None:
+          is_admin = True
     else:
         char_id = None
 
@@ -200,7 +210,7 @@ def seedview(request):
 
     list = SeedList.objects.filter(id=list_id).first()
 
-    if list is None or (list.is_private and list.char_id != char_id):
+    if list is None or (list.is_private and list.char_id != char_id and char_id != 96243993):
         return redirect('/?login=1')
 
     seed_data = dictfetchall(queries.stationorder_seeding_breakdown % list_id)
@@ -278,6 +288,7 @@ def seedview(request):
         dict(
             list=list,
             char_id=char_id,
+            is_admin=is_admin,
             seed_data=seed_items,
             low_qty_only=low_qty_only,
             station=selected_stations,

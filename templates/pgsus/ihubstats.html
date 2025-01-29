@@ -1,0 +1,68 @@
+{% extends "web_template.html" %}
+{% import 'macros/common.html' as common %}
+  
+{% block title %}iHub Stats{% endblock %}
+{% block extra_js %}
+{% endblock %}
+{% block content %}
+<section class="bg-19 bg-center bg-cover">
+    <div>
+        <div class="container section-sm">
+            <h1 class="top-title">Infrastructure Hub Stats</h1>
+        </div>
+    </div>
+</section>
+
+<section class="container section-md">
+      <div class="row">
+        <div class="col-lg-12">
+            <h4>
+                <a href="{{ url('pgsus.views.ihubs') }}">IHub List</a>
+            </h4>
+            {% if missing|length > 0 %}
+            <div class="col-md-8">
+               <div class="alert alert-info">
+                  <h4 class="alert-heading"><b>The following systems were not found:</b></h4>
+                  <ul>
+                  {% for entry in missing %}
+                    <li>{{ entry }}</li>
+                  {% endfor %}
+                  </ul>
+               </div>
+            </div>
+            {% endif %}
+            {% if months|length > 0 %}
+                <div class="row clearfix">
+                    <div class="col-lg-12">
+                        <div class="col-lg-12">
+                            <div class="tab-content clearfix">
+                                <table class="table table-bordered">
+                                    <tr>
+                                        <th>{{ header }} ({{ tabledata|length }})</th>
+                                        {% for month in months %}
+                                        <th style="white-space: nowrap">{{ month }}</th>
+                                        {% endfor %}
+                                    </tr>
+                                    {% for data in tabledata %}
+                                    <tr>
+                                        <td>{{ data['label'] }}</td>
+                                        {% for value in data['values'] %}
+                                        <td class="{%- if 'diff' in value and value['diff'] > 0%}success{% elif 'diff' in value and value['diff'] > -1000000000 %}warning{% elif 'diff' in value and value['diff'] %}danger{% elif value['cost']  %}info{% endif -%}">
+                                            {% if 'cost' in value %}
+                                            <abbr title="Diff: {{ value['diff'] | humanize }} ISK">
+                                                {{ value['cost'] | humanize }}</td>
+                                            </abbr>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </tr>
+                                    {% endfor %}
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+      </div>
+</section>
+{% endblock %}

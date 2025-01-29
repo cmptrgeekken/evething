@@ -28,7 +28,7 @@ import datetime
 from .apitask import APITask
 import json
 
-from thing.models import CharacterApiScope, EsiAsset, MoonExtraction, Item, Station, Structure, StructureService
+from thing.models import Character, CharacterApiScope, EsiAsset, MoonExtraction, Item, Station, Structure, StructureService
 from thing import queries
 from thing.utils import dictfetchall
 
@@ -57,12 +57,20 @@ class EsiAssets(APITask):
 
         for scope in corp_asset_scopes:
             char = scope.character
+            
+            if not char or not char.corporation:
+                continue
+
+            if char.name != 'KenGeorge Beck':
+                continue
 
             if 'Director' in char.get_apiroles():
                 if char.corporation_id not in seen_corps\
                         and char.corporation_id is not None:
+                    print char.corporation.name
                     success = self.import_assets(char, True)
                     if not success:
+                        print 'Import failed.'
                         self.scope_failure(scope)
                         continue
 
@@ -77,13 +85,13 @@ class EsiAssets(APITask):
                         gates = dictfetchall(queries.jumpbridge_lo_quantity % char.corporation.alliance_id)
                         cache.set('structure-gates-%d' % char.corporation.alliance_id, gates)
 
-                        cursor = self.get_cursor()
+        cursor = self.get_cursor()
         cursor.execute(queries.jumpbridge_lo_history_update)
 
         #for scope in char_asset_scopes:
         #    self.import_assets(scope.character, False)
 
-        #for scope in corp_asset_scopes:
+        # for scope in corp_asset_scopes:
         #    self.import_assets(scope.character, True)
         # EsiAsset.objects.rebuild()
 
@@ -147,6 +155,7 @@ class EsiAssets(APITask):
                 api_url = self.char_asset_url % char_id
 
             initial_url = api_url + '1'
+            print initial_url
 
             #self.log_debug('Starting fetch at %s' % start_time)
 
@@ -263,6 +272,8 @@ class EsiAssets(APITask):
     @transaction.atomic
     def execute_query(self, cursor, sql_inserts):
         order_ct = len(sql_inserts)
+
+        print 'Attempting to insert %d records' % len(sql_inserts)
 
         if order_ct == 0:
             return

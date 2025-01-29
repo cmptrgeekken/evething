@@ -153,12 +153,12 @@ class APITask(Task):
                     return False
 
     def scope_success(self, scope):
-        scope.failures = 0
+        scope.failure_count = 0
         scope.save()
 
     def scope_failure(self, scope):
-        scope.failures += 1
-        if scope.failures > 5:
+        scope.failure_count += 1
+        if scope.failure_count > 5:
             scope.enabled = False
         scope.save()
 

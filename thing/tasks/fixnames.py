@@ -74,6 +74,20 @@ class FixNames(APITask):
 
         ids = list(set(char_map.keys()) | set(corp_map.keys()) | set(char_empty_corps) | set(corp_empty_alliances))
 
+        print('Found ids: %d' % len(ids))
+
+        if 263585335 in ids:
+            print('Found Black Omega Security')
+
+            if 263585335 in char_map:
+                print('Found in char map')
+            if 263585335 in corp_map:
+                print('Found in corp map')
+            if 263585335 in char_empty_corps:
+                print('Found in empty corps')
+            if 263585335 in corp_empty_alliances:
+                print('Found in empty alliances')
+
         for i in range(0, len(ids), 10):
             bodies = [[id] for id in ids[i:i+10]]
 
@@ -104,16 +118,18 @@ class FixNames(APITask):
                             char.name = name
                             char.save()
                             continue
-                    elif cat == 'corporation':
+                    elif False and cat == 'corporation':
                         corp = corp_map.get(id)
                         if corp:
                             corp.name = name
+                            print(name)
                             corp.save()
                             continue
                         else:
                             corp = Corporation()
                             corp.id = id
                             corp.name = name
+                            print(name)
                             corp.save()
                             continue
                     elif cat == 'alliance':

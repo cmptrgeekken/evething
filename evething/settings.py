@@ -303,7 +303,7 @@ CELERYBEAT_SCHEDULE = {
     },
     'contractseeding': {
         'task': 'thing.esi_contractseeding',
-        'schedule': timedelta(minutes=60),
+        'schedule': timedelta(hours=1),
         'options': {
             'expires': 240*60,
             'queue': 'et_contractseeding'
@@ -375,6 +375,14 @@ CELERYBEAT_SCHEDULE = {
         'args': [],
     },
 
+    'systems': {
+        'task': 'thing.esisystems',
+        'schedule': crontab(hour=2),
+        'options': {
+            'expires': 10 * 60,
+            'queue': 'et_universe'
+        }
+    },
 
     # update unknown character/corporation names every hour
     'fix-names': {
@@ -389,6 +397,15 @@ CELERYBEAT_SCHEDULE = {
     'charcorps': {
         'task': 'thing.char_corp_update',
         'schedule': timedelta(minutes=5),
+        'options': {
+            'expires': 59 * 60,
+            'queue': 'et_charcorps'
+        },
+        'args': (),
+    },
+    'corpalliances': {
+        'task': 'thing.corp_alliance_update',
+        'schedule': crontab(hour=4),
         'options': {
             'expires': 59 * 60,
             'queue': 'et_charcorps'

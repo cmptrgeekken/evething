@@ -250,16 +250,21 @@ class Importer:
             if not data[0] or not data[1]:
                 continue
 
-            system = System(
-                id=id,
-                name=data[0],
-                constellation_id=data[1],
-            )
-            new.append(system)
-            added += 1
+            system = System.objects.filter(id=id).first()
+            if not system:
+	        system = System(
+                    id=id,
+                    name=data[0],
+                    constellation_id=data[1],
+                )
+                new.append(system)
+                added += 1
+            elif system.constellation_id != data[1]:
+                system.name = data[0]
+                system.constellation_id = data[1]
+                system.save()
 
         if new:
-            System.objects.all().delete()
             System.objects.bulk_create(new)
 
         return added

@@ -9,9 +9,42 @@ from django.http import JsonResponse
 from decimal import Decimal
 
 def publiccontracts(request):
+    data = dict()
+    get = request.GET
+
+    if get.get('type_id'):
+        data['type'] = Item.objects.filter(id=get.get('type_id')).values('id','name').first()
+
+    if get.get('location_id'):
+        location = MapDenormalize.objects.filter(item_id=get.get('location_id'), type_id__in=[3,4,5]).values('item_id', 'item_name').first()
+        if location:
+            data['location'] = dict(
+                id=location['item_id'],
+                name=location['item_name']
+            )
+
+
+    if get.get('category_id'):
+        data['category'] = ItemCategory.objects.filter(id=get.get('category_id')).values('id', 'name').first()
+
+    if get.get('group_id'):
+        data['group'] = ItemGroup.objects.filter(id=get.get('group_id')).values('id', 'name').first()
+
+    if get.get('issuer_id'):
+        char = Character.objects.filter(id=get.get('issuer_id')).values('id', 'name').first()
+        corp = Corporation.objects.filter(id=get.get('issuer_id')).values('id', 'name').first()
+
+        if char:
+            data['issuer'] = char
+        elif corp:
+            data['issuer'] = corp
+
+    if len(data) > 0:
+        data['do_search'] = True
+
     out = render_page(
         'pgsus/publiccontracts.html',
-        dict(),
+        data,
         request
     )
 
@@ -138,6 +171,7 @@ def api_publiccontracts(request):
         location = MapDenormalize.objects.filter(item_id=location_id).first()
 
         if location is not None:
+            pass
             if location.type_id == 3: # Region
                 region_id = location_id
             elif location.type_id == 4: # Constellation
@@ -213,6 +247,7 @@ def api_publiccontracts(request):
             + ' LEFT JOIN thing_itemgroup ig ON i.item_group_id=ig.id'\
             + ' LEFT JOIN thing_itemcategory ic ON ig.category_id=ic.id'\
             + ' LEFT JOIN thing_system sy ON st.system_id=sy.id'\
+            + ' LEFT JOIN thing_constellation c ON c.id = sy.constellation_id'\
             + ' LEFT JOIN thing_mapdenormalize md ON sy.id = md.item_id'\
             + ' WHERE 1=1'
 
@@ -259,7 +294,7 @@ def api_publiccontracts(request):
         parms.append(0 if is_bpo else 1)
 
     if region_id:
-        qry += ' AND region_id=%s'
+        qry += ' AND c.region_id=%s'
         parms.append(region_id)
 
     if constellation_id:

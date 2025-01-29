@@ -61,6 +61,8 @@ class HistoryUpdater(APITask):
 
         all_history_data = self.fetch_batch_esi_urls(urls, None)
 
+        print 'Data: %d' % len(all_history_data.items())
+
         # Collect data
         for url, history_data in all_history_data.items():
             success, data = history_data

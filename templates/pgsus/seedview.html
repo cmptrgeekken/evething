@@ -18,7 +18,7 @@
             {% if char_id %}
             <a href="{{ url('pgsus.views.seedlist') }}">Back to List View</a>
             {% endif %}
-            <h3>{{ list.name }} {% if char_id == list.char_id %} <a href="{{ url('pgsus.views.seededit') }}?id={{ list.id }}">Edit</a>{% endif %}</h3>
+            <h3>{{ list.name }} {% if char_id == list.char_id or is_admin %} <a href="{{ url('pgsus.views.seededit') }}?id={{ list.id }}">Edit</a>{% endif %}</h3>
             <h4>Creator: {{ list.char.name }}</h4>
 
           <form id="formEntry" class="form-horizontal" method="get" action="{{ url('pgsus.views.seedview') }}">
@@ -59,12 +59,12 @@
                           <th><abbr title="Min Qty">Min</abbr></th>
                           <th><abbr title="Current Stock">Stock</abbr></th>
                           <th><abbr title="Average Local Price">Price</abbr></th>
-                          <th><abbr title="20% Profit Sell">20%</abbr></th>
-                          <th><abbr title="Jita Price + Shipping (approx)">J+S</abbr></th>
                           <th><abbr title="Jita Price">J</abbr></th>
+                          <th><abbr title="Jita Price + Shipping (approx)">J+S</abbr></th>
+                          <th><abbr title="20% Profit Sell">20%</abbr></th>
                           <th><abbr title="Overpriced Pct">%</abbr></th>
-                          <th><abbr title="30-day volume">30</abbr></th>
                           <th><abbr title="5-day volume">5</abbr></th>
+                          <th><abbr title="30-day volume">30</abbr></th>
                       </tr>
                     </thead>
                     <tbody>
@@ -97,8 +97,8 @@
                             {% endif %}
                         </td>
                         <td>
-                            {% if item.twentypct_profit %}
-                                {{ item.twentypct_profit|float|round_price|commas(0) }}
+                            {% if item.jita_min_price %}
+                            {{ item.jita_min_price|float|round_price|commas(0) }}
                             {% endif %}
                         </td>
                         <td>
@@ -109,8 +109,8 @@
                             {% endif %}
                         </td>
                         <td>
-                            {% if item.jita_min_price %}
-                            {{ item.jita_min_price|float|round_price|commas(0) }}
+                            {% if item.twentypct_profit %}
+                                {{ item.twentypct_profit|float|round_price|commas(0) }}
                             {% endif %}
                         </td>
                         <td>
@@ -119,13 +119,13 @@
                             {% endif %}
                         </td>
                         <td>
-                            {% if item.thirtyday_vol %}
-                                {{ item.thirtyday_vol|commas(0) }}
+                            {% if item.fiveday_vol %}
+                                {{ item.fiveday_vol|commas(0) }}
                             {% endif %}
                         </td>
                         <td>
-                            {% if item.fiveday_vol %}
-                                {{ item.fiveday_vol|commas(0) }}
+                            {% if item.thirtyday_vol %}
+                                {{ item.thirtyday_vol|commas(0) }}
                             {% endif %}
                         </td>
                      </tr>

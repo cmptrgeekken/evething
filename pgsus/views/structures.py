@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!usr/bin/python
 # encoding=utf8
 # ------------------------------------------------------------------------------
 # Copyright (c) 2010-2013, EVEthing team
@@ -218,7 +218,11 @@ class MoonOreEntry:
 
 class MoonDetails:
 
-    def __init__(self, structure, extraction, config, observer_log, ore_values, ship_m3_per_hour, refinery):
+    def __init__(self, structure, extraction, config, observer_log, ore_values, ship_m3_per_hour, refinery, is_gated, observer):
+        m3_per_minute = 500
+        if extraction.chunk_arrival_time < datetime.datetime(2022,12,13):
+            m3_per_minute = 666
+
         self.name = structure.station.name
         self.is_jackpot = False
         self.refinery = refinery
@@ -237,14 +241,20 @@ class MoonDetails:
         self.log = observer_log
         self.ore_values = ore_values
         self.remaining_pct = 0
+        self.is_gated = is_gated
 
         self.ore_types = list()
 
         self.chunk_days = extraction.chunk_minutes / 60 / 24
 
-        self.expiration_time = extraction.natural_decay_time + datetime.timedelta(days=2)
+        expiration_days = 2
+        if observer:
+          expiration_days += observer.drill_stability_rig
 
-        self.total_volume = self.remaining_volume = extraction.chunk_minutes * 333
+        self.expiration_time = extraction.natural_decay_time + datetime.timedelta(days=expiration_days)
+        self.expiration_days = expiration_days
+
+        self.total_volume = self.remaining_volume = extraction.chunk_minutes * m3_per_minute
         self.total_value = 0
 
         self.remaining_value = 0
@@ -351,7 +361,7 @@ class MoonDetails:
 
             ore.remaining_volume = ore.total_volume = ore.pct * self.total_volume
             if ore.ore.id not in self.ore_values:
-                self.ore_values[ore.ore.id] = .9*ore.ore.get_price(buy=True,reprocess=True, reprocess_pct=.843)
+                self.ore_values[ore.ore.id] = ore.ore.get_price(buy=True,reprocess=True, reprocess_pct=.9)
 
             ore.value_ea = self.ore_values[ore.ore.id]
 
@@ -445,7 +455,7 @@ class MoonDetails:
 
 
 def extractions(request):
-    min_date = datetime.datetime.utcnow() + datetime.timedelta(days=-2)
+    min_date = datetime.datetime.utcnow() + datetime.timedelta(days=-4)
     min_date_rigged = datetime.datetime.utcnow() + datetime.timedelta(days=-4)
     max_visible_days = 7
 
@@ -453,31 +463,46 @@ def extractions(request):
 
     ical_cid = 'http://pgsus.space/extractions?format=ical'
 
+    regions_to_ignore = ['Cobalt Edge']
+
+    override_role = None
+    pankrab = False
     if 'char' in request.session:
         charid = request.session['char']['id']
         waypoint_scope = CharacterApiScope.objects.filter(character_id=charid, scope='esi-ui.write_waypoint.v1').first()
         role = CharacterRole.objects.filter(character_id=charid, role__in=['moon','spodcmd', 'moonbean']).values_list('role', flat=True).first()
+        char = Character.objects.filter(id=charid).first()
+        if char and role != 'moon' and char.corporation_id in [98477766]: # VG
+           override_role = 'spodcmd'
+        if char and char.corporation and char.corporation.alliance_id in [99005338,1042504553,386292982,1727758877]:
+           pankrab = True
     else:
         waypoint_scope = None
         role = None
+        char = None
     
     ship_m3_per_hour = [
         dict(name='Venture', m3=9*60*60),
         dict(name='Procurer', m3=32*60*60),
-        dict(name='Rorqual', m3=175*60*60, ignore='R64')
+        dict(name='Boosted ORE Hulk', m3=100*60*60)
     ]
 
     ticker = request.GET.get('ticker') or 'THXFC'
 
+    if ticker == 'AMAGL':
+        max_visible_days = 14
+
     ical_cid += '&ticker=%s' % ticker
 
     moon_type = (request.GET.get('type') or 'public').lower()
-    if role is None and moon_type == 'n64':
+    if role is None and override_role is None and moon_type == 'n64':
+        moon_type = 'public'
+    elif not pankrab and moon_type == 'pankrab':
         moon_type = 'public'
     #elif moon_type.lower() == 'r16':
     #    moon_type = 's16'
 
-    if moon_type != 'n64':
+    if moon_type != 'n64' and moon_type != 'pankrab':
         ical_cid += '&type=%s' % moon_type
 
     if moon_type == 'n64':
@@ -485,10 +510,15 @@ def extractions(request):
 
     if role is not None:
         max_visible_days = 25
+
+    if override_role is not None:
+        role = override_role
     
     region_filter = request.GET.get('region')
     if region_filter is not None:
         ical_cid += '&region=%s' % region_filter
+
+    esi_systems = set(System.objects.filter(is_esi_gated=1).values_list('name', flat=True))
 
     constellation_filter = request.GET.get('constellation')
     if constellation_filter is not None:
@@ -512,6 +542,9 @@ def extractions(request):
     if role == 'moon' or role == 'spodcmd':
         filter_types.append('N64')
 
+    if pankrab:
+        filter_types.append('pankrab')
+
     region_list = set()
     constellation_list = set()
     system_list = set()
@@ -531,8 +564,9 @@ def extractions(request):
         
         for e in moon_extractions:
             structure = e.structure
-            if structure.station.corporation_id is None\
-                or (structure.station.corporation.alliance.short_name != ticker and structure.station.corporation.ticker != ticker):
+            if not hasattr(structure.station, 'corporation')\
+                or structure.station.corporation is None\
+                or (structure.station.corporation.alliance is None or (structure.station.corporation.alliance.short_name != ticker and structure.station.corporation.ticker != ticker)):
                 continue
 
             system = structure.station.system.name
@@ -550,16 +584,21 @@ def extractions(request):
             else:
                 refinery = None
 
-
-
             cfg = MoonConfig.objects.filter(structure_id=e.structure.id).first()
             if cfg is None:
-                continue
+                cfg = MoonConfig()
+
+            station_name = structure.station.name.lower()
 
             if moon_type == 'public':
-                if cfg.is_nationalized:
+                if cfg.is_nationalized or 'pk32' in station_name or 'pk16' in station_name or 'pk64' in station_name:
                     continue
-            elif moon_type.lower() not in structure.station.name.lower():
+                if 'drill r16' not in station_name and 'drill r32' not in station_name and 'drill r64' not in station_name and 'drill r8' not in station_name and 'drill r4' not in station_name and 'airaken' not in station_name:
+                    continue
+            elif moon_type == 'pankrab':
+                if 'pk16' not in station_name and 'pk32' not in station_name and 'pk64' not in station_name:
+                    continue
+            elif moon_type.lower() not in station_name:
                 continue
 
             observer = MoonObserver.objects.filter(observer_id=structure.station_id).first()
@@ -571,10 +610,10 @@ def extractions(request):
                     last_updated__gte=e.chunk_arrival_time,
                     last_updated__lte=e.chunk_arrival_time + datetime.timedelta(days=2))
 
-            details = MoonDetails(structure, e, cfg, observer_log, ore_values, ship_m3_per_hour, refinery)
+            details = MoonDetails(structure, e, cfg, observer_log, ore_values, ship_m3_per_hour, refinery, system in esi_systems, observer)
             
-
-            moon_list[structure.id] = details
+            if details.expiration_time > datetime.datetime.utcnow():
+              moon_list[structure.id] = details
 
         moon_list = moon_list.values()
 
@@ -585,6 +624,9 @@ def extractions(request):
     filtered_list = list()
 
     for m in moon_list:
+        if m.structure.station.system.constellation.region.name in regions_to_ignore:
+            continue
+
         region_list.add(m.structure.station.system.constellation.region.name)
         constellation_list.add(m.structure.station.system.constellation.name)
 	system_list.add(m.structure.station.system.name)
@@ -599,6 +641,8 @@ def extractions(request):
 
         if valid_systems is not None and m.structure.station.system.name not in valid_systems:
             continue
+
+        m.is_gated = m.structure.station.system.name in esi_systems
 
 
         filtered_list.append(m)
@@ -650,6 +694,7 @@ def extractions(request):
             constellation=constellation_filter,
             system=system_filter,
             moon_type=moon_type,
+            ticker=ticker,
             ical_url='https://calendar.google.com/calendar/r?cid=%s' % urllib.quote(ical_cid)
         ),
         request,
@@ -707,6 +752,128 @@ class IHub:
         self.upgrades = list()
         self.last_updated = entry['last_updated']
         self.corp_ticker = entry['corp_ticker']
+
+def ihubstats(request):
+    if 'char' not in request.session:
+        return redirect('/?login=1')
+
+    charid = request.session['char']['id']
+
+    role = CharacterRole.objects.filter(character_id=charid, role__in=['structure']).first()
+
+    if role is None:
+        return redirect('/?perm=1')
+
+    start = request.GET.get('start')
+    start_dt = None
+    if start is None:
+        today = datetime.datetime.today()
+        start_dt = datetime.datetime(today.year - 1, today.month, 1)
+        # prevmo = datetime.datetime.today().replace(day=1) - datetime.timedelta(days=1)
+        
+        # start_dt = datetime.datetime.today().replace(day=1) - datetime.timedelta(days=prevmo.day)
+
+    end = request.GET.get('end')
+    end_dt = None
+    if end is None:
+        end_dt = (datetime.datetime.now().replace(day=1) + datetime.timedelta(days=32)).replace(day=1)
+
+    if start_dt is None:
+        start_dt = datetime.datetime.strptime(start, '%Y-%m-%d')
+    if end_dt is None:
+        end_dt = datetime.datetime.strptime(end, '%Y-%m-%d')
+
+    systems = request.GET.get('systems')
+    if systems is not None:
+       systems = systems.split(',')
+
+    missing_entries = list()
+    if not systems:
+       header = 'Regions'
+       stats = cache.get('ihubstats')
+       if stats is None:
+           stats = dictfetchall(queries.ihub_stats % (start_dt.strftime('%Y-%m-%d'), end_dt.strftime('%Y-%m-%d')))
+           cache.set('structures-ihubs-%s-%s' % (start_dt.strftime('%Y-%m-%d'), end_dt.strftime('%Y-%m-%d')), stats, 3600)
+    else:
+       header = 'Systems'
+       all_stats = dictfetchall(queries.ihub_system_stats % (start_dt.strftime('%Y-%m-%d'), end_dt.strftime('%Y-%m-%d')))
+       stats = list()
+       for system in systems:
+          system_found = False
+          for stat in all_stats:
+            if stat['label'].lower().strip() == system.lower().strip(): 
+               stats.append(stat)
+               system_found = True
+          if not system_found:
+            missing_entries.append(system)
+
+    alldata = dict()
+    months = set()
+    labels = list()
+    for stat in stats:
+        if stat['label'] not in alldata:
+            alldata[stat['label']] = dict()
+        alldata[stat['label']][stat['month']] = stat
+        if stat['label'] not in labels:
+          labels.append(stat['label'])
+        months.add(stat['month'])
+
+    #labels = list(sorted(labels))
+    months = list(sorted(months))
+
+    def ihubstats_sort(itema, itemb):
+        if itema['month'] > itemb['month']:
+            return -1
+        if itema['month'] < itemb['month']:
+            return 1
+        return 1
+
+    tabledata = list()
+    for label in labels:
+        stats = alldata[label]
+
+        labelentry = dict(label=label, values=list())
+
+        for i in range(len(months)):
+            month = months[i]
+
+            entry = dict(month=month, value=None, diff=None)
+
+            prevmonthdata = None
+            monthdata = None 
+
+            if month in stats:
+                monthdata = stats[month]
+
+                entry['cost'] = monthdata['cost']
+
+            if i > 0:
+                prevmonth = months[i-1]
+                if prevmonth in stats:
+                    prevmonthdata = stats[prevmonth]
+
+            if prevmonthdata is not None and monthdata is not None:
+                entry['diff'] = monthdata['cost'] - prevmonthdata['cost']
+
+            labelentry['values'].append(entry)
+
+	labelentry['values'].sort(ihubstats_sort)
+        tabledata.append(labelentry)
+
+            
+    return render_page(
+        'pgsus/ihubstats.html',
+        dict(
+            tabledata=tabledata,
+            months=sorted(months, reverse=True),
+            header=header,
+            missing=missing_entries,
+            labels=labels,
+            startdate=start_dt.strftime('%Y-%m-%d'),
+            enddate=end_dt.strftime('%Y-%m-%d')
+        ),
+        request
+    )
 
 def ihubs(request):
     if 'char' not in request.session:
@@ -813,7 +980,7 @@ def refinerylist(request):
 
     charid = request.session['char']['id']
 
-    role = CharacterRole.objects.filter(character_id=charid, role__in=['moon','moonbean']).first()
+    role = CharacterRole.objects.filter(character_id=charid, role__in=['moon','moonbean', 'spodcmd']).first()
 
     if role is None:
         return redirect('/?perm=1')
@@ -823,7 +990,7 @@ def refinerylist(request):
     if role.character.corporation_id is None:
         return render_page('pgsus/error.html', dict(message = 'No corporation associated with your character. Please contact KenGeorge Beck for assistance.'), request)
 
-    allianceid = role.character.corporation.alliance_id
+    allianceid = 99005338 #role.character.corporation.alliance_id
 
     if is_admin and request.method == 'POST':
         structure_id = request.POST.get('structure_id')
@@ -857,7 +1024,7 @@ def refinerylist(request):
 
     waypoint_scope = CharacterApiScope.objects.filter(character_id=charid, scope='esi-ui.write_waypoint.v1').first()
 
-    struct_services = StructureService.objects.filter(name='Moon Drilling', structure__station__corporation__alliance_id=allianceid)
+    struct_services = StructureService.objects.filter(name='Moon Drilling', structure__station__corporation_id=98388312)
 
     struct_list = dict()
 
@@ -875,7 +1042,7 @@ def refinerylist(request):
     constellation_list = set()
     system_list = set()
 
-    type_list = ['N64', 'R64', 'R32', 'R16', 'S16', 'R4', 'RIG', 'Athena']
+    type_list = ['N64', 'PK', 'R64', 'R32', 'R16', 'S16', 'R4', 'RIG', 'Athena']
 
     region_filter = request.GET.get('region')
     constellation_filter = request.GET.get('constellation')
@@ -941,6 +1108,9 @@ def refinerylist(request):
             elif type_filter == 'N64':
                 if type_filter not in structure.station.name: #config is None or not config.is_nationalized:
                     continue
+            elif type_filter == 'PK':
+                if 'PK16' not in structure.station.name and 'PK32' not in structure.station.name and 'PK64' not in structure.station.name:
+                    continue
             elif type_filter not in structure.station.name:
                 continue
 
@@ -978,9 +1148,9 @@ def refinerylist(request):
             if next_date_override <= datetime.datetime.utcnow():
                 while next_date_override <= datetime.datetime.utcnow():
                     next_date_override += datetime.timedelta(days=cycle_time)
-            else:
-                while next_date_override > datetime.datetime.utcnow() + datetime.timedelta(days=cycle_time):
-                    next_date_override -= datetime.timedelta(days=cycle_time)
+            #else:
+            #    while next_date_override > datetime.datetime.utcnow() + datetime.timedelta(days=cycle_time):
+            #        next_date_override -= datetime.timedelta(days=cycle_time)
             structure.z_next_chunk_time = next_date_override
 
         structure.z_cycle_time = cycle_time
@@ -1292,8 +1462,9 @@ def high_gate_usage(request):
 
     min = request.GET.get('min') or 1000000
     fast = request.GET.get('fast') or False
+    days = request.GET.get('days') or 30
 
-    cur.execute(queries.jumpbridge_usage_fees if fast is False and min >= 250000 else queries.jumpbridge_usage_fees_fast, [int(min)]);
+    cur.execute(queries.jumpbridge_usage_fees if fast is False and min >= 250000 else queries.jumpbridge_usage_fees_fast, [int(min), -int(days)]);
     rows = cur.fetchall()
     
     response = HttpResponse(content_type='text/csv')

@@ -32,6 +32,7 @@ class MoonObserver(models.Model):
     observer = models.ForeignKey(Structure, on_delete=models.DO_NOTHING)
     last_updated = models.DateField()
     observer_type = models.CharField(max_length=30)
+    drill_stability_rig = models.IntegerField()
 
     class Meta:
         app_label = 'thing'

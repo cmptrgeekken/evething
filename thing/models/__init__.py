@@ -22,6 +22,7 @@ from thing.models.buybacklocationgroup import BuybackLocationGroup
 from thing.models.buybacklocation import BuybackLocation
 from thing.models.buybacklocationtype import BuybackLocationType
 
+from thing.models.esijournal import EsiJournal
 #
 from thing.models.inventoryflag import InventoryFlag
 from thing.models.reftype import RefType

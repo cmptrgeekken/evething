@@ -28,18 +28,19 @@ import datetime
 from .apitask import APITask
 import json
 
-from thing.models import CharacterApiScope, EsiAsset, MoonExtraction, Item, Station, Structure, StructureService
+from thing.models import CharacterApiScope, EsiAsset, EsiJournal, MoonExtraction, Item, Station, Structure, StructureService
 from thing import queries
 from thing.utils import dictfetchall
 
 from django.core.cache import cache
 
 from django.db import transaction
+from decimal import Decimal
 
 import traceback
 
 
-class EsiJournal(APITask):
+class EsiJournalTask(APITask):
     name = 'thing.esijournal'
 
     corp_journal_url = 'https://esi.evetech.net/latest/corporations/%s/wallets/%d/journal/?datasource=tranquility&page='
@@ -85,7 +86,7 @@ class EsiJournal(APITask):
 
                 success, data, headers = self.fetch_esi_url(initial_url, character, headers_to_return=['x-pages', 'last-modified'])
                 if not success:
-                    self.log_error('Failed to load journal for %s via %s' % (char.corporation.name, char.name))
+                    self.log_error('Failed to load journal for %s via %s' % (character.corporation.name, character.name))
                     return False
 
                 max_pages = int(headers['x-pages']) if 'x-pages' in headers else 1
@@ -96,7 +97,6 @@ class EsiJournal(APITask):
 
         	max_dt = cursor.fetchone()[0]
 
-
                 if max_pages > 1:
                     all_journal_data = self.fetch_batch_esi_urls(urls, character, batch_size=20, headers_to_return=['last-modified'])
                 else:
@@ -105,6 +105,7 @@ class EsiJournal(APITask):
                 all_journal_data[initial_url] = (success, data, headers)
                 sql_inserts = []
                 sql_params = []
+                all_ids = []
 
                 for url, journal_data in all_journal_data.items():
                     success, results, headers = journal_data
@@ -135,18 +136,23 @@ class EsiJournal(APITask):
 
 			if max_dt is not None and date < max_dt:
                             continue
+                        
+                        all_ids.append(journal_id)
 
                         new_sql = "(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
 
                         sql_inserts.append(new_sql)
                         sql_params.extend([journal_id, amount, balance, context_id, context_id_type, date, description, first_party_id, reason, ref_type, second_party_id, corp_id, wallet_id])
-                
+
                         if len(sql_inserts) >= 1000:
+                            results = EsiJournal.objects.filter(journal_id__in=all_ids, corporation_id=corp_id, wallet_id=wallet_id).delete()
                             #self.log_debug('Inserting %d record...' % len(sql_inserts))
                             self.execute_query(cursor, sql_inserts, sql_params)
                             sql_inserts = []
                             sql_params = []
+                            all_ids = []
                 if len(sql_inserts) > 0:
+                    results = EsiJournal.objects.filter(journal_id__in=all_ids, corporation_id=corp_id, wallet_id=wallet_id).delete()
                     self.execute_query(cursor, sql_inserts, sql_params)
 
             cursor.execute("INSERT INTO thing_character(id,name) SELECT DISTINCT first_party_id, '*UNKNOWN*' FROM thing_esijournal ej LEFT JOIN thing_character ch ON ej.first_party_id=ch.id WHERE ej.ref_type in ('structure_gate_jump','bounty_prize','industry_job_tax','planetary_import_tax','planetary_export_tax') AND ch.id is null;")

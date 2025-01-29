@@ -50,7 +50,7 @@ class CharCorpUpdate(APITask):
         
         # Fetch chars to update corps
         no_corp_map = {}
-        for char in Character.objects.filter(Q(corporation_id=None) | Q(last_updated__lte=datetime.datetime.now() - datetime.timedelta(days=1)),not_found=False).exclude(name='*UNKNOWN*').order_by('corporation_id')[0:10000]:
+        for char in Character.objects.filter(Q(corporation_id=None) | Q(last_corp_update=None) | Q(last_corp_update__lte=datetime.datetime.now() - datetime.timedelta(days=1)),not_found=False).exclude(name='*UNKNOWN*').order_by('last_corp_update')[0:10000]:
             no_corp_map[char.id] = char
 
         # Fetch all unknown Corporation objects
@@ -85,14 +85,10 @@ class CharCorpUpdate(APITask):
                 corp_id = row['corporation_id']
                 alliance_id = row['alliance_id'] if 'alliance_id' in row else None
 
-                char = no_corp_map.get(char_id)
+                char = Character.objects.filter(id=char_id).first()
                 if char.corporation_id != corp_id:
                     char.corporation_id = corp_id
+                char.last_corp_update = datetime.datetime.now()
                 char.save()
-
-                corp = corp_map.get(corp_id)
-                if corp is not None and corp.alliance_id != alliance_id:
-                    corp.alliance_id = alliance_id
-                    corp.save()
 
         return True

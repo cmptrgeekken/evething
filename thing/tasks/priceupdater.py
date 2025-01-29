@@ -109,7 +109,11 @@ class PriceUpdater(APITask):
 
         cursor = self.get_cursor()
 
-        cursor.execute(queries.bulk_stationorder_drop_tmp)
+        try:
+            cursor.execute(queries.bulk_stationorder_drop_tmp)
+        except Exception:
+            pass
+            
         cursor.execute(queries.bulk_stationorder_create_tmp)
 
         seen_ids = set()

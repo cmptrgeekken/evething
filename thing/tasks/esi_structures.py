@@ -55,8 +55,10 @@ class EsiStructures(APITask):
 
             if 'Station_Manager' in char.get_apiroles():
                 if char.corporation_id is not None and char.corporation_id not in seen_corps:
+                    print('Importing %s as %s' % (char.corporation.name, char.name))
                     success = self.import_structures(char)
                     if success:
+                        print('Imported %s' % char.corporation.name)
                         seen_corps.add(char.corporation_id)
 
         for scope in search_scopes:
@@ -75,11 +77,13 @@ class EsiStructures(APITask):
 
         skip_updates = False
 
-        while max_pages is None or page < max_pages:
+        while max_pages is None or page <= max_pages:
             success, results, headers = self.fetch_esi_url(self.corp_structures_url % (corp_id, page), character, 'get', None, ['x-pages'])
+            print(self.corp_structures_url % (corp_id, page))
 
             if not success:
                 skip_updates = True
+                print('Failed to load results: %s' % results)
                 return False
 
             if 'x-pages' in headers:
@@ -90,11 +94,12 @@ class EsiStructures(APITask):
             structure_info = json.loads(results)
 
             if len(structure_info) == 0:
+                print('No structure info found on page %s' % page)
                 break
 
             for struct in structure_info:
                 struct_id = struct['structure_id']
-                
+
                 seen_ids.add(struct_id)
             
                 db_station = Station.objects.filter(id=struct_id).first()
@@ -110,12 +115,13 @@ class EsiStructures(APITask):
                 try:
                     success, results = self.fetch_esi_url(self.structure_url % struct['structure_id'], character)
                 except:
+                    print("Cannot fetch structure: %s" % struct['structure_id'])
                     continue
 
                 if success:
                     info = json.loads(results)
                 else:
-                    #self.log_debug("Cannot find info on structure: %s" % struct['structure_id'])a
+                    print("Cannot parse info on structure: %s (%s)" % (struct['structure_id'], results))
                     continue
 
                 if info is None:
@@ -230,6 +236,7 @@ class EsiStructures(APITask):
 
 
     def import_jumpgates(self, character):
+        print('Importing jumpgates..')
         # Get jump gates
         success, result = self.fetch_esi_url(self.jumpgate_search_url % character.id, character)
         if not success:
